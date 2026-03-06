@@ -72,3 +72,4 @@ npm run preview
 
 - 本文件作为前端项目入口文档，后续新增功能或改动启动方式时，请同步补充。
 - 如涉及后端接口或联调策略变化，请同步更新 `findings.md` 与 `progress.md`。
+- 前端编码与 AI 协作规范：`docs/FRONTEND_CONVENTIONS.md`。
