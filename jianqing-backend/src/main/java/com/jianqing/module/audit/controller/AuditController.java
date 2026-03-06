@@ -20,6 +20,9 @@ public class AuditController {
         this.auditLogService = auditLogService;
     }
 
+    /**
+     * 查询操作日志分页。
+     */
     @GetMapping("/oper-logs")
     public ApiResponse<PageResult<OperLogView>> operLogs(@RequestParam(defaultValue = "1") int page,
                                                          @RequestParam(defaultValue = "20") int size,
@@ -28,6 +31,9 @@ public class AuditController {
         return ApiResponse.success(auditLogService.pageOperLogs(page, size, keyword, status));
     }
 
+    /**
+     * 查询登录日志分页。
+     */
     @GetMapping("/login-logs")
     public ApiResponse<PageResult<LoginLogView>> loginLogs(@RequestParam(defaultValue = "1") int page,
                                                             @RequestParam(defaultValue = "20") int size,

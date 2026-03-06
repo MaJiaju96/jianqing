@@ -6,7 +6,7 @@ import com.jianqing.framework.security.JwtTokenService;
 import com.jianqing.framework.security.SecurityUtils;
 import com.jianqing.framework.security.TokenSessionService;
 import com.jianqing.module.audit.entity.SysLoginLog;
-import com.jianqing.module.audit.mapper.SysLoginLogMapper;
+import com.jianqing.module.audit.service.AuditLogService;
 import com.jianqing.module.auth.dto.LoginRequest;
 import com.jianqing.module.auth.dto.LoginResponse;
 import com.jianqing.module.auth.dto.UserProfileResponse;
@@ -15,6 +15,7 @@ import com.jianqing.module.system.entity.SysUser;
 import com.jianqing.module.system.mapper.SysUserMapper;
 import com.jianqing.module.system.service.SystemService;
 import jakarta.servlet.http.HttpServletRequest;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,26 +23,23 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class AuthServiceImpl implements AuthService {
+public class AuthServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements AuthService {
 
-    private final SysUserMapper sysUserMapper;
     private final SystemService systemService;
-    private final SysLoginLogMapper sysLoginLogMapper;
+    private final AuditLogService auditLogService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
     private final JwtProperties jwtProperties;
     private final TokenSessionService tokenSessionService;
 
-    public AuthServiceImpl(SysUserMapper sysUserMapper,
-                           SystemService systemService,
-                           SysLoginLogMapper sysLoginLogMapper,
+    public AuthServiceImpl(SystemService systemService,
+                           AuditLogService auditLogService,
                            PasswordEncoder passwordEncoder,
                            JwtTokenService jwtTokenService,
                            JwtProperties jwtProperties,
                            TokenSessionService tokenSessionService) {
-        this.sysUserMapper = sysUserMapper;
         this.systemService = systemService;
-        this.sysLoginLogMapper = sysLoginLogMapper;
+        this.auditLogService = auditLogService;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenService = jwtTokenService;
         this.jwtProperties = jwtProperties;
@@ -50,7 +48,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
-        SysUser user = sysUserMapper.selectOne(new LambdaQueryWrapper<SysUser>()
+        SysUser user = baseMapper.selectOne(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUsername, request.getUsername())
                 .eq(SysUser::getIsDeleted, 0)
                 .last("limit 1"));
@@ -63,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
 
         user.setLastLoginIp(clientIp(httpRequest));
         user.setLastLoginTime(LocalDateTime.now());
-        sysUserMapper.updateById(user);
+        baseMapper.updateById(user);
 
         String token = jwtTokenService.generateToken(user.getUsername());
         tokenSessionService.saveToken(token, user.getUsername());
@@ -86,7 +84,7 @@ public class AuthServiceImpl implements AuthService {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("未登录或 token 无效");
         }
-        SysUser user = sysUserMapper.selectOne(new LambdaQueryWrapper<SysUser>()
+        SysUser user = baseMapper.selectOne(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUsername, username)
                 .eq(SysUser::getIsDeleted, 0)
                 .last("limit 1"));
@@ -103,6 +101,7 @@ public class AuthServiceImpl implements AuthService {
                               HttpServletRequest request,
                               int status,
                               String message) {
+        // 登录日志统一通过审计服务写入，避免认证层直接依赖持久层 Mapper。
         SysLoginLog log = new SysLoginLog();
         log.setUserId(userId == null ? 0L : userId);
         log.setUsername(username == null ? "" : username);
@@ -114,7 +113,7 @@ public class AuthServiceImpl implements AuthService {
         log.setBrowser("");
         log.setStatus(status);
         log.setMsg(message);
-        sysLoginLogMapper.insert(log);
+        auditLogService.saveLoginLog(log);
     }
 
     private String clientIp(HttpServletRequest request) {

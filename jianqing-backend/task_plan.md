@@ -102,3 +102,7 @@ Phase 6
 - 服务层规范：模块内服务必须定义 `service` 接口，并在 `service.impl` 提供 `*ServiceImpl` 实现；控制器与调用方仅依赖接口。
 - framework 层同名 `*Service` 亦遵循“接口 + impl”模式，避免出现分层规范例外。
 - 推荐安装本地 pre-commit hook，提交前自动执行结构守卫与基础质量门禁。
+- 分层约束原则：`Mapper` 仅允许在 `service.impl` 与 `mapper` 自身定义中出现，其他层禁止直接引用。
+- MyBatis-Plus 约束：核心业务 `service` 接口统一继承 `IService<T>`，实现类统一继承 `ServiceImpl<M, T>`。
+- 跨实体协作约束：在 `service.impl` 中优先通过对应 `service` 协作，避免跨模块直接拼装持久层调用。
+- 认证审计协作约束：登录日志写入由审计服务统一承担，认证服务不得直接依赖登录日志 mapper。

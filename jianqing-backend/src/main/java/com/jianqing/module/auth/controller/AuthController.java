@@ -23,17 +23,26 @@ public class AuthController {
         this.authService = authService;
     }
 
+    /**
+     * 用户登录。
+     */
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         return ApiResponse.success(authService.login(request, httpRequest));
     }
 
+    /**
+     * 用户退出登录。
+     */
     @PostMapping("/logout")
     public ApiResponse<Void> logout(HttpServletRequest httpRequest) {
         authService.logout(httpRequest);
         return ApiResponse.success(null);
     }
 
+    /**
+     * 查询当前登录用户信息。
+     */
     @GetMapping("/me")
     public ApiResponse<UserProfileResponse> me() {
         return ApiResponse.success(authService.me());

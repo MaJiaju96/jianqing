@@ -5,8 +5,8 @@ import com.jianqing.module.audit.dto.OperLogView;
 import com.jianqing.module.audit.dto.PageResult;
 import com.jianqing.module.audit.entity.SysLoginLog;
 import com.jianqing.module.audit.entity.SysOperLog;
-import com.jianqing.module.audit.mapper.SysLoginLogMapper;
 import com.jianqing.module.audit.mapper.SysOperLogMapper;
+import com.jianqing.module.audit.service.LoginLogService;
 import com.jianqing.module.audit.service.impl.AuditLogServiceImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,11 +28,11 @@ class AuditLogServiceTest {
     private SysOperLogMapper sysOperLogMapper;
 
     @Mock
-    private SysLoginLogMapper sysLoginLogMapper;
+    private LoginLogService loginLogService;
 
     @Test
     void shouldPageOperLogsAndMapResult() {
-        AuditLogServiceImpl auditLogService = new AuditLogServiceImpl(sysOperLogMapper, sysLoginLogMapper);
+        AuditLogServiceImpl auditLogService = new AuditLogServiceImpl(sysOperLogMapper, loginLogService);
         SysOperLog operLog = buildOperLog();
         when(sysOperLogMapper.selectCount(any())).thenReturn(5L);
         when(sysOperLogMapper.selectList(any())).thenReturn(List.of(operLog));
@@ -49,7 +49,7 @@ class AuditLogServiceTest {
 
     @Test
     void shouldHandleOperLogFiltersWithEmptyResult() {
-        AuditLogServiceImpl auditLogService = new AuditLogServiceImpl(sysOperLogMapper, sysLoginLogMapper);
+        AuditLogServiceImpl auditLogService = new AuditLogServiceImpl(sysOperLogMapper, loginLogService);
         when(sysOperLogMapper.selectCount(any())).thenReturn(0L);
         when(sysOperLogMapper.selectList(any())).thenReturn(List.of());
 
@@ -65,10 +65,20 @@ class AuditLogServiceTest {
 
     @Test
     void shouldPageLoginLogsAndMapResult() {
-        AuditLogServiceImpl auditLogService = new AuditLogServiceImpl(sysOperLogMapper, sysLoginLogMapper);
+        AuditLogServiceImpl auditLogService = new AuditLogServiceImpl(sysOperLogMapper, loginLogService);
         SysLoginLog loginLog = buildLoginLog();
-        when(sysLoginLogMapper.selectCount(any())).thenReturn(3L);
-        when(sysLoginLogMapper.selectList(any())).thenReturn(List.of(loginLog));
+        when(loginLogService.pageLoginLogs(1, 20, null, null, null))
+                .thenReturn(new PageResult<>(1, 20, 3, List.of(new LoginLogView(
+                        loginLog.getId(),
+                        loginLog.getUserId(),
+                        loginLog.getUsername(),
+                        loginLog.getLoginType(),
+                        loginLog.getLoginIp(),
+                        loginLog.getUserAgent(),
+                        loginLog.getStatus(),
+                        loginLog.getMsg(),
+                        loginLog.getCreatedAt()
+                ))));
 
         PageResult<LoginLogView> result = auditLogService.pageLoginLogs(1, 20, null, null, null);
 
@@ -82,9 +92,9 @@ class AuditLogServiceTest {
 
     @Test
     void shouldHandleLoginLogFiltersWithEmptyResult() {
-        AuditLogServiceImpl auditLogService = new AuditLogServiceImpl(sysOperLogMapper, sysLoginLogMapper);
-        when(sysLoginLogMapper.selectCount(any())).thenReturn(0L);
-        when(sysLoginLogMapper.selectList(any())).thenReturn(List.of());
+        AuditLogServiceImpl auditLogService = new AuditLogServiceImpl(sysOperLogMapper, loginLogService);
+        when(loginLogService.pageLoginLogs(1, 10, "alice", 0, "password"))
+                .thenReturn(new PageResult<>(1, 10, 0, List.of()));
 
         PageResult<LoginLogView> result = auditLogService.pageLoginLogs(1, 10, "alice", 0, "password");
 
@@ -92,8 +102,7 @@ class AuditLogServiceTest {
         Assertions.assertEquals(10L, result.size());
         Assertions.assertEquals(0L, result.total());
         Assertions.assertTrue(result.records().isEmpty());
-        verify(sysLoginLogMapper).selectCount(any());
-        verify(sysLoginLogMapper).selectList(any());
+        verify(loginLogService).pageLoginLogs(1, 10, "alice", 0, "password");
     }
 
     private SysOperLog buildOperLog() {

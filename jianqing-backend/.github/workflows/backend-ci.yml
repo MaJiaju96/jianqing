@@ -39,3 +39,6 @@ jobs:
 
       - name: Check HTTP method constraints
         run: bash scripts/check-http-method-constraints.sh
+
+      - name: Check mapper layering constraints
+        run: bash scripts/check-mapper-layering.sh

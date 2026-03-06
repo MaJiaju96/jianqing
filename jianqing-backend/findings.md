@@ -53,6 +53,11 @@
 - 已新增服务层结构守卫脚本，并接入 CI 自动检查，阻止后续出现非接口化 service 回归。
 - 已新增本地 pre-commit 检查脚本与一键安装脚本，提交前可自动执行结构与质量门禁。
 - 已新增 HTTP 方法约束守卫脚本，并接入 CI 与 pre-commit，自动拦截 `PUT/DELETE` 回归。
+- 已修复 `SystemController`、`OperationLogInterceptor` 的 Mapper 直连，统一改为依赖 service。
+- 已新增 Mapper 分层守卫脚本，自动拦截非 `service.impl` 层直接引用 Mapper。
+- 核心业务服务已统一接入 `IService<T>` / `ServiceImpl<M,T>` 模式，保留 service 契约层并复用 MP 通用能力。
+- 已新增 `RoleService`、`MenuService`、`LoginLogService`，将跨实体 mapper 调用收敛为 service 间协作。
+- `AuthServiceImpl` 登录日志写入已改为调用 `AuditLogService`，不再直接依赖登录日志 mapper。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -147,6 +152,9 @@
 - `scripts/pre-commit-check.sh`
 - `scripts/install-git-hooks.sh`
 - `scripts/check-http-method-constraints.sh`
+- `scripts/check-mapper-layering.sh`
+- `src/main/java/com/jianqing/module/system/controller/SystemController.java`
+- `src/main/java/com/jianqing/framework/web/OperationLogInterceptor.java`
 
 ## Visual/Browser Findings
 - 本轮无网页或图像类输入。

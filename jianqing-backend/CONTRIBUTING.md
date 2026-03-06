@@ -61,6 +61,7 @@ bash scripts/install-git-hooks.sh
 
 - `bash scripts/check-service-structure.sh`
 - `bash scripts/check-http-method-constraints.sh`
+- `bash scripts/check-mapper-layering.sh`
 - `mvn -DskipTests compile`
 - `mvn checkstyle:check`
 

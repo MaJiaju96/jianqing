@@ -152,6 +152,7 @@ npm run dev
   - `mvn checkstyle:check`
   - `bash scripts/check-service-structure.sh`
   - `bash scripts/check-http-method-constraints.sh`
+  - `bash scripts/check-mapper-layering.sh`
 
 本地提交前可安装 pre-commit 守卫：
 

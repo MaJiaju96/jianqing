@@ -2,8 +2,8 @@ package com.jianqing.framework.web;
 
 import com.jianqing.framework.security.SecurityUtils;
 import com.jianqing.module.audit.entity.SysOperLog;
-import com.jianqing.module.audit.mapper.SysOperLogMapper;
-import com.jianqing.module.system.mapper.SysUserMapper;
+import com.jianqing.module.audit.service.AuditLogService;
+import com.jianqing.module.system.service.SystemService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
@@ -17,12 +17,12 @@ public class OperationLogInterceptor implements HandlerInterceptor {
     private static final String ATTR_START = "jq_req_start";
     private static final String ATTR_TRACE = "jq_trace_id";
 
-    private final SysOperLogMapper sysOperLogMapper;
-    private final SysUserMapper sysUserMapper;
+    private final AuditLogService auditLogService;
+    private final SystemService systemService;
 
-    public OperationLogInterceptor(SysOperLogMapper sysOperLogMapper, SysUserMapper sysUserMapper) {
-        this.sysOperLogMapper = sysOperLogMapper;
-        this.sysUserMapper = sysUserMapper;
+    public OperationLogInterceptor(AuditLogService auditLogService, SystemService systemService) {
+        this.auditLogService = auditLogService;
+        this.systemService = systemService;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class OperationLogInterceptor implements HandlerInterceptor {
         }
 
         String username = SecurityUtils.currentUsername();
-        Long userId = username == null ? 0L : sysUserMapper.selectIdByUsername(username);
+        Long userId = username == null ? 0L : systemService.findUserIdByUsername(username);
 
         long start = request.getAttribute(ATTR_START) instanceof Long value ? value : System.currentTimeMillis();
         int cost = (int) Math.max(0, System.currentTimeMillis() - start);
@@ -64,7 +64,7 @@ public class OperationLogInterceptor implements HandlerInterceptor {
         log.setStatus(ex == null && response.getStatus() < 500 ? 1 : 0);
         log.setErrorMsg(ex == null ? "" : ex.getMessage());
         log.setCostMs(cost);
-        sysOperLogMapper.insert(log);
+        auditLogService.saveOperationLog(log);
     }
 
     private String resolveModule(String uri) {

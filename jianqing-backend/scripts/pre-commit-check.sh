@@ -12,6 +12,9 @@ bash "$BASE_DIR/scripts/check-service-structure.sh"
 echo "[pre-commit] 运行 HTTP 方法约束检查..."
 bash "$BASE_DIR/scripts/check-http-method-constraints.sh"
 
+echo "[pre-commit] 运行 Mapper 分层约束检查..."
+bash "$BASE_DIR/scripts/check-mapper-layering.sh"
+
 echo "[pre-commit] 运行编译检查..."
 mvn -B -ntp -DskipTests compile
 

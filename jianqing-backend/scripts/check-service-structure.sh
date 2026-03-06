@@ -41,7 +41,7 @@ check_service_package() {
       continue
     fi
 
-    if ! grep -q "class ${interface_name}Impl implements ${interface_name}" "$expected_impl"; then
+    if ! grep -qE "class ${interface_name}Impl( extends [^{]+)? implements ${interface_name}" "$expected_impl"; then
       echo "[ERROR] 实现类未按规范实现接口：$expected_impl"
       errors=$((errors + 1))
     fi
