@@ -38,6 +38,10 @@
   - 审计日志页（操作日志/登录日志）增加分页与每页条数切换。
   - 用户/角色页新增状态分野筛选，审计日志页新增关键字/状态（登录日志含登录方式）筛选。
   - Element Plus 启用中文 locale，分页文案统一为中文“页”语义。
+  - 已新增前端开发规范文档，明确注释策略、常量收敛、API/store/权限与 AI 协作约定。
+  - 已新增公共常量与校验工具，收敛分页、状态、菜单类型、成功码及表单校验规则。
+  - 已完成一轮前端可读性整理：减少魔法值、合并重复校验，并在 README 增加规范文档入口。
+  - 已新增 `usePermissions` 组合式工具，收敛布局页与系统页重复的权限 computed 定义。
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -50,6 +54,7 @@
 | frontend method constraint scan | grep `.put/.delete` in `src/api` | no matches | passed | ✓ |
 | all list pagination | check users/roles/menus/audit views | all list pages provide pagination | passed | ✓ |
 | list segmentation filters | check users/roles/audit views filter controls | segmented filtering works with pagination | passed | ✓ |
+| frontend readability refactor | constants/validators/docs update + build | readability improves without behavior change | passed (`npm run build`) | ✓ |
 
 ## 5-Question Reboot Check
 | Question | Answer |

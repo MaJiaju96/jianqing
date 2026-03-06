@@ -22,6 +22,11 @@
 - 所有列表页面已统一接入分页（用户、角色、菜单、操作日志、登录日志）。
 - 用户/角色/审计日志页已补齐“分野筛选”（状态/登录方式/关键字）并与分页联动。
 - Element Plus 已切换中文本地化，分页统一展示中文“页”语义。
+- 已新增 `docs/FRONTEND_CONVENTIONS.md`，沉淀前端注释规则、常量收敛、AI 协作与公共层约定。
+- 已新增 `src/constants/app.js`，统一收敛成功码、分页、状态、菜单类型与超级管理员角色等公共常量。
+- 已新增 `src/utils/validators.js`，统一收敛手机号、邮箱、角色编码、权限标识校验逻辑。
+- 已完成一轮前端可读性整理：减少视图层魔法值、收敛重复校验、补齐 README 对规范文档的入口。
+- 已新增 `src/composables/usePermissions.js`，统一收敛页面批量权限显隐的 computed 模式。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -36,6 +41,8 @@
 | 前端 API 调用仅使用 `GET` / `POST` | 与后端接口约束保持一致，避免联调歧义 |
 | 列表页统一分页布局（total/sizes/pager） | 提升长列表可读性与浏览效率 |
 | 分野筛选尽量走后端查询参数 | 保证筛选结果与分页总数一致，避免“只筛当前页”偏差 |
+| 可读性优先通过结构与常量表达 | 让代码先自解释，再只为复杂边界补必要注释 |
+| 前端协作规范文档化 | 降低后续 AI/人工接手时的上下文恢复成本 |
 
 ## Resources
 - `src/router/index.js`
@@ -55,6 +62,10 @@
 - `src/api/system.js`
 - `src/views/audit/OperLogsView.vue`
 - `src/views/audit/LoginLogsView.vue`
+- `docs/FRONTEND_CONVENTIONS.md`
+- `src/constants/app.js`
+- `src/utils/validators.js`
+- `src/composables/usePermissions.js`
 
 ## Cross-Project Sync
 - 若接口字段或认证策略变更，需要同步更新 `jianqing-backend/progress.md` 与本文件。
