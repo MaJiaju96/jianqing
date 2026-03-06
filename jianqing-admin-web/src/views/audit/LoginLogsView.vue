@@ -26,7 +26,7 @@
       <el-table-column prop="userAgent" label="UA" min-width="260" />
       <el-table-column label="状态" width="90">
         <template #default="scope">
-          <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">{{ scope.row.status === 1 ? '成功' : '失败' }}</el-tag>
+          <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'danger'">{{ scope.row.status === STATUS_ENABLED ? '成功' : '失败' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="msg" label="信息" min-width="140" />
@@ -37,7 +37,7 @@
       background
       layout="total, sizes, prev, pager, next"
       :total="total"
-      :page-sizes="[10, 20, 50]"
+      :page-sizes="pageSizes"
       v-model:current-page="pageNo"
       v-model:page-size="pageSize"
       @current-change="loadData"
@@ -48,15 +48,22 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import {
+  DEFAULT_AUDIT_PAGE_SIZE,
+  EMPTY_FILTER_VALUE,
+  PAGE_SIZE_OPTIONS,
+  STATUS_ENABLED
+} from '../../constants/app';
 import { fetchLoginLogs } from '../../api/audit';
 
 const rows = ref([]);
 const total = ref(0);
 const pageNo = ref(1);
-const pageSize = ref(20);
+const pageSize = ref(DEFAULT_AUDIT_PAGE_SIZE);
+const pageSizes = PAGE_SIZE_OPTIONS;
 const keyword = ref('');
-const statusFilter = ref('');
-const loginTypeFilter = ref('');
+const statusFilter = ref(EMPTY_FILTER_VALUE);
+const loginTypeFilter = ref(EMPTY_FILTER_VALUE);
 
 async function loadData() {
   const page = await fetchLoginLogs({
