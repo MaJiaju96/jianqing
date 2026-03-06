@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jianqing-backend
+  datasource:
+    url: jdbc:mysql://localhost:1010/jianqing?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: Root999.
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:3s}
+
+mybatis-plus:
+  mapper-locations: classpath*:com/jianqing/**/mapper/*Mapper.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jianqing:
+  jwt:
+    secret: ${JQ_JWT_SECRET:change-this-secret-at-least-32-bytes-long}
+    expire-seconds: ${JQ_JWT_EXPIRE_SECONDS:7200}
+    token-key-prefix: ${JQ_TOKEN_KEY_PREFIX:jq:token:}
+  cache:
+    key-prefix: ${JQ_CACHE_KEY_PREFIX:jq:cache:}
+    hot-data-expire-seconds: ${JQ_CACHE_HOT_EXPIRE_SECONDS:300}
+    delay-double-delete-millis: ${JQ_CACHE_DOUBLE_DELETE_DELAY_MILLIS:500}
+  integration:
+    search:
+      enabled: ${JQ_SEARCH_ENABLED:false}
+    nacos:
+      enabled: ${JQ_NACOS_ENABLED:false}
+      server-addr: ${JQ_NACOS_SERVER_ADDR:127.0.0.1:8848}
+      namespace: ${JQ_NACOS_NAMESPACE:public}
+      group: ${JQ_NACOS_GROUP:DEFAULT_GROUP}
+    rocketmq:
+      enabled: ${JQ_ROCKETMQ_ENABLED:false}
+      namesrv-addr: ${JQ_ROCKETMQ_NAMESRV_ADDR:127.0.0.1:9876}

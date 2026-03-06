@@ -1,0 +1,15 @@
+.DS_Store
+.idea/
+.vscode/
+
+# frontend
+jianqing-admin-web/node_modules/
+jianqing-admin-web/dist/
+
+# backend
+jianqing-backend/target/
+jianqing-backend/.idea/
+
+# env
+.env
+*.local

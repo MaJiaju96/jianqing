@@ -1,0 +1,190 @@
+:root {
+  --jq-text: #dce9ff;
+  --jq-bg-gradient: radial-gradient(circle at 20% 20%, #21335f 0%, #0b1020 55%, #06090f 100%);
+  --jq-card: rgba(255, 255, 255, 0.88);
+  --jq-card-shadow: rgba(17, 25, 51, 0.2);
+  --jq-page-title: #e9f0ff;
+  --jq-page-subtitle: #b8c7e6;
+  --jq-card-title: #223960;
+  --jq-card-subtitle: #5f759d;
+  --jq-card-muted-text: #5f759d;
+  --jq-card-strong-text: #2a3f7f;
+  --jq-login-subtitle: #5f759d;
+  --jq-login-tip: #7f90b0;
+  --jq-sidebar-bg-start: rgba(18, 28, 52, 0.95);
+  --jq-sidebar-bg-end: rgba(24, 38, 70, 0.75);
+  --jq-sidebar-border: rgba(255, 255, 255, 0.08);
+  --jq-sidebar-logo-color: #ffffff;
+  --jq-menu-text-color: rgba(255, 255, 255, 0.86);
+  --jq-menu-hover-text-color: #ffffff;
+  --jq-menu-hover-bg: rgba(255, 255, 255, 0.14);
+  --jq-menu-active-text-color: #162a52;
+  --jq-menu-active-bg-start: #f4f7ff;
+  --jq-menu-active-bg-end: #cfddff;
+  --jq-menu-active-shadow: rgba(32, 54, 99, 0.25);
+  --jq-menu-parent-active-text-color: #ecf2ff;
+  --jq-menu-parent-active-bg: rgba(255, 255, 255, 0.12);
+  --jq-role-text-color: #6780af;
+}
+
+[data-theme='light'] {
+  --jq-text: #2a3856;
+  --jq-bg-gradient: radial-gradient(circle at 12% 14%, #f8fbff 0%, #e8f0fb 52%, #dbe8f8 100%);
+  --jq-card: rgba(255, 255, 255, 0.92);
+  --jq-card-shadow: rgba(68, 86, 124, 0.18);
+  --jq-page-title: #294069;
+  --jq-page-subtitle: #5f78a4;
+  --jq-card-title: #1f365e;
+  --jq-card-subtitle: #5d759e;
+  --jq-card-muted-text: #5d759e;
+  --jq-card-strong-text: #243f86;
+  --jq-login-subtitle: #5d759e;
+  --jq-login-tip: #7088af;
+  --jq-sidebar-bg-start: rgba(234, 242, 255, 0.94);
+  --jq-sidebar-bg-end: rgba(214, 228, 249, 0.9);
+  --jq-sidebar-border: rgba(86, 116, 167, 0.2);
+  --jq-sidebar-logo-color: #2a4777;
+  --jq-menu-text-color: #355281;
+  --jq-menu-hover-text-color: #1e3761;
+  --jq-menu-hover-bg: rgba(100, 132, 188, 0.18);
+  --jq-menu-active-text-color: #102848;
+  --jq-menu-active-bg-start: #ffffff;
+  --jq-menu-active-bg-end: #d8e6ff;
+  --jq-menu-active-shadow: rgba(91, 124, 177, 0.2);
+  --jq-menu-parent-active-text-color: #25426f;
+  --jq-menu-parent-active-bg: rgba(98, 127, 179, 0.16);
+  --jq-role-text-color: #5876a6;
+}
+
+[data-theme='emerald'] {
+  --jq-text: #dff8ef;
+  --jq-bg-gradient: radial-gradient(circle at 22% 20%, #1f5a57 0%, #0c2326 56%, #071114 100%);
+  --jq-card: rgba(236, 255, 250, 0.86);
+  --jq-card-shadow: rgba(9, 44, 40, 0.28);
+  --jq-page-title: #d3f7ed;
+  --jq-page-subtitle: #9ad4c3;
+  --jq-card-title: #14362f;
+  --jq-card-subtitle: #3a5f57;
+  --jq-card-muted-text: #3a5f57;
+  --jq-card-strong-text: #184e42;
+  --jq-login-subtitle: #36645a;
+  --jq-login-tip: #4d7e73;
+  --jq-sidebar-bg-start: rgba(13, 62, 56, 0.95);
+  --jq-sidebar-bg-end: rgba(17, 89, 78, 0.8);
+  --jq-sidebar-border: rgba(155, 231, 207, 0.22);
+  --jq-sidebar-logo-color: #e3fff7;
+  --jq-menu-text-color: rgba(221, 255, 244, 0.92);
+  --jq-menu-hover-text-color: #f6fffc;
+  --jq-menu-hover-bg: rgba(168, 241, 219, 0.18);
+  --jq-menu-active-text-color: #0d3d37;
+  --jq-menu-active-bg-start: #ddfff5;
+  --jq-menu-active-bg-end: #9fe9d5;
+  --jq-menu-active-shadow: rgba(7, 60, 52, 0.35);
+  --jq-menu-parent-active-text-color: #dffff5;
+  --jq-menu-parent-active-bg: rgba(165, 236, 212, 0.2);
+  --jq-role-text-color: #95c9ba;
+}
+
+[data-theme='sunset'] {
+  --jq-text: #fff0e7;
+  --jq-bg-gradient: radial-gradient(circle at 20% 15%, #7d3a2f 0%, #2d1320 56%, #180914 100%);
+  --jq-card: rgba(255, 244, 233, 0.9);
+  --jq-card-shadow: rgba(72, 24, 29, 0.28);
+  --jq-page-title: #ffe7d6;
+  --jq-page-subtitle: #e6b8a2;
+  --jq-card-title: #48201c;
+  --jq-card-subtitle: #74453f;
+  --jq-card-muted-text: #74453f;
+  --jq-card-strong-text: #643028;
+  --jq-login-subtitle: #74453f;
+  --jq-login-tip: #8c5a52;
+  --jq-sidebar-bg-start: rgba(87, 37, 41, 0.96);
+  --jq-sidebar-bg-end: rgba(126, 51, 43, 0.82);
+  --jq-sidebar-border: rgba(255, 194, 161, 0.22);
+  --jq-sidebar-logo-color: #fff3eb;
+  --jq-menu-text-color: rgba(255, 231, 216, 0.92);
+  --jq-menu-hover-text-color: #fff8f4;
+  --jq-menu-hover-bg: rgba(255, 208, 182, 0.2);
+  --jq-menu-active-text-color: #4a221e;
+  --jq-menu-active-bg-start: #fff2e6;
+  --jq-menu-active-bg-end: #ffc8ad;
+  --jq-menu-active-shadow: rgba(98, 35, 28, 0.33);
+  --jq-menu-parent-active-text-color: #ffe8da;
+  --jq-menu-parent-active-bg: rgba(255, 204, 174, 0.2);
+  --jq-role-text-color: #e2ae95;
+}
+
+[data-theme='violet'] {
+  --jq-text: #ece6ff;
+  --jq-bg-gradient: radial-gradient(circle at 18% 18%, #443a82 0%, #1a1538 54%, #0f0b22 100%);
+  --jq-card: rgba(246, 242, 255, 0.87);
+  --jq-card-shadow: rgba(34, 24, 66, 0.28);
+  --jq-page-title: #ebe2ff;
+  --jq-page-subtitle: #bdb2ea;
+  --jq-card-title: #2f2457;
+  --jq-card-subtitle: #504680;
+  --jq-card-muted-text: #504680;
+  --jq-card-strong-text: #3d2f72;
+  --jq-login-subtitle: #55498a;
+  --jq-login-tip: #6d62a3;
+  --jq-sidebar-bg-start: rgba(38, 30, 81, 0.96);
+  --jq-sidebar-bg-end: rgba(68, 56, 131, 0.8);
+  --jq-sidebar-border: rgba(203, 192, 255, 0.22);
+  --jq-sidebar-logo-color: #f4efff;
+  --jq-menu-text-color: rgba(235, 226, 255, 0.9);
+  --jq-menu-hover-text-color: #fbf8ff;
+  --jq-menu-hover-bg: rgba(206, 191, 255, 0.18);
+  --jq-menu-active-text-color: #33255e;
+  --jq-menu-active-bg-start: #f6f2ff;
+  --jq-menu-active-bg-end: #d8cbff;
+  --jq-menu-active-shadow: rgba(47, 31, 95, 0.34);
+  --jq-menu-parent-active-text-color: #efe8ff;
+  --jq-menu-parent-active-bg: rgba(203, 191, 255, 0.2);
+  --jq-role-text-color: #ac9fdf;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--jq-text);
+  background: var(--jq-bg-gradient);
+}
+
+.jq-shell {
+  height: 100%;
+}
+
+.jq-glass-card {
+  border-radius: 18px;
+  background: var(--jq-card);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 40px var(--jq-card-shadow);
+}
+
+.jq-page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--jq-page-title);
+}
+
+.jq-page-subtitle {
+  margin-top: 6px;
+  color: var(--jq-page-subtitle);
+}
+
+.jq-glass-card .jq-page-title {
+  color: var(--jq-card-title);
+}
+
+.jq-glass-card .jq-page-subtitle {
+  color: var(--jq-card-subtitle);
+}

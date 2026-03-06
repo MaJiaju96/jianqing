@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jianqing.module.system.mapper.SysMenuMapper">
+
+    <select id="selectEnabledMenusByUserId" resultType="com.jianqing.module.system.entity.SysMenu">
+        SELECT DISTINCT m.*
+        FROM jq_sys_menu m
+        INNER JOIN jq_sys_role_menu rm ON rm.menu_id = m.id
+        INNER JOIN jq_sys_user_role ur ON ur.role_id = rm.role_id
+        WHERE ur.user_id = #{userId}
+          AND m.status = 1
+          AND m.visible = 1
+          AND m.is_deleted = 0
+        ORDER BY m.parent_id, m.sort_no, m.id
+    </select>
+
+    <select id="selectPermMenusByUserId" resultType="com.jianqing.module.system.entity.SysMenu">
+        SELECT DISTINCT m.*
+        FROM jq_sys_menu m
+        INNER JOIN jq_sys_role_menu rm ON rm.menu_id = m.id
+        INNER JOIN jq_sys_user_role ur ON ur.role_id = rm.role_id
+        WHERE ur.user_id = #{userId}
+          AND m.status = 1
+          AND m.is_deleted = 0
+        ORDER BY m.parent_id, m.sort_no, m.id
+    </select>
+
+    <select id="selectAllEnabledMenus" resultType="com.jianqing.module.system.entity.SysMenu">
+        SELECT *
+        FROM jq_sys_menu
+        WHERE is_deleted = 0
+        ORDER BY parent_id, sort_no, id
+    </select>
+
+    <select id="countChildren" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM jq_sys_menu
+        WHERE parent_id = #{menuId}
+          AND is_deleted = 0
+    </select>
+
+    <delete id="deleteRoleMenuByMenuId">
+        DELETE FROM jq_sys_role_menu
+        WHERE menu_id = #{menuId}
+    </delete>
+
+</mapper>

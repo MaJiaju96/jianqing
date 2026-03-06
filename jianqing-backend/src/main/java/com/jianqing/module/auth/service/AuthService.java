@@ -1,0 +1,131 @@
+package com.jianqing.module.auth.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.jianqing.framework.security.JwtProperties;
+import com.jianqing.framework.security.JwtTokenService;
+import com.jianqing.framework.security.SecurityUtils;
+import com.jianqing.framework.security.TokenSessionService;
+import com.jianqing.module.audit.entity.SysLoginLog;
+import com.jianqing.module.audit.mapper.SysLoginLogMapper;
+import com.jianqing.module.auth.dto.LoginRequest;
+import com.jianqing.module.auth.dto.LoginResponse;
+import com.jianqing.module.auth.dto.UserProfileResponse;
+import com.jianqing.module.system.entity.SysUser;
+import com.jianqing.module.system.mapper.SysUserMapper;
+import com.jianqing.module.system.service.SystemService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class AuthService {
+
+    private final SysUserMapper sysUserMapper;
+    private final SystemService systemService;
+    private final SysLoginLogMapper sysLoginLogMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenService jwtTokenService;
+    private final JwtProperties jwtProperties;
+    private final TokenSessionService tokenSessionService;
+
+    public AuthService(SysUserMapper sysUserMapper,
+                       SystemService systemService,
+                       SysLoginLogMapper sysLoginLogMapper,
+                       PasswordEncoder passwordEncoder,
+                       JwtTokenService jwtTokenService,
+                       JwtProperties jwtProperties,
+                       TokenSessionService tokenSessionService) {
+        this.sysUserMapper = sysUserMapper;
+        this.systemService = systemService;
+        this.sysLoginLogMapper = sysLoginLogMapper;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenService = jwtTokenService;
+        this.jwtProperties = jwtProperties;
+        this.tokenSessionService = tokenSessionService;
+    }
+
+    public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+        SysUser user = sysUserMapper.selectOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUsername, request.getUsername())
+                .eq(SysUser::getIsDeleted, 0)
+                .last("limit 1"));
+
+        if (user == null || user.getStatus() == null || user.getStatus() != 1
+                || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            saveLoginLog(0L, request.getUsername(), httpRequest, 0, "用户名或密码错误");
+            throw new IllegalArgumentException("用户名或密码错误");
+        }
+
+        user.setLastLoginIp(clientIp(httpRequest));
+        user.setLastLoginTime(LocalDateTime.now());
+        sysUserMapper.updateById(user);
+
+        String token = jwtTokenService.generateToken(user.getUsername());
+        tokenSessionService.saveToken(token, user.getUsername());
+        saveLoginLog(user.getId(), user.getUsername(), httpRequest, 1, "登录成功");
+        return new LoginResponse(token, "Bearer", jwtProperties.getExpireSeconds());
+    }
+
+    public void logout(HttpServletRequest httpRequest) {
+        String token = resolveBearerToken(httpRequest);
+        if (token == null) {
+            return;
+        }
+        tokenSessionService.removeToken(token);
+    }
+
+    public UserProfileResponse me() {
+        String username = SecurityUtils.currentUsername();
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("未登录或 token 无效");
+        }
+        SysUser user = sysUserMapper.selectOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUsername, username)
+                .eq(SysUser::getIsDeleted, 0)
+                .last("limit 1"));
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        List<String> roles = systemService.listRoleCodesByUserId(user.getId());
+        List<String> perms = systemService.listPermissionsByUserId(user.getId());
+        return new UserProfileResponse(user.getId(), user.getUsername(), user.getNickname(), roles, perms);
+    }
+
+    private void saveLoginLog(Long userId,
+                              String username,
+                              HttpServletRequest request,
+                              int status,
+                              String message) {
+        SysLoginLog log = new SysLoginLog();
+        log.setUserId(userId == null ? 0L : userId);
+        log.setUsername(username == null ? "" : username);
+        log.setLoginType("password");
+        log.setLoginIp(clientIp(request));
+        log.setLoginLocation("");
+        log.setUserAgent(request.getHeader("User-Agent"));
+        log.setOs("");
+        log.setBrowser("");
+        log.setStatus(status);
+        log.setMsg(message);
+        sysLoginLogMapper.insert(log);
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
+    }
+
+    private String resolveBearerToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header == null || !header.startsWith("Bearer ")) {
+            return null;
+        }
+        return header.substring(7);
+    }
+}
