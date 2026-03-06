@@ -11,6 +11,12 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.UUID;
 
+/**
+ * 操作日志拦截器：记录非 GET 请求的接口调用
+ * - 记录请求耗时、用户信息、响应状态
+ * - 自动生成/透传 TraceId 便于链路追踪
+ * 注意：此拦截器被 Spring MVC 调用，不能抛异常影响主业务
+ */
 @Component
 public class OperationLogInterceptor implements HandlerInterceptor {
 
@@ -25,6 +31,10 @@ public class OperationLogInterceptor implements HandlerInterceptor {
         this.systemService = systemService;
     }
 
+    /**
+     * 前置处理：记录请求开始时间，生成/透传 TraceId
+     * 若请求头已有 X-Trace-Id 则复用，否则生成 UUID
+     */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         request.setAttribute(ATTR_START, System.currentTimeMillis());

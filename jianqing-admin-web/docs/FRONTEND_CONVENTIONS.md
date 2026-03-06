@@ -15,7 +15,50 @@
   - 关键分支：例如登录态判断、权限分流、异常兜底。
   - 复杂流程：例如递归树过滤、批量勾选回填、状态同步。
   - 边界处理：例如空值过滤、401 失效跳转、筛选条件兼容。
-- 注释只解释“为什么这样做”或“这里的约束是什么”，不要复述字面代码。
+  - 多方协作点：被多个组件共享的工具函数、mixin、composable。
+  - 业务约束：接口返回的特殊码含义、业务规则限制。
+- 注释只解释"为什么这样做"或"这里的约束是什么"，不要复述字面代码。
+
+## 2.1 注释示例
+
+### 关键分支
+```javascript
+// 登录态失效时，清除本地 token 并跳转到登录页
+// 不直接重载页面，保留当前 URL 便于登录后回跳
+if (!authStore.token || res.code === 401) {
+  authStore.logout()
+  router.push(`/login?redirect=${encodeURIComponent(router.currentRoute.value.fullPath)}`)
+}
+```
+
+### 复杂流程
+```javascript
+// 角色分配菜单：回显逻辑
+// 1. 先将后端返回的菜单 ID 数组转为 Map（去重）
+// 2. 遍历整棵树，勾选已分配的菜单
+// 3. 按钮权限单独处理：按钮不展示在菜单树，只在详情弹窗中分配
+const checkedMenus = new Set(res.data.map(m => m.id))
+const checkTreeNode = (node) => {
+  node.checked = checkedMenus.has(node.id)
+  if (node.children) {
+    node.children.forEach(checkTreeNode)
+  }
+}
+treeData.value.forEach(checkTreeNode)
+```
+
+### 边界处理
+```javascript
+// 分页参数兼容：后端默认 pageSize=10，前端兜底防止 NaN
+const pageSize = parseInt(pagination.value.pageSize) || 10
+```
+
+## 2.2 注释禁区
+
+- ❌ 不要写「这是加载数据函数」这类复述性注释
+- ❌ 不要在方法内部为每行代码都加注释
+- ❌ 不要用注释代码块代替删除代码
+- ❌ 不要在注释中暴露 API 密钥或敏感信息
 
 ## 3. 常量与魔法值
 

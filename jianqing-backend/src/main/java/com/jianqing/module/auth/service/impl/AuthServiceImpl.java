@@ -22,6 +22,11 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 认证服务：登录、登出、获取用户信息
+ * 登录成功后写入 Redis 会话，支持服务端主动失效
+ * 登录日志统一通过 AuditLogService 写入，避免认证层直接依赖持久层 Mapper
+ */
 @Service
 public class AuthServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements AuthService {
 
@@ -46,29 +51,45 @@ public class AuthServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impleme
         this.tokenSessionService = tokenSessionService;
     }
 
+    /**
+     * 用户登录
+     * @param request 登录请求（username/password）
+     * @param httpRequest 用于获取客户端 IP
+     * @return 登录响应（token/Bearer/过期时间）
+     * @throws IllegalArgumentException 账号不存在、禁用或密码错误
+     */
     @Override
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+        // 查询用户：username 唯一 + 未删除
         SysUser user = baseMapper.selectOne(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUsername, request.getUsername())
                 .eq(SysUser::getIsDeleted, 0)
                 .last("limit 1"));
 
+        // 校验用户状态：存在 + 启用(1) + 密码匹配
+        // 统一返回「用户名或密码错误」，防止账号枚举攻击
         if (user == null || user.getStatus() == null || user.getStatus() != 1
                 || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             saveLoginLog(0L, request.getUsername(), httpRequest, 0, "用户名或密码错误");
             throw new IllegalArgumentException("用户名或密码错误");
         }
 
+        // 更新最后登录 IP 和时间
         user.setLastLoginIp(clientIp(httpRequest));
         user.setLastLoginTime(LocalDateTime.now());
         baseMapper.updateById(user);
 
+        // 生成 JWT 并写入 Redis 会话（支持服务端主动失效）
         String token = jwtTokenService.generateToken(user.getUsername());
         tokenSessionService.saveToken(token, user.getUsername());
         saveLoginLog(user.getId(), user.getUsername(), httpRequest, 1, "登录成功");
         return new LoginResponse(token, "Bearer", jwtProperties.getExpireSeconds());
     }
 
+    /**
+     * 用户登出：清除 Redis 会话
+     * @param httpRequest 用于提取 Bearer Token
+     */
     @Override
     public void logout(HttpServletRequest httpRequest) {
         String token = resolveBearerToken(httpRequest);
@@ -78,6 +99,11 @@ public class AuthServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impleme
         tokenSessionService.removeToken(token);
     }
 
+    /**
+     * 获取当前登录用户信息
+     * @return 用户profile（含角色、权限）
+     * @throws IllegalArgumentException 未登录或用户不存在
+     */
     @Override
     public UserProfileResponse me() {
         String username = SecurityUtils.currentUsername();

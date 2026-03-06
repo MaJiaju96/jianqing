@@ -17,6 +17,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * 菜单服务：增删改查、树形构建、权限过滤
+ * 菜单树采用 parentId 关联，删除时级联清除角色-菜单关联
+ */
 @Service
 public class MenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements MenuService {
 
@@ -47,6 +51,11 @@ public class MenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impleme
         return toMenuTreeNode(menu);
     }
 
+    /**
+     * 删除菜单：逻辑删除 + 校验子菜单 + 级联清除角色关联
+     * @param id 菜单ID
+     * @throws IllegalArgumentException 菜单不存在或存在子菜单
+     */
     @Override
     public void deleteMenu(Long id) {
         SysMenu menu = getMenuOrThrow(id);
@@ -111,6 +120,11 @@ public class MenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impleme
         return menu;
     }
 
+    /**
+     * 构建菜单树：先将所有菜单转为节点Map，再按parentId挂载到父节点
+     * @param menus 数据库查询出的菜单列表
+     * @return 树形结构（根节点parentId为0或null）
+     */
     private List<MenuTreeNode> buildMenuTree(List<SysMenu> menus) {
         Map<Long, MenuTreeNode> nodeMap = new HashMap<>();
         for (SysMenu menu : menus) {

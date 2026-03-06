@@ -12,6 +12,12 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
 
+/**
+ * JWT Token 服务：生成与解析 Token
+ * - 生成：使用 HS256 算法，将 username 写入 subject，过期时间从配置读取
+ * - 解析：从 Token 中提取 username
+ * - 注意：secret 至少需要 32 字符，生产环境务必修改默认值
+ */
 @Service
 public class JwtTokenServiceImpl implements JwtTokenService {
 
