@@ -33,3 +33,9 @@ jobs:
 
       - name: Run checkstyle
         run: mvn -B -ntp checkstyle:check
+
+      - name: Check service layer structure
+        run: bash scripts/check-service-structure.sh
+
+      - name: Check HTTP method constraints
+        run: bash scripts/check-http-method-constraints.sh

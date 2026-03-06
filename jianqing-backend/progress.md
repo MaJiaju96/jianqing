@@ -111,6 +111,14 @@
   - 已新增 v0.1/v0.2 范围说明文档，明确版本边界与下一步计划。
   - 已新增 v0.1 发布说明文档，补齐首版开源发布信息。
   - 已新增发布执行 SOP，提供可复制的 tag/Release/回滚指引，并补充 git 前置条件说明。
+  - 已新增首批后端单元测试，覆盖 JWT token 服务与 Redis 会话服务核心行为。
+  - 已新增审计服务单元测试，覆盖操作日志/登录日志分页与筛选调用场景。
+  - 已新增 Auth/Audit 控制器 MockMvc 测试，覆盖登录参数校验、默认分页参数与响应结构断言。
+  - 已完成模块服务层接口化改造（auth/audit/system），实现类统一迁移至 `service.impl` 并改为 `*ServiceImpl` 命名。
+  - 已完成 framework 服务接口化改造（jwt/session/cache consistency），实现类统一迁移至 `impl` 包。
+  - 已新增服务层结构守卫脚本并接入 CI，确保 service 分层规范持续生效。
+  - 已新增本地 pre-commit hook 方案（安装脚本 + 检查脚本），用于开发阶段提前拦截不合规提交。
+  - 已新增 HTTP 方法约束守卫（仅允许 GET/POST），并接入 CI 与 pre-commit 自动检查。
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -130,6 +138,14 @@
 | backend method constraint scan | grep `@PutMapping/@DeleteMapping` | no matches in backend source | passed | ✓ |
 | backend redis refactor compile | `mvn -DskipTests compile` | compile success after redis/cache changes | success | ✓ |
 | backend audit filter compile | `mvn -DskipTests compile` | compile success after audit filter params | success | ✓ |
+| backend auth unit tests | `mvn test` | JWT/TokenSession tests pass | 7 passed, 0 failed | ✓ |
+| backend audit service unit tests | `mvn test` | AuditLogService tests pass | 4 passed, 0 failed | ✓ |
+| backend controller web tests | `mvn test` | Auth/Audit controller tests pass | 6 passed, 0 failed | ✓ |
+| backend service interface refactor | `mvn test` + `mvn compile` + `mvn checkstyle:check` | service interface+impl refactor passes all gates | passed | ✓ |
+| backend framework service interface refactor | `mvn test` + `mvn compile` + `mvn checkstyle:check` | framework service interface+impl refactor passes all gates | passed | ✓ |
+| backend service structure guard | `bash scripts/check-service-structure.sh` | interface+impl convention check passes | passed | ✓ |
+| backend pre-commit guard | `bash scripts/pre-commit-check.sh` | local pre-commit checks pass | passed | ✓ |
+| backend http method guard | `bash scripts/check-http-method-constraints.sh` | no PUT/DELETE in backend and frontend api | passed | ✓ |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

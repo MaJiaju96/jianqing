@@ -45,6 +45,14 @@
 - 审计日志接口已支持筛选参数（关键字/状态/登录方式），用于前端列表“分野筛选 + 分页”联动查询。
 - 已完成发布准备文档闭环：发布检查清单、v0.1/v0.2 范围说明、v0.1 发布说明。
 - 已新增发布执行 SOP（含 tag、Release、回滚步骤），并明确未初始化 git 时的前置处理。
+- 已新增首批认证链路回归测试（JWT 生成解析、token 会话存取与失效）。
+- 已新增审计服务回归测试，覆盖分页边界与筛选入参场景。
+- 已新增控制器回归测试（Auth/Audit），覆盖登录参数校验、默认分页参数与响应结构。
+- 已完成服务层结构重构：`auth/audit/system` 模块统一为“接口 + impl”模式，调用方改为依赖接口。
+- 已完成 framework 服务结构重构：`JwtTokenService`、`TokenSessionService`、`CacheConsistencyService` 统一为“接口 + impl”。
+- 已新增服务层结构守卫脚本，并接入 CI 自动检查，阻止后续出现非接口化 service 回归。
+- 已新增本地 pre-commit 检查脚本与一键安装脚本，提交前可自动执行结构与质量门禁。
+- 已新增 HTTP 方法约束守卫脚本，并接入 CI 与 pre-commit，自动拦截 `PUT/DELETE` 回归。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -69,6 +77,12 @@
 | token 会话状态落 Redis，并复用 JWT TTL | 支持自动失效与服务端可控登出 |
 | 热点缓存配合延迟双删 | 提升查询性能并降低写后脏读概率 |
 | 审计筛选在后端执行 | 避免前端仅筛当前页，保证分页总数与查询条件一致 |
+| 先补认证关键路径单测 | 优先稳住登录会话链路，降低后续演进回归风险 |
+| 审计服务先覆盖分页与筛选入参 | 快速建立日志查询链路的可回归基线 |
+| 控制器测试改用 standalone MockMvc | 避免安全/MyBatis 上下文干扰，聚焦接口行为验证 |
+| 服务层统一接口化并落地 impl 包 | 规范分层边界并降低实现替换成本 |
+| framework 服务同样接口化 | 保持全项目分层规范一致性，避免后续新代码混用模式 |
+| 增加结构守卫脚本并接入 CI | 通过自动化门禁防止分层规范回退 |
 | 发布阶段先补文档闭环再打版本 | 降低发布信息缺失和协作偏差风险 |
 
 ## Issues Encountered
@@ -111,6 +125,28 @@
 - `docs/SCOPE_v0.1_v0.2.md`
 - `docs/RELEASE_NOTES_v0.1.md`
 - `docs/RELEASE_SOP.md`
+- `src/test/java/com/jianqing/framework/security/JwtTokenServiceTest.java`
+- `src/test/java/com/jianqing/framework/security/TokenSessionServiceTest.java`
+- `src/test/java/com/jianqing/module/audit/service/AuditLogServiceTest.java`
+- `src/test/java/com/jianqing/module/auth/controller/AuthControllerTest.java`
+- `src/test/java/com/jianqing/module/audit/controller/AuditControllerTest.java`
+- `src/main/java/com/jianqing/module/auth/service/AuthService.java`
+- `src/main/java/com/jianqing/module/auth/service/impl/AuthServiceImpl.java`
+- `src/main/java/com/jianqing/module/audit/service/AuditLogService.java`
+- `src/main/java/com/jianqing/module/audit/service/impl/AuditLogServiceImpl.java`
+- `src/main/java/com/jianqing/module/system/service/SystemService.java`
+- `src/main/java/com/jianqing/module/system/service/impl/SystemServiceImpl.java`
+- `src/main/java/com/jianqing/framework/security/JwtTokenService.java`
+- `src/main/java/com/jianqing/framework/security/impl/JwtTokenServiceImpl.java`
+- `src/main/java/com/jianqing/framework/security/TokenSessionService.java`
+- `src/main/java/com/jianqing/framework/security/impl/TokenSessionServiceImpl.java`
+- `src/main/java/com/jianqing/framework/cache/CacheConsistencyService.java`
+- `src/main/java/com/jianqing/framework/cache/impl/CacheConsistencyServiceImpl.java`
+- `scripts/check-service-structure.sh`
+- `.github/workflows/backend-ci.yml`
+- `scripts/pre-commit-check.sh`
+- `scripts/install-git-hooks.sh`
+- `scripts/check-http-method-constraints.sh`
 
 ## Visual/Browser Findings
 - 本轮无网页或图像类输入。

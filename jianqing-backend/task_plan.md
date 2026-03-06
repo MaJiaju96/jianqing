@@ -78,6 +78,7 @@ Phase 6
 | 后端接口方法仅允许 `GET` / `POST` | 统一接口约束与协作规范，避免 `PUT` / `DELETE` 漂移 |
 | 引入 Redis 承载 token 会话与热点缓存 | 支撑可配置 token TTL 与高频查询缓存能力 |
 | DB 与缓存一致性采用延迟双删 | 降低并发读写下的缓存脏读窗口 |
+| 服务层统一采用“接口 + impl”结构 | 明确契约边界，提升可测试性与后续演进稳定性 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -96,4 +97,8 @@ Phase 6
 - 技术规范原则：后端严格遵循阿里巴巴 Java 开发规范，保持统一风格。
 - 演进规划原则：代码需为后续 `TS`/`Vue2`、`SpringBoot2`/`SpringCloud`/`JDK8` 等分支保留可迁移性。
 - 接口约束原则：后端对外接口仅允许 `GET` 与 `POST`，不新增 `PUT` / `DELETE`。
+- 方法约束守卫：通过脚本与 CI/pre-commit 自动扫描，禁止引入 `PUT` / `DELETE`。
 - 缓存一致性原则：写操作统一执行“先删缓存 + 延迟再删”策略，避免 DB 与缓存短暂不一致。
+- 服务层规范：模块内服务必须定义 `service` 接口，并在 `service.impl` 提供 `*ServiceImpl` 实现；控制器与调用方仅依赖接口。
+- framework 层同名 `*Service` 亦遵循“接口 + impl”模式，避免出现分层规范例外。
+- 推荐安装本地 pre-commit hook，提交前自动执行结构守卫与基础质量门禁。

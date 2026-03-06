@@ -49,6 +49,21 @@
 - 单元测试通过：`mvn test`
 - 核心接口手工联调通过（登录、系统管理、审计日志）
 
+## 本地 pre-commit 守卫（推荐）
+
+建议安装本地 git hook，在提交前自动执行结构与质量检查：
+
+```bash
+bash scripts/install-git-hooks.sh
+```
+
+安装后每次 `git commit` 前会自动运行：
+
+- `bash scripts/check-service-structure.sh`
+- `bash scripts/check-http-method-constraints.sh`
+- `mvn -DskipTests compile`
+- `mvn checkstyle:check`
+
 ## 文档同步
 
 涉及架构/能力变更时，请同步更新：

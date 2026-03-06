@@ -150,6 +150,12 @@ npm run dev
   - `mvn -DskipTests compile`
   - `mvn test`
   - `mvn checkstyle:check`
+  - `bash scripts/check-service-structure.sh`
+  - `bash scripts/check-http-method-constraints.sh`
+
+本地提交前可安装 pre-commit 守卫：
+
+- `bash scripts/install-git-hooks.sh`
 
 ## Redis 缓存与会话说明
 
