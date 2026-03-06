@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
+import { API_SUCCESS_CODE } from '../constants/app';
 import { authStore } from '../stores/auth';
 
 export const http = axios.create({
@@ -17,7 +18,7 @@ http.interceptors.request.use((config) => {
 http.interceptors.response.use(
   (res) => {
     const payload = res.data;
-    if (payload?.code !== 0) {
+    if (payload?.code !== API_SUCCESS_CODE) {
       ElMessage.error(payload?.message ?? '请求失败');
       return Promise.reject(new Error(payload?.message ?? '请求失败'));
     }

@@ -1,3 +1,4 @@
+import { SUPER_ADMIN_ROLE } from '../constants/app';
 import { authStore } from '../stores/auth';
 
 export function hasPerm(permission) {
@@ -5,7 +6,7 @@ export function hasPerm(permission) {
   if (!profile) {
     return false;
   }
-  if ((profile.roles || []).includes('super_admin')) {
+  if ((profile.roles || []).includes(SUPER_ADMIN_ROLE)) {
     return true;
   }
   return (profile.permissions || []).includes(permission);
