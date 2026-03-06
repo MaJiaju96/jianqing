@@ -7,8 +7,8 @@
           <el-input v-model="keyword" clearable placeholder="搜索角色名称/编码" style="width: 220px;" />
           <el-select v-model="statusFilter" style="width: 140px;">
             <el-option label="全部状态" value="all" />
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
+            <el-option label="启用" :value="STATUS_ENABLED" />
+            <el-option label="禁用" :value="STATUS_DISABLED" />
           </el-select>
           <el-button v-if="canAdd" type="primary" @click="openCreate">新增角色</el-button>
         </div>
@@ -20,7 +20,7 @@
       <el-table-column prop="roleCode" label="角色编码" min-width="180" />
       <el-table-column label="状态" width="100">
         <template #default="scope">
-          <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">{{ scope.row.status === 1 ? '启用' : '禁用' }}</el-tag>
+          <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'danger'">{{ scope.row.status === STATUS_ENABLED ? '启用' : '禁用' }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="220" fixed="right">
@@ -38,7 +38,7 @@
       background
       layout="total, sizes, prev, pager, next"
       :total="filteredRows.length"
-      :page-sizes="[10, 20, 50]"
+      :page-sizes="pageSizes"
       v-model:current-page="pageNo"
       v-model:page-size="pageSize"
     />
@@ -54,8 +54,8 @@
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="form.status" style="width: 100%;">
-          <el-option :value="1" label="启用" />
-          <el-option :value="0" label="禁用" />
+            <el-option :value="STATUS_ENABLED" label="启用" />
+            <el-option :value="STATUS_DISABLED" label="禁用" />
         </el-select>
       </el-form-item>
     </el-form>
@@ -105,6 +105,16 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
+  DEFAULT_LIST_PAGE_SIZE,
+  MENU_TYPE_BUTTON,
+  MENU_TYPE_DIRECTORY,
+  MENU_TYPE_PAGE,
+  PAGE_SIZE_OPTIONS,
+  STATUS_DISABLED,
+  STATUS_ENABLED,
+  STATUS_FILTER_ALL
+} from '../../constants/app';
+import {
   assignRoleMenus,
   createRole,
   deleteRole,
@@ -113,13 +123,15 @@ import {
   fetchRoles,
   updateRole
 } from '../../api/system';
-import { hasPerm } from '../../utils/permission';
+import { usePermissionGroup } from '../../composables/usePermissions';
+import { isValidRoleCode } from '../../utils/validators';
 
 const rows = ref([]);
 const keyword = ref('');
-const statusFilter = ref('all');
+const statusFilter = ref(STATUS_FILTER_ALL);
 const pageNo = ref(1);
-const pageSize = ref(10);
+const pageSize = ref(DEFAULT_LIST_PAGE_SIZE);
+const pageSizes = PAGE_SIZE_OPTIONS;
 const dialogVisible = ref(false);
 const isEdit = ref(false);
 const editingId = ref(null);
@@ -131,21 +143,23 @@ const assignTypeFilter = ref('all');
 const form = ref({
   roleName: '',
   roleCode: '',
-  status: 1
+  status: STATUS_ENABLED
 });
 
-const canAdd = computed(() => hasPerm('system:role:add'));
-const canEdit = computed(() => hasPerm('system:role:edit'));
-const canDelete = computed(() => hasPerm('system:role:remove'));
+const { canAdd, canEdit, canDelete } = usePermissionGroup({
+  canAdd: 'system:role:add',
+  canEdit: 'system:role:edit',
+  canDelete: 'system:role:remove'
+});
 
 const filteredRows = computed(() => {
   const query = keyword.value.trim().toLowerCase();
   if (!query) {
-    return rows.value.filter((item) => statusFilter.value === 'all' || item.status === statusFilter.value);
+    return rows.value.filter((item) => statusFilter.value === STATUS_FILTER_ALL || item.status === statusFilter.value);
   }
   return rows.value.filter((item) => {
     const keywordMatched = item.roleName.toLowerCase().includes(query) || item.roleCode.toLowerCase().includes(query);
-    const statusMatched = statusFilter.value === 'all' || item.status === statusFilter.value;
+    const statusMatched = statusFilter.value === STATUS_FILTER_ALL || item.status === statusFilter.value;
     return keywordMatched && statusMatched;
   });
 });
@@ -167,7 +181,7 @@ function resetForm() {
   form.value = {
     roleName: '',
     roleCode: '',
-    status: 1
+    status: STATUS_ENABLED
   };
 }
 
@@ -198,7 +212,7 @@ async function handleSubmit() {
     ElMessage.warning('请填写角色名称和编码');
     return;
   }
-  if (!/^[a-zA-Z0-9:_-]{2,64}$/.test(form.value.roleCode)) {
+  if (!isValidRoleCode(form.value.roleCode)) {
     ElMessage.warning('角色编码仅支持字母数字及 : _ -');
     return;
   }
@@ -240,29 +254,29 @@ function handleAssignTypeChange(value) {
 
 function filterAssignNode(value, data) {
   if (value === 'menu') {
-    return data.menuType === 1 || data.menuType === 2;
+    return data.menuType === MENU_TYPE_DIRECTORY || data.menuType === MENU_TYPE_PAGE;
   }
   if (value === 'button') {
-    return data.menuType === 3;
+    return data.menuType === MENU_TYPE_BUTTON;
   }
   return true;
 }
 
 function menuTypeText(menuType) {
-  if (menuType === 1) {
+  if (menuType === MENU_TYPE_DIRECTORY) {
     return '目录';
   }
-  if (menuType === 2) {
+  if (menuType === MENU_TYPE_PAGE) {
     return '菜单';
   }
   return '按钮';
 }
 
 function menuTypeTag(menuType) {
-  if (menuType === 1) {
+  if (menuType === MENU_TYPE_DIRECTORY) {
     return 'info';
   }
-  if (menuType === 2) {
+  if (menuType === MENU_TYPE_PAGE) {
     return 'success';
   }
   return 'warning';
