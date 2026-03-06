@@ -55,7 +55,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { logout } from '../api/auth';
 import { authStore } from '../stores/auth';
 import { THEMES, themeStore } from '../stores/theme.js';
-import { hasPerm } from '../utils/permission';
+import { usePermissionGroup } from '../composables/usePermissions';
 
 const route = useRoute();
 const router = useRouter();
@@ -69,12 +69,20 @@ const currentThemeLabel = computed(() => {
   const current = themes.find((theme) => theme.key === currentTheme.value);
   return current ? current.label : '午夜蓝';
 });
-const canViewUsers = computed(() => hasPerm('system:user:list'));
-const canViewRoles = computed(() => hasPerm('system:role:list'));
-const canViewMenus = computed(() => hasPerm('system:menu:list'));
+const {
+  canViewUsers,
+  canViewRoles,
+  canViewMenus,
+  canViewOperLogs,
+  canViewLoginLogs
+} = usePermissionGroup({
+  canViewUsers: 'system:user:list',
+  canViewRoles: 'system:role:list',
+  canViewMenus: 'system:menu:list',
+  canViewOperLogs: 'audit:oper-log:list',
+  canViewLoginLogs: 'audit:login-log:list'
+});
 const showSystemMenu = computed(() => canViewUsers.value || canViewRoles.value || canViewMenus.value);
-const canViewOperLogs = computed(() => hasPerm('audit:oper-log:list'));
-const canViewLoginLogs = computed(() => hasPerm('audit:login-log:list'));
 const showAuditMenu = computed(() => canViewOperLogs.value || canViewLoginLogs.value);
 
 function handleThemeChange(themeKey) {
