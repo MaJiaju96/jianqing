@@ -15,3 +15,14 @@ export const MENU_TYPE_PAGE = 2;
 export const MENU_TYPE_BUTTON = 3;
 
 export const SUPER_ADMIN_ROLE = 'super_admin';
+export const ROOT_PARENT_ID = 0;
+
+export const DATA_SCOPE_ALL = 1;
+export const DATA_SCOPE_DEPT = 3;
+export const DATA_SCOPE_SELF = 4;
+
+export const DATA_SCOPE_OPTIONS = [
+  { label: '全部数据', value: DATA_SCOPE_ALL },
+  { label: '本部门数据', value: DATA_SCOPE_DEPT },
+  { label: '仅本人数据', value: DATA_SCOPE_SELF }
+];

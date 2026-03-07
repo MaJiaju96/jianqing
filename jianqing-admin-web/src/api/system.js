@@ -28,6 +28,22 @@ export function fetchRoles() {
   return http.get('/system/roles');
 }
 
+export function fetchDepts() {
+  return http.get('/system/depts');
+}
+
+export function createDept(payload) {
+  return http.post('/system/depts', payload);
+}
+
+export function updateDept(id, payload) {
+  return http.post(`/system/depts/${id}/update`, payload);
+}
+
+export function deleteDept(id) {
+  return http.post(`/system/depts/${id}/delete`);
+}
+
 export function createRole(payload) {
   return http.post('/system/roles', payload);
 }

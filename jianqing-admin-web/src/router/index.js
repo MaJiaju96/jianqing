@@ -1,15 +1,17 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import MainLayout from '../layouts/MainLayout.vue';
-import LoginView from '../views/LoginView.vue';
-import DashboardView from '../views/DashboardView.vue';
-import UsersView from '../views/system/UsersView.vue';
-import RolesView from '../views/system/RolesView.vue';
-import MenusView from '../views/system/MenusView.vue';
-import OperLogsView from '../views/audit/OperLogsView.vue';
-import LoginLogsView from '../views/audit/LoginLogsView.vue';
 import { authStore } from '../stores/auth';
 import { fetchProfile } from '../api/auth';
 import { hasPerm } from '../utils/permission';
+
+const MainLayout = () => import('../layouts/MainLayout.vue');
+const LoginView = () => import('../views/LoginView.vue');
+const DashboardView = () => import('../views/DashboardView.vue');
+const DeptsView = () => import('../views/system/DeptsView.vue');
+const UsersView = () => import('../views/system/UsersView.vue');
+const RolesView = () => import('../views/system/RolesView.vue');
+const MenusView = () => import('../views/system/MenusView.vue');
+const OperLogsView = () => import('../views/audit/OperLogsView.vue');
+const LoginLogsView = () => import('../views/audit/LoginLogsView.vue');
 
 const routes = [
   { path: '/login', component: LoginView },
@@ -19,6 +21,7 @@ const routes = [
     children: [
       { path: '', redirect: '/dashboard' },
       { path: '/dashboard', component: DashboardView },
+      { path: '/system/depts', component: DeptsView, meta: { perm: 'system:dept:list' } },
       { path: '/system/users', component: UsersView, meta: { perm: 'system:user:list' } },
       { path: '/system/roles', component: RolesView, meta: { perm: 'system:role:list' } },
       { path: '/system/menus', component: MenusView, meta: { perm: 'system:menu:list' } },

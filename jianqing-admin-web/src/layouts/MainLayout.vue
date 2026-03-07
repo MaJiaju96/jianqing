@@ -7,6 +7,7 @@
         <el-sub-menu v-if="showSystemMenu" index="/system">
           <template #title>系统管理</template>
           <el-menu-item v-if="canViewUsers" index="/system/users">用户管理</el-menu-item>
+          <el-menu-item v-if="canViewDepts" index="/system/depts">部门管理</el-menu-item>
           <el-menu-item v-if="canViewRoles" index="/system/roles">角色管理</el-menu-item>
           <el-menu-item v-if="canViewMenus" index="/system/menus">菜单权限</el-menu-item>
         </el-sub-menu>
@@ -42,7 +43,7 @@
           <el-button type="primary" plain @click="handleLogout">退出登录</el-button>
         </div>
       </el-header>
-      <el-main>
+      <el-main class="jq-main">
         <router-view />
       </el-main>
     </el-container>
@@ -56,6 +57,7 @@ import { logout } from '../api/auth';
 import { authStore } from '../stores/auth';
 import { THEMES, themeStore } from '../stores/theme.js';
 import { usePermissionGroup } from '../composables/usePermissions';
+import { showSuccessMessage } from '../utils/feedback';
 
 const route = useRoute();
 const router = useRouter();
@@ -71,18 +73,20 @@ const currentThemeLabel = computed(() => {
 });
 const {
   canViewUsers,
+  canViewDepts,
   canViewRoles,
   canViewMenus,
   canViewOperLogs,
   canViewLoginLogs
 } = usePermissionGroup({
   canViewUsers: 'system:user:list',
+  canViewDepts: 'system:dept:list',
   canViewRoles: 'system:role:list',
   canViewMenus: 'system:menu:list',
   canViewOperLogs: 'audit:oper-log:list',
   canViewLoginLogs: 'audit:login-log:list'
 });
-const showSystemMenu = computed(() => canViewUsers.value || canViewRoles.value || canViewMenus.value);
+const showSystemMenu = computed(() => canViewUsers.value || canViewDepts.value || canViewRoles.value || canViewMenus.value);
 const showAuditMenu = computed(() => canViewOperLogs.value || canViewLoginLogs.value);
 
 function handleThemeChange(themeKey) {
@@ -92,6 +96,7 @@ function handleThemeChange(themeKey) {
 async function handleLogout() {
   try {
     await logout();
+    showSuccessMessage('退出登录');
   } finally {
     authStore.logout();
     router.replace('/login');
@@ -176,8 +181,10 @@ async function handleLogout() {
   color: var(--jq-card-subtitle);
 }
 
-.el-main {
+.jq-main {
   padding: 16px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .jq-header-actions {
