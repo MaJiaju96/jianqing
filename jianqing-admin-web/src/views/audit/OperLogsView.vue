@@ -1,20 +1,21 @@
 <template>
-  <el-card class="jq-glass-card" shadow="never">
+  <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
       <div class="header-row">
         <h2 class="jq-page-title">操作日志</h2>
         <div class="toolbar-right">
-          <el-input v-model="keyword" clearable placeholder="搜索操作人/模块/地址" style="width: 220px;" />
-          <el-select v-model="statusFilter" style="width: 140px;">
+          <el-input v-model="keywordInput" clearable placeholder="搜索操作人/模块/地址" style="width: 220px;" @keyup.enter="handleSearch" />
+          <el-select v-model="statusFilterInput" style="width: 140px;">
             <el-option label="全部状态" value="" />
             <el-option label="成功" :value="1" />
             <el-option label="失败" :value="0" />
           </el-select>
-          <el-button @click="handleSearch">查询</el-button>
+          <el-button :loading="loading" @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
         </div>
       </div>
     </template>
-    <el-table :data="rows" stripe>
+    <el-table :data="rows" stripe :empty-text="tableEmptyText" :height="tableHeight">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="username" label="操作人" width="130" />
       <el-table-column prop="moduleName" label="模块" width="110" />
@@ -52,24 +53,34 @@ import {
   STATUS_ENABLED
 } from '../../constants/app';
 import { fetchOperLogs } from '../../api/audit';
+import { useAdaptiveTable } from '../../composables/useAdaptiveTable';
+import { useTableFeedback } from '../../composables/useAsyncState';
 
 const rows = ref([]);
 const total = ref(0);
 const pageNo = ref(1);
 const pageSize = ref(DEFAULT_AUDIT_PAGE_SIZE);
 const pageSizes = PAGE_SIZE_OPTIONS;
+const keywordInput = ref('');
+const statusFilterInput = ref(EMPTY_FILTER_VALUE);
 const keyword = ref('');
 const statusFilter = ref(EMPTY_FILTER_VALUE);
+const tableFeedback = useTableFeedback();
+const { tableHeight } = useAdaptiveTable();
+const loading = tableFeedback.loading;
+const tableEmptyText = tableFeedback.emptyText;
 
 async function loadData() {
-  const page = await fetchOperLogs({
-    page: pageNo.value,
-    size: pageSize.value,
-    keyword: keyword.value.trim(),
-    status: statusFilter.value
+  await tableFeedback.run(async () => {
+    const page = await fetchOperLogs({
+      page: pageNo.value,
+      size: pageSize.value,
+      keyword: keyword.value.trim(),
+      status: statusFilter.value
+    });
+    rows.value = page.records || [];
+    total.value = Number(page.total || 0);
   });
-  rows.value = page.records || [];
-  total.value = Number(page.total || 0);
 }
 
 function handleSizeChange() {
@@ -79,11 +90,19 @@ function handleSizeChange() {
 
 function handleSearch() {
   pageNo.value = 1;
+  keyword.value = keywordInput.value.trim();
+  statusFilter.value = statusFilterInput.value;
   loadData();
 }
 
+function handleReset() {
+  keywordInput.value = '';
+  statusFilterInput.value = EMPTY_FILTER_VALUE;
+  handleSearch();
+}
+
 onMounted(async () => {
-  await loadData();
+  handleSearch();
 });
 </script>
 

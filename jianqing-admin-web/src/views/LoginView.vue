@@ -28,6 +28,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { fetchProfile, login } from '../api/auth';
 import { authStore } from '../stores/auth';
+import { showSuccessMessage } from '../utils/feedback';
 
 const router = useRouter();
 const loading = ref(false);
@@ -47,6 +48,7 @@ async function handleLogin() {
     authStore.setToken(result.accessToken);
     const profile = await fetchProfile();
     authStore.setProfile(profile);
+    showSuccessMessage('登录');
     await router.replace('/dashboard');
   } finally {
     loading.value = false;
