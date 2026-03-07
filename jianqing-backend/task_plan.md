@@ -4,7 +4,7 @@
 在保留后台管理系统高效率开发体验的前提下，完成 `简擎` 的可开源后端内核：以 `MySQL` 为首发数据源，预留 `Elasticsearch`、`Nacos`、`RocketMQ` 的可插拔集成能力。
 
 ## Current Phase
-Phase 6
+Phase 7
 
 ## Phases
 
@@ -49,6 +49,14 @@ Phase 6
 - [x] 标注 v0.1 scope 与 v0.2 计划
 - [x] 输出首次开源发布说明
 - **Status:** complete
+
+### Phase 7: v0.2 数据权限最小闭环
+- [x] 明确最小数据权限策略（全部/本部门/本人）
+- [x] 将角色数据范围字段接入后端 DTO / 实体 / 服务
+- [x] 在用户管理模块落首批数据范围校验
+- [x] 补齐部门管理后端最小 CRUD
+- [ ] 补齐前后端联调与回归测试
+- **Status:** in_progress
 
 ## Key Questions
 1. v0.1 是否只交付后端内核（不绑定前端）？

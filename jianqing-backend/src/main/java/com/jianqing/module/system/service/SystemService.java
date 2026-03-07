@@ -3,6 +3,8 @@ package com.jianqing.module.system.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jianqing.module.system.dto.MenuSaveRequest;
 import com.jianqing.module.system.dto.MenuTreeNode;
+import com.jianqing.module.system.dto.DeptSaveRequest;
+import com.jianqing.module.system.dto.DeptTreeNode;
 import com.jianqing.module.system.dto.RoleSaveRequest;
 import com.jianqing.module.system.dto.RoleSummary;
 import com.jianqing.module.system.dto.UserSaveRequest;
@@ -75,6 +77,14 @@ public interface SystemService extends IService<SysUser> {
      * 分配角色菜单。
      */
     void assignRoleMenus(Long roleId, List<Long> menuIds);
+
+    List<DeptTreeNode> listDeptTree();
+
+    DeptTreeNode createDept(DeptSaveRequest request);
+
+    DeptTreeNode updateDept(Long id, DeptSaveRequest request);
+
+    void deleteDept(Long id);
 
     /**
      * 查询全量菜单树。

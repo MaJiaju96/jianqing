@@ -122,7 +122,31 @@
   - 已修复控制器/拦截器绕过 service 直接使用 Mapper 的问题，分层调用统一收敛到 service。
   - 已新增 Mapper 分层约束守卫，并接入 CI 与 pre-commit。
   - 已完成核心业务服务与 MP 能力整合：`service` 接口继承 `IService<T>`，实现类继承 `ServiceImpl<M,T>`。
-  - 已完成服务协作重构：`SystemService` 通过 `RoleService/MenuService` 完成跨实体协作，`AuthService` 通过 `AuditLogService` 写登录日志。
+   - 已完成服务协作重构：`SystemService` 通过 `RoleService/MenuService` 完成跨实体协作，`AuthService` 通过 `AuditLogService` 写登录日志。
+
+### Phase 7: v0.2 数据权限最小闭环
+- **Status:** in_progress
+- Actions taken:
+  - 已确认 `jq_sys_role.data_scope` 可直接复用，无需新增首批数据范围字段。
+  - 已在后端接入角色数据范围配置，当前支持 `全部数据 / 本部门数据 / 仅本人数据`。
+  - 已在用户管理模块接入首批数据范围约束：用户列表、编辑、删除、查看角色、分配角色、新增用户均按当前登录人范围校验。
+  - 已完成前后端编译验证，作为 v0.2 最小闭环基线。
+  - 已完成首轮联调：角色页可新增/编辑数据范围，浏览器无控制台错误，后端改动已生效。
+  - 已完成真实账号验证：`dept_user`（本部门数据）可见同部门用户且不可见跨部门用户；`self_user`（仅本人数据）仅可见自己。
+  - 已补齐部门管理后端最小闭环：部门树查询、创建、更新、删除接口均已可用。
+  - 已新增 `SystemServiceImplTest`，覆盖数据权限首批核心分支：`super_admin` 全量查询、`仅本人` 查询、`仅本人` 禁止新增、`本部门` 禁止越权编辑。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/constant/DataScopeConstants.java` (created)
+  - `src/main/java/com/jianqing/module/system/entity/SysRole.java` (updated)
+  - `src/main/java/com/jianqing/module/system/dto/RoleSaveRequest.java` (updated)
+  - `src/main/java/com/jianqing/module/system/dto/RoleSummary.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/RoleService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/RoleServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/SystemServiceImpl.java` (updated)
+  - `src/test/java/com/jianqing/module/system/service/impl/SystemServiceImplTest.java` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -153,6 +177,11 @@
 | backend mapper layering guard | `bash scripts/check-mapper-layering.sh` | no mapper import outside service.impl | passed | ✓ |
 | backend mp service pattern guard | `mvn test` + `mvn compile` | IService + ServiceImpl integration works | passed | ✓ |
 | backend service-collaboration refactor | `mvn test` + guards | service-to-service replaces cross-entity mapper access | passed | ✓ |
+| backend data scope baseline | `mvn test` | role data scope DTO/service changes and user-scope restrictions compile and tests pass | passed | ✓ |
+| data scope integration smoke test | restart backend + browser role create/update | role data scope create/update works after backend restart | passed | ✓ |
+| data scope real-account verification | create test users/roles + browser login verification | dept scope sees same dept only, self scope sees self only | passed | ✓ |
+| dept backend minimal CRUD | `mvn test` | dept entity/mapper/service/controller changes compile and backend tests still pass | passed | ✓ |
+| backend data scope unit tests | `mvn test` | SystemServiceImpl data-scope branches are covered and all backend tests pass | passed（21 passed, 0 failed） | ✓ |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

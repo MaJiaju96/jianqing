@@ -58,6 +58,11 @@
 - 核心业务服务已统一接入 `IService<T>` / `ServiceImpl<M,T>` 模式，保留 service 契约层并复用 MP 通用能力。
 - 已新增 `RoleService`、`MenuService`、`LoginLogService`，将跨实体 mapper 调用收敛为 service 间协作。
 - `AuthServiceImpl` 登录日志写入已改为调用 `AuditLogService`，不再直接依赖登录日志 mapper。
+- `jq_sys_role` 表已预留 `data_scope` 字段，本轮已在后端实体/DTO/服务层正式接入并开始落地 v0.2 数据权限。
+- 当前 v0.2 最小数据权限闭环先支持 `全部数据` / `本部门数据` / `仅本人数据` 三种范围，避免在未引入部门树前过度设计。
+- 用户管理模块已作为首个闭环模块接入数据范围控制：列表查询与按 ID 的编辑/删除/分配角色均受当前登录用户数据范围约束。
+- `jq_sys_dept` 表此前只有 SQL seed，本轮已补齐后端 `SysDept` 实体、Mapper、Service、Controller，部门管理从“仅有菜单 seed”变为可用模块。
+- 后端数据权限专项测试已补齐首批单测，沿用现有 Mockito 服务层测试风格，优先覆盖 `super_admin`、`本部门`、`仅本人` 三条关键分支。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -89,6 +94,10 @@
 | framework 服务同样接口化 | 保持全项目分层规范一致性，避免后续新代码混用模式 |
 | 增加结构守卫脚本并接入 CI | 通过自动化门禁防止分层规范回退 |
 | 发布阶段先补文档闭环再打版本 | 降低发布信息缺失和协作偏差风险 |
+| v0.2 首批数据权限仅落三种范围 | 复用现有 `dept_id` 与用户 ID，先做最小闭环再扩展子部门/自定义部门 |
+| 用户管理作为首个数据权限试点模块 | 现有表结构已具备 `dept_id`，改造成本低且易于验证 |
+| 部门管理先交付最小 CRUD | 先让 `dept_id` 有真实业务承载，再决定是否继续做部门树级联与数据权限联动 |
+| 数据权限测试优先落服务层单测 | 当前项目已有 Mockito 风格服务测试，先覆盖核心分支再补更重的集成测试 |
 
 ## Issues Encountered
 | Issue | Resolution |

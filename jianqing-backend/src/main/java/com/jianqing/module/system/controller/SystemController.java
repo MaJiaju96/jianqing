@@ -2,6 +2,8 @@ package com.jianqing.module.system.controller;
 
 import com.jianqing.common.api.ApiResponse;
 import com.jianqing.framework.security.SecurityUtils;
+import com.jianqing.module.system.dto.DeptSaveRequest;
+import com.jianqing.module.system.dto.DeptTreeNode;
 import com.jianqing.module.system.dto.MenuTreeNode;
 import com.jianqing.module.system.dto.MenuSaveRequest;
 import com.jianqing.module.system.dto.IdListRequest;
@@ -103,6 +105,27 @@ public class SystemController {
     @PostMapping("/roles/{id}/menus/assign")
     public ApiResponse<Void> assignRoleMenus(@PathVariable Long id, @RequestBody @Valid IdListRequest request) {
         systemService.assignRoleMenus(id, request.getIds());
+        return ApiResponse.success(null);
+    }
+
+    @GetMapping("/depts")
+    public ApiResponse<List<DeptTreeNode>> depts() {
+        return ApiResponse.success(systemService.listDeptTree());
+    }
+
+    @PostMapping("/depts")
+    public ApiResponse<DeptTreeNode> createDept(@Valid @RequestBody DeptSaveRequest request) {
+        return ApiResponse.success(systemService.createDept(request));
+    }
+
+    @PostMapping("/depts/{id}/update")
+    public ApiResponse<DeptTreeNode> updateDept(@PathVariable Long id, @Valid @RequestBody DeptSaveRequest request) {
+        return ApiResponse.success(systemService.updateDept(id, request));
+    }
+
+    @PostMapping("/depts/{id}/delete")
+    public ApiResponse<Void> deleteDept(@PathVariable Long id) {
+        systemService.deleteDept(id);
         return ApiResponse.success(null);
     }
 

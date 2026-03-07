@@ -41,7 +41,24 @@
   - 已新增前端开发规范文档，明确注释策略、常量收敛、API/store/权限与 AI 协作约定。
   - 已新增公共常量与校验工具，收敛分页、状态、菜单类型、成功码及表单校验规则。
   - 已完成一轮前端可读性整理：减少魔法值、合并重复校验，并在 README 增加规范文档入口。
-  - 已新增 `usePermissions` 组合式工具，收敛布局页与系统页重复的权限 computed 定义。
+- 已新增 `usePermissions` 组合式工具，收敛布局页与系统页重复的权限 computed 定义。
+- 已完成前端构建体积优化：页面路由改为懒加载，Element Plus 改为按需组件解析，构建结果不再出现大 chunk 告警。
+- 已补齐站点 favicon，并为系统管理/审计日志关键页面增加加载中、空数据文案与保存/删除 loading 反馈。
+- 已抽取 `useAsyncState` 轻量组合式工具，统一列表页加载与按钮异步状态，减少系统管理/审计页面重复 loading 代码。
+- 已统一登录/登出及系统管理写操作成功提示文案，并为审计日志查询输入补齐回车触发。
+- 已完成一轮页面细节巡检，修复按需引入改造后 Element Plus 英文化回退问题，恢复中文分页/下拉文案。
+- 已启动 v0.2 数据权限前端改造：角色列表新增数据范围列，角色表单支持编辑数据范围。
+- 已完成首轮数据权限联调：角色页成功新增“仅本人”角色并更新为“本部门”，成功提示与列表展示均正常。
+- 已完成真实账号联调：`dept_user` 登录后用户管理显示 admin/dept_user/self_user/other_user，不显示 outside_user；`self_user` 登录后仅显示 self_user。
+- 已补齐部门管理页面、路由与 API 接入，并完成一次新增子部门→编辑→删除的浏览器联调。
+- 已将用户页部门字段改为真实部门下拉，用户列表同步展示所属部门名称。
+- 已将部门页负责人字段改为真实用户选择，部门列表同步展示负责人姓名。
+- 已统一用户页与部门页的筛选区交互，查询与重置行为保持一致，并支持输入框回车触发查询。
+- 已统一系统页/审计页表格的自适应固定高度，数据超出时走内部滚动；部门页补齐分页；关键编辑弹窗统一追加到 body，避免遮挡。
+- 已统一角色页与菜单页筛选区交互，系统管理主列表页现全部采用显式查询/重置模式。
+- 已统一审计页筛选区交互，操作日志/登录日志现与系统管理页保持一致的查询与重置模式。
+- 已进一步将所有查询列表改为“固定占满可用工作区高度”，并补齐主内容区与工具栏的响应式宽高适配：大屏占满、小屏换行、数据超出时内部滚动。
+- 已完成 768/640 小屏巡检与补丁：列表页无主内容横向溢出，移动端分页区支持左对齐与横向滚动。
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -55,6 +72,23 @@
 | all list pagination | check users/roles/menus/audit views | all list pages provide pagination | passed | ✓ |
 | list segmentation filters | check users/roles/audit views filter controls | segmented filtering works with pagination | passed | ✓ |
 | frontend readability refactor | constants/validators/docs update + build | readability improves without behavior change | passed (`npm run build`) | ✓ |
+| frontend bundle optimization | route lazy loading + Element Plus on-demand components + `npm run build` | build succeeds without large chunk warning | passed | ✓ |
+| frontend feedback polish | favicon + loading/empty text + submit/delete loading + `npm run build` | build succeeds and console no longer reports favicon 404 | passed | ✓ |
+| frontend async state composable | extract `useAsyncState` + refactor key pages + `npm run build` | build succeeds and repeated async loading logic is reduced | passed | ✓ |
+| frontend success feedback polish | add shared success feedback helper + enter-to-search + `npm run build` | build succeeds and success messaging is more consistent | passed | ✓ |
+| frontend locale regression fix | add `ElConfigProvider` in `App.vue` + `npm run build` + browser verify | build succeeds and pagination text remains Chinese | passed | ✓ |
+| frontend role data scope baseline | add role data scope constants/UI + `npm run build` | build succeeds and role page can edit/display data scope | passed | ✓ |
+| frontend data scope integration smoke test | browser create/update role data scope | role page can create/update data scope and render latest value | passed | ✓ |
+| frontend data scope real-account verification | browser login with dept/self scope accounts | user list visibility matches configured data scope | passed | ✓ |
+| frontend dept management baseline | add dept page/router/api + `npm run build` + browser CRUD smoke test | dept page is visible and dept CRUD basic flow works | passed | ✓ |
+| frontend user dept selector | replace deptId input with dept select + browser verify | user page shows dept names and dialog no longer exposes raw deptId input | passed | ✓ |
+| frontend dept leader selector | replace leaderUserId input with user select + browser verify | dept page shows leader names and dialog no longer exposes raw leaderUserId input | passed | ✓ |
+| frontend filter ux alignment | unify query/reset behavior on users and depts + browser verify | search and reset interactions behave consistently across both pages | passed | ✓ |
+| frontend table workspace stabilization | adaptive table max-height + dept pagination + dialog append-to-body + browser verify | list area stays fixed-height, dept page has pagination, dialog no longer gets visually blocked | passed | ✓ |
+| frontend system-filter consistency | unify query/reset behavior on roles and menus + browser verify | roles and menus now match users and depts filter interaction | passed | ✓ |
+| frontend audit-filter consistency | unify query/reset behavior on audit pages + browser verify | oper/login logs now match the same search and reset interaction | passed | ✓ |
+| frontend full-workspace table layout | switch list tables from max-height to fixed adaptive height + responsive layout verify | query pages keep stable height on desktop and wrap controls correctly on smaller widths | passed | ✓ |
+| frontend small-screen list verification | 768/640 viewport browser verify + pager mobile patch | no main horizontal overflow and pagination remains operable on narrow screens | passed | ✓ |
 
 ## 5-Question Reboot Check
 | Question | Answer |

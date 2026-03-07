@@ -9,6 +9,8 @@ public class RoleSaveRequest {
     private String roleName;
     @NotBlank(message = "角色编码不能为空")
     private String roleCode;
+    @NotNull(message = "数据范围不能为空")
+    private Integer dataScope;
     @NotNull(message = "状态不能为空")
     private Integer status;
 
@@ -34,5 +36,13 @@ public class RoleSaveRequest {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public Integer getDataScope() {
+        return dataScope;
+    }
+
+    public void setDataScope(Integer dataScope) {
+        this.dataScope = dataScope;
     }
 }

@@ -4,7 +4,7 @@
 构建一个可直接联调 `jianqing-backend` 的前端管理台，界面不死板、交互流畅，并保持纯 `JavaScript` 实现。
 
 ## Current Phase
-Phase 4
+Phase 5
 
 ## Phases
 
@@ -34,6 +34,14 @@ Phase 4
 - [x] 菜单权限页层级与类型可读性优化
 - [x] 所有列表页统一分页交互
 - **Status:** complete
+
+### Phase 5: v0.2 数据权限配置起步
+- [x] 在角色页展示数据范围字段
+- [x] 在角色表单支持编辑数据范围
+- [x] 补齐部门管理页面与路由接入
+- [ ] 补一轮数据范围联调验证
+- [ ] 做一轮整体 UI 细节巡检（表格列宽/分页信息/按钮文案/空态文案）
+- **Status:** in_progress
 
 ## Decisions Made
 | Decision | Rationale |

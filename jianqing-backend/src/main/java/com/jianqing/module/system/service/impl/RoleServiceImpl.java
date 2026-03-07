@@ -2,6 +2,7 @@ package com.jianqing.module.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.jianqing.module.system.constant.DataScopeConstants;
 import com.jianqing.module.system.dto.RoleSaveRequest;
 import com.jianqing.module.system.dto.RoleSummary;
 import com.jianqing.module.system.entity.SysRole;
@@ -34,9 +35,11 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     @Override
     public RoleSummary createRole(RoleSaveRequest request) {
         validateRoleCodeUnique(request.getRoleCode(), null);
+        validateDataScope(request.getDataScope());
         SysRole role = new SysRole();
         role.setRoleName(request.getRoleName());
         role.setRoleCode(request.getRoleCode());
+        role.setDataScope(request.getDataScope());
         role.setStatus(request.getStatus());
         role.setIsDeleted(0);
         baseMapper.insert(role);
@@ -47,8 +50,10 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     public RoleSummary updateRole(Long id, RoleSaveRequest request) {
         SysRole role = getRoleOrThrow(id);
         validateRoleCodeUnique(request.getRoleCode(), id);
+        validateDataScope(request.getDataScope());
         role.setRoleName(request.getRoleName());
         role.setRoleCode(request.getRoleCode());
+        role.setDataScope(request.getDataScope());
         role.setStatus(request.getStatus());
         baseMapper.updateById(role);
         return toRoleSummary(role);
@@ -82,10 +87,15 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
 
     @Override
     public List<String> listRoleCodesByUserId(Long userId) {
-        return baseMapper.selectEnabledRolesByUserId(userId).stream()
+        return listEnabledRolesByUserId(userId).stream()
                 .map(SysRole::getRoleCode)
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    @Override
+    public List<SysRole> listEnabledRolesByUserId(Long userId) {
+        return baseMapper.selectEnabledRolesByUserId(userId);
     }
 
     @Override
@@ -102,7 +112,18 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     }
 
     private RoleSummary toRoleSummary(SysRole role) {
-        return new RoleSummary(role.getId(), role.getRoleName(), role.getRoleCode(), role.getStatus());
+        return new RoleSummary(role.getId(), role.getRoleName(), role.getRoleCode(), role.getDataScope(), role.getStatus());
+    }
+
+    private void validateDataScope(Integer dataScope) {
+        if (dataScope == null) {
+            throw new IllegalArgumentException("数据范围不能为空");
+        }
+        if (dataScope != DataScopeConstants.ALL
+                && dataScope != DataScopeConstants.DEPT
+                && dataScope != DataScopeConstants.SELF) {
+            throw new IllegalArgumentException("当前版本仅支持全部、本部门、本人三种数据范围");
+        }
     }
 
     private void validateRoleCodeUnique(String roleCode, Long excludeId) {

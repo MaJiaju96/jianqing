@@ -47,6 +47,8 @@ public interface RoleService extends IService<SysRole> {
      */
     List<String> listRoleCodesByUserId(Long userId);
 
+    List<SysRole> listEnabledRolesByUserId(Long userId);
+
     /**
      * 校验角色 ID 集合是否全部有效。
      */

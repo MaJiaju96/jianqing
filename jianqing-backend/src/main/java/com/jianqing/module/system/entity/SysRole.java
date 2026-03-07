@@ -14,6 +14,8 @@ public class SysRole {
     private String roleName;
     @TableField("role_code")
     private String roleCode;
+    @TableField("data_scope")
+    private Integer dataScope;
     private Integer status;
     @TableField("is_deleted")
     private Integer isDeleted;
@@ -48,6 +50,14 @@ public class SysRole {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public Integer getDataScope() {
+        return dataScope;
+    }
+
+    public void setDataScope(Integer dataScope) {
+        this.dataScope = dataScope;
     }
 
     public Integer getIsDeleted() {
