@@ -1,24 +1,31 @@
 <template>
-  <el-card class="jq-glass-card" shadow="never">
+  <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
       <div class="header-row">
         <h2 class="jq-page-title">用户管理</h2>
         <div class="toolbar-right">
-          <el-input v-model="keyword" clearable placeholder="搜索用户名/昵称" style="width: 220px;" />
-          <el-select v-model="statusFilter" style="width: 140px;">
+          <el-input v-model="keywordInput" clearable placeholder="搜索用户名/昵称" style="width: 220px;" @keyup.enter="handleSearch" />
+          <el-select v-model="statusFilterInput" style="width: 140px;">
             <el-option label="全部状态" value="all" />
             <el-option label="启用" :value="STATUS_ENABLED" />
             <el-option label="禁用" :value="STATUS_DISABLED" />
           </el-select>
+          <el-button @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
           <el-button v-if="canAdd" type="primary" @click="openCreate">新增用户</el-button>
         </div>
       </div>
     </template>
-    <el-table :data="pagedRows" stripe>
+    <el-table :data="pagedRows" stripe :empty-text="tableEmptyText" :height="tableHeight">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="username" label="用户名" min-width="120" />
       <el-table-column prop="nickname" label="昵称" min-width="120" />
       <el-table-column prop="realName" label="真实姓名" min-width="120" />
+      <el-table-column label="所属部门" min-width="160">
+        <template #default="scope">
+          {{ deptNameMap[scope.row.deptId] || `部门#${scope.row.deptId}` }}
+        </template>
+      </el-table-column>
       <el-table-column prop="mobile" label="手机号" min-width="130" />
       <el-table-column prop="email" label="邮箱" min-width="180" />
       <el-table-column label="状态" width="100">
@@ -29,9 +36,9 @@
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="scope">
           <div class="user-action-row">
-            <el-button v-if="canEdit" type="primary" link @click="openAssignRoles(scope.row)">分配角色</el-button>
-            <el-button v-if="canEdit" type="primary" link @click="openEdit(scope.row)">编辑</el-button>
-            <el-button v-if="canDelete" type="danger" link @click="handleDelete(scope.row)">删除</el-button>
+             <el-button v-if="canEdit" type="primary" link :loading="roleSaving && currentUser?.id === scope.row.id" @click="openAssignRoles(scope.row)">分配角色</el-button>
+             <el-button v-if="canEdit" type="primary" link :disabled="submitLoading || deleteLoadingId === scope.row.id" @click="openEdit(scope.row)">编辑</el-button>
+             <el-button v-if="canDelete" type="danger" link :loading="deleteLoadingId === scope.row.id" :disabled="submitLoading" @click="handleDelete(scope.row)">删除</el-button>
           </div>
         </template>
       </el-table-column>
@@ -47,7 +54,7 @@
     />
   </el-card>
 
-  <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="560px">
+  <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="560px" append-to-body>
     <el-form label-width="90px">
       <el-form-item label="用户名">
         <el-input v-model="form.username" />
@@ -67,8 +74,10 @@
       <el-form-item label="邮箱">
         <el-input v-model="form.email" />
       </el-form-item>
-      <el-form-item label="部门ID">
-        <el-input-number v-model="form.deptId" :min="0" />
+      <el-form-item label="所属部门">
+        <el-select v-model="form.deptId" style="width: 100%;">
+          <el-option v-for="item in deptOptions" :key="item.id" :label="item.label" :value="item.id" />
+        </el-select>
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="form.status" style="width: 100%;">
@@ -78,12 +87,12 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="dialogVisible = false">取消</el-button>
-      <el-button type="primary" @click="handleSubmit">保存</el-button>
+       <el-button :disabled="submitLoading" @click="dialogVisible = false">取消</el-button>
+       <el-button type="primary" :loading="submitLoading" @click="handleSubmit">保存</el-button>
     </template>
   </el-dialog>
 
-  <el-dialog v-model="roleDialogVisible" title="分配角色" width="520px">
+  <el-dialog v-model="roleDialogVisible" title="分配角色" width="520px" append-to-body>
     <div class="assign-title">当前用户：{{ currentUser?.username }}</div>
     <el-checkbox-group v-model="checkedRoleIds">
       <el-checkbox v-for="role in allRoles" :key="role.id" :value="role.id">
@@ -91,8 +100,8 @@
       </el-checkbox>
     </el-checkbox-group>
     <template #footer>
-      <el-button @click="roleDialogVisible = false">取消</el-button>
-      <el-button type="primary" @click="handleSaveRoles">保存</el-button>
+       <el-button :disabled="roleSaving" @click="roleDialogVisible = false">取消</el-button>
+       <el-button type="primary" :loading="roleSaving" @click="handleSaveRoles">保存</el-button>
     </template>
   </el-dialog>
 </template>
@@ -111,15 +120,21 @@ import {
   assignUserRoles,
   createUser,
   deleteUser,
+  fetchDepts,
   fetchRoles,
   fetchUserRoleIds,
   fetchUsers,
   updateUser
 } from '../../api/system';
+import { useActionLoading, useRowActionLoading, useTableFeedback } from '../../composables/useAsyncState';
+import { useAdaptiveTable } from '../../composables/useAdaptiveTable';
 import { usePermissionGroup } from '../../composables/usePermissions';
+import { showSuccessMessage } from '../../utils/feedback';
 import { isValidEmail, isValidMobile } from '../../utils/validators';
 
 const rows = ref([]);
+const keywordInput = ref('');
+const statusFilterInput = ref(STATUS_FILTER_ALL);
 const keyword = ref('');
 const statusFilter = ref(STATUS_FILTER_ALL);
 const pageNo = ref(1);
@@ -132,6 +147,7 @@ const roleDialogVisible = ref(false);
 const currentUser = ref(null);
 const allRoles = ref([]);
 const checkedRoleIds = ref([]);
+const deptRows = ref([]);
 const form = ref({
   username: '',
   password: '',
@@ -168,11 +184,20 @@ const pagedRows = computed(() => {
   return filteredRows.value.slice(start, start + pageSize.value);
 });
 
-watch(keyword, () => {
-  pageNo.value = 1;
-});
+const tableFeedback = useTableFeedback();
+const { tableHeight } = useAdaptiveTable();
+const submitAction = useActionLoading();
+const roleAction = useActionLoading();
+const deleteAction = useRowActionLoading();
+const pageLoading = tableFeedback.loading;
+const submitLoading = submitAction.loading;
+const roleSaving = roleAction.loading;
+const deleteLoadingId = deleteAction.loadingId;
+const tableEmptyText = tableFeedback.emptyText;
+const deptOptions = computed(() => flattenDeptOptions(deptRows.value));
+const deptNameMap = computed(() => buildDeptNameMap(deptRows.value));
 
-watch(statusFilter, () => {
+watch([keyword, statusFilter], () => {
   pageNo.value = 1;
 });
 
@@ -184,7 +209,7 @@ function resetForm() {
     realName: '',
     mobile: '',
     email: '',
-    deptId: 0,
+    deptId: resolveDefaultDeptId(),
     status: STATUS_ENABLED
   };
 }
@@ -206,14 +231,29 @@ function openEdit(row) {
     realName: row.realName,
     mobile: row.mobile,
     email: row.email,
-    deptId: row.deptId,
+    deptId: row.deptId || resolveDefaultDeptId(),
     status: row.status
   };
   dialogVisible.value = true;
 }
 
 async function loadData() {
-  rows.value = await fetchUsers();
+  await tableFeedback.run(async () => {
+    const [users, depts] = await Promise.all([fetchUsers(), fetchDepts()]);
+    rows.value = users;
+    deptRows.value = depts;
+  });
+}
+
+function handleSearch() {
+  keyword.value = keywordInput.value.trim();
+  statusFilter.value = statusFilterInput.value;
+}
+
+function handleReset() {
+  keywordInput.value = '';
+  statusFilterInput.value = STATUS_FILTER_ALL;
+  handleSearch();
 }
 
 async function handleSubmit() {
@@ -233,23 +273,29 @@ async function handleSubmit() {
     ElMessage.warning('邮箱格式不正确');
     return;
   }
-  if (isEdit.value) {
-    await updateUser(editingId.value, form.value);
-  } else {
-    if (form.value.password.length < 6) {
-      ElMessage.warning('密码长度至少 6 位');
-      return;
+  await submitAction.run(async () => {
+    if (isEdit.value) {
+      await updateUser(editingId.value, form.value);
+    } else {
+      if (form.value.password.length < 6) {
+        ElMessage.warning('密码长度至少 6 位');
+        return;
+      }
+      await createUser(form.value);
     }
-    await createUser(form.value);
-  }
-  dialogVisible.value = false;
-  await loadData();
+    dialogVisible.value = false;
+    await loadData();
+    showSuccessMessage(isEdit.value ? '更新用户' : '新增用户');
+  });
 }
 
 async function handleDelete(row) {
   await ElMessageBox.confirm(`确认删除用户「${row.username}」吗？`, '提示', { type: 'warning' });
-  await deleteUser(row.id);
-  await loadData();
+  await deleteAction.run(row.id, async () => {
+    await deleteUser(row.id);
+    await loadData();
+    showSuccessMessage('删除用户');
+  });
 }
 
 async function openAssignRoles(row) {
@@ -264,12 +310,35 @@ async function handleSaveRoles() {
   if (!currentUser.value) {
     return;
   }
-  await assignUserRoles(currentUser.value.id, checkedRoleIds.value);
-  roleDialogVisible.value = false;
+  await roleAction.run(async () => {
+    await assignUserRoles(currentUser.value.id, checkedRoleIds.value);
+    roleDialogVisible.value = false;
+    showSuccessMessage('分配角色');
+  });
+}
+
+function flattenDeptOptions(nodes, prefix = '') {
+  return nodes.flatMap((node) => {
+    const current = [{ id: node.id, label: `${prefix}${node.deptName}` }];
+    return current.concat(flattenDeptOptions(node.children || [], `${prefix}${node.deptName} / `));
+  });
+}
+
+function resolveDefaultDeptId() {
+  return deptOptions.value[0]?.id ?? 0;
+}
+
+function buildDeptNameMap(nodes, prefix = '') {
+  return nodes.reduce((result, node) => {
+    result[node.id] = `${prefix}${node.deptName}`;
+    Object.assign(result, buildDeptNameMap(node.children || [], `${prefix}${node.deptName} / `));
+    return result;
+  }, {});
 }
 
 onMounted(async () => {
   await loadData();
+  handleSearch();
 });
 </script>
 

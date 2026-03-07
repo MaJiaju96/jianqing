@@ -1,15 +1,17 @@
 <template>
-  <el-card class="jq-glass-card" shadow="never">
+  <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
       <div class="header-row">
         <h2 class="jq-page-title">菜单权限</h2>
         <div class="toolbar-right">
-          <el-input v-model="keyword" clearable placeholder="搜索菜单名称/权限" style="width: 220px;" />
-          <el-select v-model="typeFilter" style="width: 170px;" @change="handleFilterChange">
+          <el-input v-model="keywordInput" clearable placeholder="搜索菜单名称/权限" style="width: 220px;" @keyup.enter="handleSearch" />
+          <el-select v-model="typeFilterInput" style="width: 170px;">
             <el-option label="全部权限" value="all" />
             <el-option label="目录/菜单" value="menu" />
             <el-option label="仅按钮权限" value="button" />
           </el-select>
+          <el-button @click="handleSearch">查询</el-button>
+          <el-button @click="handleReset">重置</el-button>
           <el-button v-if="canAdd" type="primary" @click="openCreateRoot">新增根菜单</el-button>
         </div>
       </div>
@@ -26,6 +28,8 @@
       stripe
       default-expand-all
       :tree-props="{ children: 'children' }"
+      :empty-text="tableEmptyText"
+      :height="tableHeight"
       class="jq-menu-table"
     >
       <el-table-column label="权限名称" min-width="260" show-overflow-tooltip>
@@ -57,9 +61,9 @@
       </el-table-column>
       <el-table-column label="操作" width="210" fixed="right">
         <template #default="scope">
-          <el-button v-if="canAdd && scope.row.menuType !== MENU_TYPE_BUTTON" type="primary" link @click="openCreateChild(scope.row)">新增子菜单</el-button>
-          <el-button v-if="canEdit" type="primary" link @click="openEdit(scope.row)">编辑</el-button>
-          <el-button v-if="canDelete" type="danger" link @click="handleDelete(scope.row)">删除</el-button>
+           <el-button v-if="canAdd && scope.row.menuType !== MENU_TYPE_BUTTON" type="primary" link :disabled="submitLoading || deleteLoadingId === scope.row.id" @click="openCreateChild(scope.row)">新增子菜单</el-button>
+           <el-button v-if="canEdit" type="primary" link :disabled="submitLoading || deleteLoadingId === scope.row.id" @click="openEdit(scope.row)">编辑</el-button>
+           <el-button v-if="canDelete" type="danger" link :loading="deleteLoadingId === scope.row.id" :disabled="submitLoading" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -74,7 +78,7 @@
     />
   </el-card>
 
-  <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑菜单' : '新增菜单'" width="560px">
+  <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑菜单' : '新增菜单'" width="560px" append-to-body>
     <el-form label-width="90px">
       <el-form-item label="父菜单ID">
         <el-input-number v-model="form.parentId" :min="0" :disabled="isEdit" />
@@ -118,8 +122,8 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="dialogVisible = false">取消</el-button>
-      <el-button type="primary" @click="handleSubmit">保存</el-button>
+       <el-button :disabled="submitLoading" @click="dialogVisible = false">取消</el-button>
+       <el-button type="primary" :loading="submitLoading" @click="handleSubmit">保存</el-button>
     </template>
   </el-dialog>
 </template>
@@ -137,10 +141,15 @@ import {
   STATUS_ENABLED
 } from '../../constants/app';
 import { createMenu, deleteMenu, fetchMenus, updateMenu } from '../../api/system';
+import { useActionLoading, useRowActionLoading, useTableFeedback } from '../../composables/useAsyncState';
+import { useAdaptiveTable } from '../../composables/useAdaptiveTable';
 import { usePermissionGroup } from '../../composables/usePermissions';
+import { showSuccessMessage } from '../../utils/feedback';
 import { isValidPermissionCode } from '../../utils/validators';
 
 const rows = ref([]);
+const keywordInput = ref('');
+const typeFilterInput = ref('all');
 const keyword = ref('');
 const typeFilter = ref('all');
 const pageNo = ref(1);
@@ -177,6 +186,15 @@ const pagedRows = computed(() => {
   const start = (pageNo.value - 1) * pageSize.value;
   return filteredRows.value.slice(start, start + pageSize.value);
 });
+
+const tableFeedback = useTableFeedback();
+const { tableHeight } = useAdaptiveTable();
+const submitAction = useActionLoading();
+const deleteAction = useRowActionLoading();
+const pageLoading = tableFeedback.loading;
+const submitLoading = submitAction.loading;
+const deleteLoadingId = deleteAction.loadingId;
+const tableEmptyText = tableFeedback.emptyText;
 
 function filterMenuTree(nodes, query, filterType, level = 1) {
   return (nodes || []).reduce((result, item) => {
@@ -276,20 +294,25 @@ function openEdit(row) {
 }
 
 async function loadData() {
-  rows.value = await fetchMenus();
+  await tableFeedback.run(async () => {
+    rows.value = await fetchMenus();
+  });
 }
 
-function handleFilterChange() {
-  pageNo.value = 1;
-}
-
-watch(keyword, () => {
+watch([keyword, typeFilter], () => {
   pageNo.value = 1;
 });
 
-watch(typeFilter, () => {
-  pageNo.value = 1;
-});
+function handleSearch() {
+  keyword.value = keywordInput.value.trim();
+  typeFilter.value = typeFilterInput.value;
+}
+
+function handleReset() {
+  keywordInput.value = '';
+  typeFilterInput.value = 'all';
+  handleSearch();
+}
 
 async function handleSubmit() {
   if (!form.value.menuName) {
@@ -300,23 +323,30 @@ async function handleSubmit() {
     ElMessage.warning('权限标识仅支持字母数字及 : _ -');
     return;
   }
-  if (isEdit.value) {
-    await updateMenu(editingId.value, form.value);
-  } else {
-    await createMenu(form.value);
-  }
-  dialogVisible.value = false;
-  await loadData();
+  await submitAction.run(async () => {
+    if (isEdit.value) {
+      await updateMenu(editingId.value, form.value);
+    } else {
+      await createMenu(form.value);
+    }
+    dialogVisible.value = false;
+    await loadData();
+    showSuccessMessage(isEdit.value ? '更新菜单' : '新增菜单');
+  });
 }
 
 async function handleDelete(row) {
   await ElMessageBox.confirm(`确认删除菜单「${row.menuName}」吗？`, '提示', { type: 'warning' });
-  await deleteMenu(row.id);
-  await loadData();
+  await deleteAction.run(row.id, async () => {
+    await deleteMenu(row.id);
+    await loadData();
+    showSuccessMessage('删除菜单');
+  });
 }
 
 onMounted(async () => {
   await loadData();
+  handleSearch();
 });
 </script>
 
