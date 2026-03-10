@@ -7,19 +7,19 @@
       <el-col :span="8">
         <el-card class="jq-glass-card stat-card">
           <div class="label">用户规模</div>
-          <div class="value">{{ usersCount }}</div>
+          <div class="value">{{ usersCountDisplay }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card class="jq-glass-card stat-card">
           <div class="label">角色数量</div>
-          <div class="value">{{ rolesCount }}</div>
+          <div class="value">{{ rolesCountDisplay }}</div>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card class="jq-glass-card stat-card">
           <div class="label">菜单节点</div>
-          <div class="value">{{ menuCount }}</div>
+          <div class="value">{{ menuCountDisplay }}</div>
         </el-card>
       </el-col>
     </el-row>
@@ -30,22 +30,44 @@
 import { computed, onMounted, ref } from 'vue';
 import { fetchRoles, fetchUsers, fetchMenuTree } from '../api/system';
 import { authStore } from '../stores/auth';
+import { hasPerm } from '../utils/permission';
+import { ignoreHandledError } from '../utils/errors';
 
-const usersCount = ref(0);
-const rolesCount = ref(0);
-const menuCount = ref(0);
+const usersCount = ref(null);
+const rolesCount = ref(null);
+const menuCount = ref(null);
 
 const profileName = computed(() => authStore.profile?.nickname || authStore.profile?.username || '管理员');
+const usersCountDisplay = computed(() => (usersCount.value == null ? '--' : usersCount.value));
+const rolesCountDisplay = computed(() => (rolesCount.value == null ? '--' : rolesCount.value));
+const menuCountDisplay = computed(() => (menuCount.value == null ? '--' : menuCount.value));
 
 function countMenus(tree) {
   return tree.reduce((total, item) => total + 1 + countMenus(item.children || []), 0);
 }
 
 onMounted(async () => {
-  const [users, roles, menus] = await Promise.all([fetchUsers(), fetchRoles(), fetchMenuTree()]);
-  usersCount.value = users.length;
-  rolesCount.value = roles.length;
-  menuCount.value = countMenus(menus);
+  try {
+    const requests = [];
+    if (hasPerm('system:user:list')) {
+      requests.push(fetchUsers().then((users) => {
+        usersCount.value = users.length;
+      }));
+    }
+    if (hasPerm('system:role:list')) {
+      requests.push(fetchRoles().then((roles) => {
+        rolesCount.value = roles.length;
+      }));
+    }
+    if (hasPerm('system:menu:list')) {
+      requests.push(fetchMenuTree().then((menus) => {
+        menuCount.value = countMenus(menus);
+      }));
+    }
+    await Promise.all(requests);
+  } catch (error) {
+    ignoreHandledError(error);
+  }
 });
 </script>
 

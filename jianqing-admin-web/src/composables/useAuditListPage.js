@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { DEFAULT_AUDIT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '../constants/app';
+import { ignoreHandledError } from '../utils/errors';
 import { useTableFeedback } from './useAsyncState';
 export function useAuditListPage(options) {
   const rows = ref([]);
@@ -25,13 +26,13 @@ export function useAuditListPage(options) {
 
   function handleSizeChange() {
     pageNo.value = 1;
-    loadData();
+    loadData().catch(ignoreHandledError);
   }
 
   function handleSearch() {
     pageNo.value = 1;
     options.syncQuery();
-    loadData();
+    loadData().catch(ignoreHandledError);
   }
 
   function handleReset() {
@@ -40,7 +41,7 @@ export function useAuditListPage(options) {
   }
 
   function handleRefresh() {
-    loadData();
+    loadData().catch(ignoreHandledError);
   }
 
   return {

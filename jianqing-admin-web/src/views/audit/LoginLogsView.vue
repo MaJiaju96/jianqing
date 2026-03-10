@@ -62,6 +62,7 @@ import {
 } from '../../constants/app';
 import { fetchLoginLogs } from '../../api/audit';
 import { useAuditListPage } from '../../composables/useAuditListPage';
+import { ignoreHandledError } from '../../utils/errors';
 
 const keywordInput = ref('');
 const statusFilterInput = ref(EMPTY_FILTER_VALUE);
@@ -102,7 +103,11 @@ const {
 });
 
 onMounted(async () => {
-  handleSearch();
+  try {
+    handleSearch();
+  } catch (error) {
+    ignoreHandledError(error);
+  }
 });
 </script>
 
