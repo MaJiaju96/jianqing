@@ -4,7 +4,7 @@
 在保留后台管理系统高效率开发体验的前提下，完成 `简擎` 的可开源后端内核：以 `MySQL` 为首发数据源，预留 `Elasticsearch`、`Nacos`、`RocketMQ` 的可插拔集成能力。
 
 ## Current Phase
-Phase 7
+Phase 8
 
 ## Phases
 
@@ -58,6 +58,16 @@ Phase 7
 - [x] 补齐前后端联调与回归测试
 - **Status:** complete
 
+### Phase 8: 代码健康治理（去屎山重构）
+- [x] 完成后端热点扫描并识别主复杂度集中点（`SystemServiceImpl`）
+- [x] 修复 `JwtAuthenticationFilter` 异常吞掉问题，补齐可观测日志
+- [x] 抽离数据范围判定职责（`UserDataScopeResolver`）
+- [x] 抽离系统缓存失效职责（`SystemCacheEvictor`）
+- [ ] 继续拆分 `SystemServiceImpl` 用户写操作编排（创建/更新/删除）
+- [ ] 增补系统服务关键路径单测（缓存失效与数据范围分支）
+- [ ] 评估并落地前端系统页列表通用 composable（users/roles/menus/depts）
+- **Status:** in_progress
+
 ## Key Questions
 1. v0.1 是否只交付后端内核（不绑定前端）？
 2. 鉴权方案选 `Spring Security + JWT` 还是 `Sa-Token`？
@@ -87,6 +97,7 @@ Phase 7
 | 引入 Redis 承载 token 会话与热点缓存 | 支撑可配置 token TTL 与高频查询缓存能力 |
 | DB 与缓存一致性采用延迟双删 | 降低并发读写下的缓存脏读窗口 |
 | 服务层统一采用“接口 + impl”结构 | 明确契约边界，提升可测试性与后续演进稳定性 |
+| 热点服务优先按职责分层拆分（解析/编排/失效） | 降低单类复杂度，避免在历史代码上持续叠补丁 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -115,3 +126,4 @@ Phase 7
 - MyBatis-Plus 约束：核心业务 `service` 接口统一继承 `IService<T>`，实现类统一继承 `ServiceImpl<M, T>`。
 - 跨实体协作约束：在 `service.impl` 中优先通过对应 `service` 协作，避免跨模块直接拼装持久层调用。
 - 认证审计协作约束：登录日志写入由审计服务统一承担，认证服务不得直接依赖登录日志 mapper。
+- 重构执行约束：先做行为不变的小步拆分（职责抽离），再做接口级重排，避免一次性大改带来回归风险。

@@ -173,6 +173,8 @@
 - 已修复安全过滤器异常吞掉问题：`JwtAuthenticationFilter` 捕获 JWT 解析异常后新增 `warn` 级日志，避免无痕失败导致排障困难。
 - 已完成 `SystemServiceImpl` 第二批重构：抽离数据范围判定与校验职责到 `UserDataScopeResolver`，主服务类聚焦编排逻辑。
 - 当前后端热点复杂度已初步下降，后续可继续抽离用户写操作与缓存失效策略，进一步压缩主服务体积。
+- 已完成 `SystemServiceImpl` 第三批重构：抽离缓存失效职责到 `SystemCacheEvictor`，主服务不再直接编排缓存 key 细节。
+- 下一步规划已落到 `task_plan`：继续拆用户写操作编排并补关键路径单测，保证重构收益可验证。
 
 ## Visual/Browser Findings
 - 本轮无网页或图像类输入。

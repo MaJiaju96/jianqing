@@ -2,7 +2,6 @@ package com.jianqing.module.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.jianqing.framework.cache.CacheConsistencyService;
 import com.jianqing.module.system.dto.DeptSaveRequest;
 import com.jianqing.module.system.dto.DeptTreeNode;
 import com.jianqing.module.system.dto.MenuTreeNode;
@@ -40,23 +39,23 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     private final DeptService deptService;
     private final MenuService menuService;
     private final PasswordEncoder passwordEncoder;
-    private final CacheConsistencyService cacheConsistencyService;
     private final UserDataScopeResolver userDataScopeResolver;
+    private final SystemCacheEvictor systemCacheEvictor;
 
     public SystemServiceImpl(SysUserMapper sysUserMapper,
                              RoleService roleService,
                              DeptService deptService,
                              MenuService menuService,
                              PasswordEncoder passwordEncoder,
-                             CacheConsistencyService cacheConsistencyService,
-                             UserDataScopeResolver userDataScopeResolver) {
+                             UserDataScopeResolver userDataScopeResolver,
+                             SystemCacheEvictor systemCacheEvictor) {
         this.baseMapper = sysUserMapper;
         this.roleService = roleService;
         this.deptService = deptService;
         this.menuService = menuService;
         this.passwordEncoder = passwordEncoder;
-        this.cacheConsistencyService = cacheConsistencyService;
         this.userDataScopeResolver = userDataScopeResolver;
+        this.systemCacheEvictor = systemCacheEvictor;
     }
 
     @Cacheable(cacheNames = CACHE_SYSTEM_USERS, key = "'" + ALL_CACHE_KEY + "'")
@@ -87,7 +86,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
         user.setStatus(request.getStatus());
         user.setIsDeleted(0);
         baseMapper.insert(user);
-        evictCache(CACHE_SYSTEM_USERS, ALL_CACHE_KEY);
+        systemCacheEvictor.evictSystemUsers();
         return toUserSummary(user);
     }
 
@@ -109,8 +108,8 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
         baseMapper.updateById(user);
-        evictCache(CACHE_SYSTEM_USERS, ALL_CACHE_KEY);
-        evictUserAuthCache(id);
+        systemCacheEvictor.evictSystemUsers();
+        systemCacheEvictor.evictUserAuth(id);
         return toUserSummary(user);
     }
 
@@ -120,8 +119,8 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
         user.setIsDeleted(1);
         baseMapper.updateById(user);
         baseMapper.deleteUserRoleByUserId(id);
-        evictCache(CACHE_SYSTEM_USERS, ALL_CACHE_KEY);
-        evictUserAuthCache(id);
+        systemCacheEvictor.evictSystemUsers();
+        systemCacheEvictor.evictUserAuth(id);
     }
 
     @Override
@@ -140,7 +139,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
         if (!validRoleIds.isEmpty()) {
             baseMapper.batchInsertUserRole(userId, validRoleIds);
         }
-        evictUserAuthCache(userId);
+        systemCacheEvictor.evictUserAuth(userId);
     }
 
     @Cacheable(cacheNames = CACHE_SYSTEM_ROLES, key = "'" + ALL_CACHE_KEY + "'")
@@ -152,7 +151,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     @Override
     public RoleSummary createRole(RoleSaveRequest request) {
         RoleSummary summary = roleService.createRole(request);
-        evictCache(CACHE_SYSTEM_ROLES, ALL_CACHE_KEY);
+        systemCacheEvictor.evictSystemRoles();
         return summary;
     }
 
@@ -160,8 +159,8 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     public RoleSummary updateRole(Long id, RoleSaveRequest request) {
         List<Long> affectedUserIds = baseMapper.selectUserIdsByRoleId(id);
         RoleSummary summary = roleService.updateRole(id, request);
-        evictCache(CACHE_SYSTEM_ROLES, ALL_CACHE_KEY);
-        evictUserAuthCaches(affectedUserIds);
+        systemCacheEvictor.evictSystemRoles();
+        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
         return summary;
     }
 
@@ -169,8 +168,8 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     public void deleteRole(Long id) {
         List<Long> affectedUserIds = baseMapper.selectUserIdsByRoleId(id);
         roleService.deleteRole(id);
-        evictCache(CACHE_SYSTEM_ROLES, ALL_CACHE_KEY);
-        evictUserAuthCaches(affectedUserIds);
+        systemCacheEvictor.evictSystemRoles();
+        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
     }
 
     @Override
@@ -183,7 +182,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
         List<Long> affectedUserIds = baseMapper.selectUserIdsByRoleId(roleId);
         // 角色与菜单关系由角色服务维护，当前服务仅负责跨实体缓存一致性收敛。
         roleService.assignRoleMenus(roleId, menuIds);
-        evictUserAuthCaches(affectedUserIds);
+        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
     }
 
     @Override
@@ -215,7 +214,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     @Override
     public MenuTreeNode createMenu(MenuSaveRequest request) {
         MenuTreeNode node = menuService.createMenu(request);
-        evictCache(CACHE_SYSTEM_MENUS, ALL_CACHE_KEY);
+        systemCacheEvictor.evictSystemMenus();
         return node;
     }
 
@@ -223,8 +222,8 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     public MenuTreeNode updateMenu(Long id, MenuSaveRequest request) {
         List<Long> affectedUserIds = baseMapper.selectUserIdsByMenuId(id);
         MenuTreeNode node = menuService.updateMenu(id, request);
-        evictCache(CACHE_SYSTEM_MENUS, ALL_CACHE_KEY);
-        evictUserAuthCaches(affectedUserIds);
+        systemCacheEvictor.evictSystemMenus();
+        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
         return node;
     }
 
@@ -232,8 +231,8 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     public void deleteMenu(Long id) {
         List<Long> affectedUserIds = baseMapper.selectUserIdsByMenuId(id);
         menuService.deleteMenu(id);
-        evictCache(CACHE_SYSTEM_MENUS, ALL_CACHE_KEY);
-        evictUserAuthCaches(affectedUserIds);
+        systemCacheEvictor.evictSystemMenus();
+        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
     }
 
     @Cacheable(cacheNames = CACHE_USER_MENU_TREE, key = "#userId")
@@ -297,22 +296,4 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
         return value == null ? "" : value;
     }
 
-    private void evictUserAuthCache(Long userId) {
-        evictCache(CACHE_USER_ROLE_CODES, userId);
-        evictCache(CACHE_USER_PERMS, userId);
-        evictCache(CACHE_USER_MENU_TREE, userId);
-    }
-
-    private void evictUserAuthCaches(List<Long> userIds) {
-        if (userIds == null || userIds.isEmpty()) {
-            return;
-        }
-        for (Long userId : userIds) {
-            evictUserAuthCache(userId);
-        }
-    }
-
-    private void evictCache(String cacheName, Object key) {
-        cacheConsistencyService.deleteWithDelay(cacheName, key);
-    }
 }
