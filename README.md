@@ -32,6 +32,17 @@ jianqing
 
 - `PROMPT_TEMPLATES.md`
 
+## 统一开发规范
+
+工作区统一执行规范见：
+
+- `DEVELOPMENT_CONVENTIONS.md`
+
+前后端分离规范入口：
+
+- 后端：`jianqing-backend/docs/BACKEND_CONVENTIONS.md`
+- 前端：`jianqing-admin-web/docs/FRONTEND_CONVENTIONS.md`
+
 ## 一句话继续开发（口令）
 
 你可以直接说：`我们现在继续上次未完成的简擎项目开发`
