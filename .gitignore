@@ -5,10 +5,12 @@
 # frontend
 jianqing-admin-web/node_modules/
 jianqing-admin-web/dist/
+jianqing-admin-web/.ai-logs/
 
 # backend
 jianqing-backend/target/
 jianqing-backend/.idea/
+jianqing-backend/.ai-logs/
 
 # env
 .env
