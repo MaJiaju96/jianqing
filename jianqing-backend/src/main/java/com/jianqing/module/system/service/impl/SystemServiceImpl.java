@@ -18,7 +18,6 @@ import com.jianqing.module.system.service.SystemService;
 import com.jianqing.module.system.entity.SysUser;
 import com.jianqing.module.system.service.impl.UserDataScopeResolver.CurrentDataScope;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -38,24 +37,24 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     private final RoleService roleService;
     private final DeptService deptService;
     private final MenuService menuService;
-    private final PasswordEncoder passwordEncoder;
     private final UserDataScopeResolver userDataScopeResolver;
     private final SystemCacheEvictor systemCacheEvictor;
+    private final UserWriteOperationHandler userWriteOperationHandler;
 
     public SystemServiceImpl(SysUserMapper sysUserMapper,
                              RoleService roleService,
                              DeptService deptService,
                              MenuService menuService,
-                             PasswordEncoder passwordEncoder,
                              UserDataScopeResolver userDataScopeResolver,
-                             SystemCacheEvictor systemCacheEvictor) {
+                             SystemCacheEvictor systemCacheEvictor,
+                             UserWriteOperationHandler userWriteOperationHandler) {
         this.baseMapper = sysUserMapper;
         this.roleService = roleService;
         this.deptService = deptService;
         this.menuService = menuService;
-        this.passwordEncoder = passwordEncoder;
         this.userDataScopeResolver = userDataScopeResolver;
         this.systemCacheEvictor = systemCacheEvictor;
+        this.userWriteOperationHandler = userWriteOperationHandler;
     }
 
     @Cacheable(cacheNames = CACHE_SYSTEM_USERS, key = "'" + ALL_CACHE_KEY + "'")
@@ -72,21 +71,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
         CurrentDataScope currentDataScope = userDataScopeResolver.resolveCurrentDataScope();
         userDataScopeResolver.validateUserCreatePermission(request, currentDataScope);
         validateUsernameUnique(request.getUsername(), null);
-        if (request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new IllegalArgumentException("新增用户时密码不能为空");
-        }
-        SysUser user = new SysUser();
-        user.setUsername(request.getUsername());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setNickname(request.getNickname());
-        user.setRealName(safeText(request.getRealName()));
-        user.setMobile(safeText(request.getMobile()));
-        user.setEmail(safeText(request.getEmail()));
-        user.setDeptId(request.getDeptId());
-        user.setStatus(request.getStatus());
-        user.setIsDeleted(0);
-        baseMapper.insert(user);
-        systemCacheEvictor.evictSystemUsers();
+        SysUser user = userWriteOperationHandler.createUser(request);
         return toUserSummary(user);
     }
 
@@ -96,31 +81,14 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
         SysUser user = getAccessibleUserOrThrow(id, currentDataScope);
         userDataScopeResolver.validateUserUpdatePermission(request, currentDataScope);
         validateUsernameUnique(request.getUsername(), id);
-
-        user.setUsername(request.getUsername());
-        user.setNickname(request.getNickname());
-        user.setRealName(safeText(request.getRealName()));
-        user.setMobile(safeText(request.getMobile()));
-        user.setEmail(safeText(request.getEmail()));
-        user.setDeptId(request.getDeptId());
-        user.setStatus(request.getStatus());
-        if (request.getPassword() != null && !request.getPassword().isBlank()) {
-            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        }
-        baseMapper.updateById(user);
-        systemCacheEvictor.evictSystemUsers();
-        systemCacheEvictor.evictUserAuth(id);
+        userWriteOperationHandler.updateUser(user, request);
         return toUserSummary(user);
     }
 
     @Override
     public void deleteUser(Long id) {
         SysUser user = getAccessibleUserOrThrow(id, userDataScopeResolver.resolveCurrentDataScope());
-        user.setIsDeleted(1);
-        baseMapper.updateById(user);
-        baseMapper.deleteUserRoleByUserId(id);
-        systemCacheEvictor.evictSystemUsers();
-        systemCacheEvictor.evictUserAuth(id);
+        userWriteOperationHandler.deleteUser(user);
     }
 
     @Override
@@ -291,9 +259,4 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
             throw new IllegalArgumentException("用户名已存在");
         }
     }
-
-    private String safeText(String value) {
-        return value == null ? "" : value;
-    }
-
 }
