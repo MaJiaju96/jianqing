@@ -63,10 +63,10 @@ Phase 8
 - [x] 修复 `JwtAuthenticationFilter` 异常吞掉问题，补齐可观测日志
 - [x] 抽离数据范围判定职责（`UserDataScopeResolver`）
 - [x] 抽离系统缓存失效职责（`SystemCacheEvictor`）
-- [ ] 继续拆分 `SystemServiceImpl` 用户写操作编排（创建/更新/删除）
-- [ ] 增补系统服务关键路径单测（缓存失效与数据范围分支）
-- [ ] 评估并落地前端系统页列表通用 composable（users/roles/menus/depts）
-- **Status:** in_progress
+- [x] 继续拆分 `SystemServiceImpl` 用户写操作编排（创建/更新/删除）
+- [x] 增补系统服务关键路径单测（缓存失效与数据范围分支）
+- [x] 评估并落地前端系统页列表通用 composable（users/roles/menus/depts）
+- **Status:** complete
 
 ## Key Questions
 1. v0.1 是否只交付后端内核（不绑定前端）？

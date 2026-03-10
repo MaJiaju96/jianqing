@@ -70,6 +70,15 @@
 - 已清理无效样式残留（旧版 `header-row` / `toolbar-right` 规则），减少历史补丁叠加造成的样式噪音。
 - 已完成前端首轮代码味道扫描并落地首批重构：新增 `useAuditListPage`，收敛操作日志/登录日志页重复分页查询状态逻辑。
 - 审计页两处列表已改为共享组合式状态流（`loadData/search/reset/refresh/page`），行为保持一致且页面脚本体积下降。
+- 已完成系统管理列表页第二批去重复：新增 `useSystemListPage`，users/roles/menus/depts 四页统一接入查询、重置、刷新与分页状态流。
+- 已完成系统管理弹窗表单第三批去重复：新增 `useEntityDialogForm`，users/roles/menus/depts 四页统一接入 create/edit 弹窗状态与表单初始化/回填流程。
+- 已完成系统管理删除链路第四批去重复：新增 `useEntityDeleteAction`，users/roles/menus/depts 四页统一接入删除确认、删除执行、刷新与成功提示流程。
+- 已完成系统管理保存链路第五批去重复：新增 `useEntitySubmitAction`，users/roles/menus/depts 四页统一接入保存 loading、关闭弹窗、刷新与成功提示流程。
+- 已完成一轮系统页 Playwright 真实回归：users/roles/menus/depts 四页的查询、重置、新增/编辑弹窗开关、删除确认、分页状态均通过；期间修复 `openCreate` 点击事件兼容与删除取消警告问题。
+- 已补做数据权限账号回归：浏览器上下文下 `dept_user` 仍仅见本部门 5 人，`self_user` 仍仅见自己；并确认 `outside_user` 当前因角色 `Test_User(dataScope=ALL)` 返回 6 人，属于配置现状而非前端/后端回归。
+- 已完成审计页真实回归：操作日志与登录日志页的查询、重置、分页正常，当前各页加载 20 条记录且无异常。
+- 已补一轮失败场景体验收口：audit/system/dashboard 页面在接口失败后不再额外抛出未处理 Promise 警告，loading 可恢复，页面仍可继续操作。
+- 已修复非 admin 账号登录后的 dashboard 401 噪音：统计卡片改为按权限加载，`outside_user` 登录后展示“用户规模 6 / 角色数量 -- / 菜单节点 --”，且无新增错误提示噪音。
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -105,12 +114,21 @@
 | frontend latest data-scope regression | admin/dept_user/self_user browser verification | role/dept pages render normally, dept scope sees same dept only, self scope sees self only | passed | ✓ |
 | frontend table/pagination visual split | `npm run build` | build succeeds after separating table panel and pagination panel UI | passed | ✓ |
 | frontend audit composable refactor | `npm run build` | build succeeds after extracting shared audit list state into `useAuditListPage` | passed | ✓ |
+| frontend system list composable | `npm run build` | build succeeds after extracting shared list state into `useSystemListPage` for system pages | passed | ✓ |
+| frontend dialog form composable | `npm run build` | build succeeds after extracting shared dialog form state into `useEntityDialogForm` for system pages | passed | ✓ |
+| frontend delete action composable | `npm run build` | build succeeds after extracting shared delete action into `useEntityDeleteAction` for system pages | passed | ✓ |
+| frontend submit action composable | `npm run build` | build succeeds after extracting shared submit action into `useEntitySubmitAction` for system pages | passed | ✓ |
+| frontend system pages browser regression | Playwright + admin session | users/roles/menus/depts query/reset/create-open-close/edit-open-close/delete-confirm/pagination all pass | passed | ✓ |
+| frontend data-scope account regression | browser-context auth + user list verification | dept_user sees same-dept 5 users, self_user sees self only, outside_user sees 6 users | passed | ✓ |
+| frontend audit pages browser regression | Playwright + admin session | oper/login logs query/reset/pagination all pass and each page loads 20 rows | passed | ✓ |
+| frontend failure-handling regression | Playwright + mocked audit failure | request failure shows message, loading recovers, query button remains usable, no unhandled warning appears | passed | ✓ |
+| non-admin login dashboard regression | Playwright + outside_user real login | dashboard redirects normally, unauthorized stats render `--`, no extra error/warning noise | passed | ✓ |
 
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 4 |
-| Where am I going? | 收尾视觉细节并补充更多交互反馈 |
+| Where am I? | Phase 6 |
+| Where am I going? | 继续做前端代码健康治理与轻量去重复 |
 | What's the goal? | 构建可联调且有质感的简擎前端管理台 |
-| What have I learned? | 平级目录 + 纯 JS 规范需长期保持 |
-| What have I done? | 已完成菜单权限页表格化与权限链路修复 |
+| What have I learned? | 保存链路也适合只抽固定收尾节奏，避免把表单校验和 create/update 业务判断过度封到通用层 |
+| What have I done? | 已完成审计页列表、系统页列表、系统页弹窗表单、系统页删除链路、系统页保存链路五批 composable 收口，并保持构建通过 |

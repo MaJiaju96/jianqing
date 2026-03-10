@@ -188,13 +188,35 @@
 | backend jwt filter observability fix | `mvn -q -DskipTests compile` + `mvn -q checkstyle:check` | compile/checkstyle pass after replacing swallowed exception with warn logging | passed | ✓ |
 | backend system-service split step2 | `mvn -q -DskipTests compile` + `mvn -q checkstyle:check` | compile/checkstyle pass after extracting user data-scope logic to `UserDataScopeResolver` | passed | ✓ |
 | backend system-service split step3 | `mvn -q -DskipTests compile` + `mvn -q checkstyle:check` | compile/checkstyle pass after extracting cache eviction logic to `SystemCacheEvictor` | passed | ✓ |
+| backend system-service split step4 | `mvn test` + `mvn checkstyle:check` | user write operations are extracted to `UserWriteOperationHandler` and quality gates still pass | passed | ✓ |
+| backend system-service key-path tests | `mvn test` | cache eviction, password validation and data-scope branches are covered by new tests | passed（26 passed, 0 failed） | ✓ |
+| frontend system list composable | `npm run build` | users/roles/menus/depts share one list-page composable and frontend build passes | passed | ✓ |
+| frontend dialog form composable | `npm run build` | users/roles/menus/depts share one dialog-form state composable and frontend build passes | passed | ✓ |
+| frontend delete action composable | `npm run build` | users/roles/menus/depts share one delete-action composable and frontend build passes | passed | ✓ |
+| frontend submit action composable | `npm run build` | users/roles/menus/depts share one submit-action composable and frontend build passes | passed | ✓ |
+| frontend system pages browser regression | Playwright + admin login + users/roles/menus/depts smoke flow | query/reset/create-open-close/edit-open-close/delete-confirm/pagination work without console cancel warnings | passed | ✓ |
+| data-scope account regression | browser-context auth + `/api/system/users` verification | dept_user sees 5 same-dept users, self_user sees self only, outside_user sees 6 users | passed | ✓ |
+| audit pages browser regression | Playwright + admin session | oper/login logs query/reset/pagination work and both pages load 20 rows | passed | ✓ |
+| frontend failure-handling regression | Playwright + mocked audit 500 response | page keeps operable, loading recovers, and no unhandled warning is emitted | passed | ✓ |
+| non-admin login dashboard regression | Playwright + outside_user login | dashboard no longer triggers roles/menus unauthorized noise; unauthorized stats show `--` | passed | ✓ |
 
 ## Latest Updates
 - 已完成后端热点扫描，识别 `SystemServiceImpl` 为当前优先重构目标（职责集中、行数最高）。
 - 已修复 `JwtAuthenticationFilter` 异常吞掉问题：保留鉴权失败清上下文逻辑，同时输出 `warn` 级日志提升排障可观测性。
 - 已完成 `SystemServiceImpl` 第二批重构：新增 `UserDataScopeResolver`，将数据范围解析/查询构造/访问校验从主类中抽离。
 - 已完成 `SystemServiceImpl` 第三批重构：新增 `SystemCacheEvictor`，将系统缓存与用户权限缓存失效职责抽离。
-- 已将后续规划同步到 `task_plan` Phase 8：继续拆分用户写操作编排与补齐关键路径单测。
+- 已完成 `SystemServiceImpl` 第四批重构：新增 `UserWriteOperationHandler`，继续下沉用户创建/更新/删除写操作编排，主服务进一步收敛为访问控制 + 业务编排入口。
+- 已补齐系统服务关键路径单测：新增 `UserWriteOperationHandlerTest`、`UserDataScopeResolverTest`，覆盖缓存失效、密码校验、数据范围解析与越权分支。
+- 已完成前端系统页列表通用 composable 收口：新增 `useSystemListPage`，统一 users/roles/menus/depts 四页的查询、重置、刷新与分页状态流。
+- 已完成前端系统页弹窗表单轻量收口：新增 `useEntityDialogForm`，统一四页 create/edit 弹窗的可见性、编辑态、编辑目标与表单回填流程。
+- 已完成前端系统页删除操作轻量收口：新增 `useEntityDeleteAction`，统一删除确认、删除执行、列表刷新与成功提示流程。
+- 已完成前端系统页保存提交轻量收口：新增 `useEntitySubmitAction`，统一保存执行、关闭弹窗、列表刷新与成功提示流程。
+- 已完成一轮 Playwright 系统页真实回归；过程中发现并修复 `openCreate` 误吃点击事件对象、删除取消产生未处理 `cancel` 警告两处问题，复测已通过。
+- 已补做数据权限账号回归：通过浏览器上下文调用登录与用户列表接口，确认 `dept_user` / `self_user` 结果符合预期；并查清 `outside_user` 当前挂载 `Test_User(dataScope=ALL)`，因此返回 6 人属于配置结果而非代码异常。
+- 已完成测试账号口径收清：后续数据权限联调应继续使用 `dept_user` / `self_user` 作为受限账号，`outside_user` 仅保留为“全部数据”现状样本，除非后续显式改角色配置。
+- 已完成审计页真实回归：操作日志与登录日志页的查询、重置、分页均通过，当前无新增异常。
+- 已补一轮前端异常处理收口：system/audit/dashboard 页面在请求失败时不再额外抛出未处理 Promise 警告，loading 能正确回收，失败提示继续由 HTTP 拦截器统一输出。
+- 已修复非 admin 账号登录噪音：dashboard 统计卡片改为按权限请求，低权限账号登录后不再因无权限的 roles/menus 请求产生 401 噪音，未授权统计显示为 `--`。
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
@@ -204,11 +226,11 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 5（开源化与工程化完善） |
-| Where am I going? | Phase 5（开源化与工程化完善） |
+| Where am I? | Phase 8（代码健康治理） |
+| Where am I going? | 完成 Phase 8 收口，并准备进入下一轮前端/跨端精简优化 |
 | What's the goal? | 构建可开源的简擎后端内核，并预留 ES/Nacos/RocketMQ 扩展 |
-| What have I learned? | 前端目录平级与纯 JS 规范需要纳入计划文件避免回退 |
-| What have I done? | 已补齐后端 README/贡献规范/API 示例，Phase 5 剩余质量门禁 |
+| What have I learned? | 跨端重复 UI 状态流适合先抽轻量 composable，只收口 loading/关闭/刷新/提示这类固定节奏，不抬高业务校验 |
+| What have I done? | 已完成后端热点重构收口，并联动前端落地系统列表、弹窗表单、删除操作、保存提交四层轻量 composable |
 
 ---
 *Update after completing each phase or encountering errors*

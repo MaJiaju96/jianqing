@@ -53,6 +53,15 @@
 - 已完成列表页高度逻辑重构：移除 `useAdaptiveTable` 与全局 `offset` 调参方案，统一改为 `flex` 布局分配高度（分页贴底、表格区 `height=100%` 填充剩余空间）。
 - 已完成一轮前端“屎山扫描”并确认高重复区：审计页（操作日志/登录日志）分页、查询、重置、刷新与加载状态逻辑高度重复。
 - 已新增 `useAuditListPage` 组合式工具，收敛审计页重复分页查询状态，减少页面样板逻辑并统一交互节奏。
+- 已新增 `src/composables/useSystemListPage.js`，统一系统管理四个主列表页（users/roles/menus/depts）的查询、重置、刷新、分页状态流，页面仅保留领域差异逻辑。
+- 已新增 `src/composables/useEntityDialogForm.js`，统一系统管理四个主弹窗表单的可见性、编辑态、编辑目标、表单初始化与编辑回填，页面继续保留校验与提交 API。
+- 已新增 `src/composables/useEntityDeleteAction.js`，统一系统管理四个主列表页删除确认、行级 loading、删除后刷新与成功提示，页面仅传入实体标签、展示字段与删除 API。
+- 已新增 `src/composables/useEntitySubmitAction.js`，统一系统管理四个主弹窗表单保存时的 loading、关闭弹窗、刷新列表与成功提示，页面继续保留字段校验与 create/update 分支。
+- Playwright 真实回归发现两处轻量抽象回归点：`openCreate` 会收到原生点击事件对象、删除取消会产生未处理 `cancel`；现已分别在 `useEntityDialogForm` 与 `useEntityDeleteAction` 修复。
+- 已补做数据权限账号回归：浏览器上下文验证 `dept_user` 可见 `admin/test/dept_user/self_user/other_user`，`self_user` 仅见 `self_user`；并查清 `outside_user` 当前因挂载 `Test_User(dataScope=ALL)` 而可见 6 人，属于配置现状。
+- 已完成审计页真实回归：`/audit/oper-logs` 与 `/audit/login-logs` 的查询、重置、分页流程正常，当前两页各展示 20 条数据。
+- 已新增 `src/utils/errors.js` 中的 `ignoreHandledError`，并接入 system/audit/dashboard 相关页面与列表 composable，用于吞掉已由 HTTP 拦截器弹出的失败请求，减少控制台未处理 Promise 警告噪音。
+- 已修复非 admin 账号登录后的 dashboard 噪音：`src/views/DashboardView.vue` 不再无差别请求 users/roles/menus，而是按 `hasPerm` 逐项拉取；无权限统计显示为 `--`。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -90,6 +99,9 @@
 | 列表顶部不再重复展示页面标题 | 左侧菜单已提供当前位置，内容区优先留给筛选与操作模块 |
 | 列表布局优先 `flex` 结构，不再依赖魔法高度参数 | 减少反复微调 `offset` 造成的维护负担，保持结构稳定与可读性 |
 | 高重复页面优先抽轻量 composable 收敛 | 先减样板和重复状态逻辑，再做组件级拆分，避免一次性大改风险 |
+| 弹窗表单先抽状态层，不抽业务提交层 | 保持校验、接口调用与领域差异留在页面内，降低通用层失控风险 |
+| 删除链路先抽操作编排层 | 统一确认/执行/刷新/提示节奏，实体差异通过参数注入保持轻量 |
+| 保存链路只抽固定收尾节奏 | loading、关闭、刷新、提示可复用，字段校验与 create/update 分支仍留页面内 |
 
 ## Resources
 - `src/router/index.js`

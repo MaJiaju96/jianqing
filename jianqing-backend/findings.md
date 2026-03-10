@@ -63,7 +63,7 @@
 - 用户管理模块已作为首个闭环模块接入数据范围控制：列表查询与按 ID 的编辑/删除/分配角色均受当前登录用户数据范围约束。
 - `jq_sys_dept` 表此前只有 SQL seed，本轮已补齐后端 `SysDept` 实体、Mapper、Service、Controller，部门管理从“仅有菜单 seed”变为可用模块。
 - 后端数据权限专项测试已补齐首批单测，沿用现有 Mockito 服务层测试风格，优先覆盖 `super_admin`、`本部门`、`仅本人` 三条关键分支。
-- 已完成一轮最新真实账号联调复核：`dept_user` 仅可见本部门用户（当前为 admin/test/dept_user/self_user/other_user），`self_user` 仅可见自己，`outside_user` 位于“外部协作部”。
+- 已完成一轮最新真实账号联调复核：`dept_user` 仅可见本部门用户（当前为 admin/test/dept_user/self_user/other_user），`self_user` 仅可见自己；`outside_user` 当前数据库实际挂载角色为 `Test_User`（`dataScope=ALL`），因此可见全部 6 人，不应再按“跨部门受限账号”理解。
 - 当前开发联调测试账号口径已统一：`admin/admin123`，其余测试账号统一使用 `test123`。
 
 ## Technical Decisions
@@ -174,7 +174,18 @@
 - 已完成 `SystemServiceImpl` 第二批重构：抽离数据范围判定与校验职责到 `UserDataScopeResolver`，主服务类聚焦编排逻辑。
 - 当前后端热点复杂度已初步下降，后续可继续抽离用户写操作与缓存失效策略，进一步压缩主服务体积。
 - 已完成 `SystemServiceImpl` 第三批重构：抽离缓存失效职责到 `SystemCacheEvictor`，主服务不再直接编排缓存 key 细节。
-- 下一步规划已落到 `task_plan`：继续拆用户写操作编排并补关键路径单测，保证重构收益可验证。
+- 已完成 `SystemServiceImpl` 第四批重构：新增 `UserWriteOperationHandler`，将用户创建/更新/删除的字段装配、持久化与缓存失效从主服务继续下沉。
+- 已补齐系统服务关键路径单测：新增 `UserWriteOperationHandlerTest` 与 `UserDataScopeResolverTest`，覆盖用户写操作缓存失效、密码校验，以及数据范围解析/越权分支。
+- 已完成前端系统页列表通用 composable 收口：新增 `useSystemListPage`，统一 users/roles/menus/depts 四个列表页的查询/重置/刷新/分页状态流。
+- 已完成前端系统页弹窗表单轻量收口：新增 `useEntityDialogForm`，统一 create/edit 对话框的可见性、编辑态、编辑目标与表单重置/回填流程。
+- 已完成前端系统页删除操作轻量收口：新增 `useEntityDeleteAction`，统一删除确认、行级 loading、删除后刷新与成功提示流程。
+- 已完成前端系统页保存提交轻量收口：新增 `useEntitySubmitAction`，统一保存时 loading、成功后关闭弹窗、列表刷新与成功提示流程。
+- 浏览器真实回归中发现并修复两处前端回归：`useEntityDialogForm.openCreate` 需忽略点击事件对象；`useEntityDeleteAction` 需吞掉 `ElMessageBox.confirm` 的 `cancel/close`，避免控制台未处理警告。
+- 已补做数据权限账号回归：在浏览器上下文中完成 `dept_user / self_user / outside_user` 登录鉴权与用户列表数据校验；当前结果为 `dept_user` 可见本部门 5 人、`self_user` 仅见自己、`outside_user` 当前可见 6 人。
+- 已澄清测试账号口径：`outside_user` 当前数据库实际挂载角色为 `Test_User(dataScope=ALL)`，因此可见 6 人属于配置现状；不应再把它当作“跨部门受限账号”使用。
+- 已完成审计页真实回归：`/audit/oper-logs` 与 `/audit/login-logs` 的查询、重置、分页均通过，当前两页各返回 20 条数据且无异常。
+- 已补一轮前端异常处理收口：新增 `ignoreHandledError`，用于吞掉已由全局 HTTP 拦截器提示过的请求异常，避免 system/audit/dashboard 页面在加载失败时继续抛出未处理 Promise 警告。
+- 已修复非 admin 账号登录后的 dashboard 噪音：`DashboardView` 改为按权限拉取统计数据，避免低权限账号登录后立即请求无权访问的 roles/menus 接口导致 401 噪音。
 
 ## Visual/Browser Findings
 - 本轮无网页或图像类输入。

@@ -4,7 +4,7 @@
 构建一个可直接联调 `jianqing-backend` 的前端管理台，界面不死板、交互流畅，并保持纯 `JavaScript` 实现。
 
 ## Current Phase
-Phase 5
+Phase 6
 
 ## Phases
 
@@ -41,6 +41,15 @@ Phase 5
 - [x] 补齐部门管理页面与路由接入
 - [x] 补一轮数据范围联调验证
 - [x] 做一轮整体 UI 细节巡检（表格列宽/分页信息/按钮文案/空态文案）
+- **Status:** complete
+
+### Phase 6: 代码健康治理（列表页去重复）
+- [x] 识别系统管理四个主列表页重复状态流
+- [x] 抽离系统列表通用 composable（users/roles/menus/depts）
+- [x] 完成四个系统页接入并保留原有交互行为
+- [x] 评估并抽离系统页 create/edit 弹窗表单轻量 composable
+- [x] 抽离系统页删除确认与删除后反馈轻量 composable
+- [x] 抽离系统页保存提交与成功反馈轻量 composable
 - **Status:** complete
 
 ## Decisions Made
