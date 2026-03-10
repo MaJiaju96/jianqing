@@ -4,7 +4,7 @@
       <div class="jq-toolbar-shell">
         <div class="jq-toolbar-group jq-toolbar-group--filters">
           <el-input v-model="keywordInput" clearable placeholder="搜索部门名称" class="jq-toolbar-field" @keyup.enter="handleSearch" />
-          <el-select v-model="statusFilterInput" class="jq-toolbar-select--sm">
+          <el-select v-model="filterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
             <el-option label="启用" :value="1" />
             <el-option label="停用" :value="0" />
@@ -62,7 +62,7 @@
         class="table-pagination"
         background
         layout="total, sizes, prev, pager, next"
-        :total="flatRows.length"
+        :total="total"
         :page-sizes="pageSizes"
         v-model:current-page="pageNo"
         v-model:page-size="pageSize"
@@ -111,43 +111,23 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
-import { ElMessageBox } from 'element-plus';
 import { DEFAULT_LIST_PAGE_SIZE, PAGE_SIZE_OPTIONS, ROOT_PARENT_ID, STATUS_DISABLED, STATUS_ENABLED } from '../../constants/app';
 import { createDept, deleteDept, fetchDepts, fetchUsers, updateDept } from '../../api/system';
-import { useActionLoading, useRowActionLoading, useTableFeedback } from '../../composables/useAsyncState';
+import { useTableFeedback } from '../../composables/useAsyncState';
+import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
+import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
-import { showSuccessMessage } from '../../utils/feedback';
+import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
+import { useSystemListPage } from '../../composables/useSystemListPage';
+import { ignoreHandledError } from '../../utils/errors';
 
 const rows = ref([]);
 const userRows = ref([]);
-const keywordInput = ref('');
-const statusFilterInput = ref('all');
-const keyword = ref('');
-const statusFilter = ref('all');
-const pageNo = ref(1);
-const pageSize = ref(DEFAULT_LIST_PAGE_SIZE);
-const pageSizes = PAGE_SIZE_OPTIONS;
-const dialogVisible = ref(false);
-const isEdit = ref(false);
-const editingId = ref(null);
-const form = ref({
-  parentId: ROOT_PARENT_ID,
-  deptName: '',
-  leaderUserId: 0,
-  phone: '',
-  email: '',
-  sortNo: 0,
-  status: STATUS_ENABLED
-});
 
 const tableFeedback = useTableFeedback();
-const submitAction = useActionLoading();
-const deleteAction = useRowActionLoading();
 const pageLoading = tableFeedback.loading;
-const submitLoading = submitAction.loading;
-const deleteLoadingId = deleteAction.loadingId;
 const tableEmptyText = tableFeedback.emptyText;
 
 const { canAdd, canEdit, canDelete } = usePermissionGroup({
@@ -156,11 +136,29 @@ const { canAdd, canEdit, canDelete } = usePermissionGroup({
   canDelete: 'system:dept:delete'
 });
 
-const filteredRows = computed(() => filterTree(rows.value, keyword.value.trim(), statusFilter.value));
-const flatRows = computed(() => flattenDeptRows(filteredRows.value));
-const pagedRows = computed(() => {
-  const start = (pageNo.value - 1) * pageSize.value;
-  return flatRows.value.slice(start, start + pageSize.value);
+const filteredRows = computed(() => filterTree(rows.value, keyword.value.trim(), filterValue.value));
+const {
+  keywordInput,
+  filterInput,
+  keyword,
+  filterValue,
+  pageNo,
+  pageSize,
+  pageSizes,
+  total,
+  pagedRows,
+  displayRows: flatRows,
+  handleSearch,
+  handleReset,
+  handleRefresh
+} = useSystemListPage({
+  initialFilterInput: 'all',
+  initialFilterValue: 'all',
+  defaultPageSize: DEFAULT_LIST_PAGE_SIZE,
+  pageSizes: PAGE_SIZE_OPTIONS,
+  loadData,
+  filterRows: ({ keyword, filterValue }) => filterTree(rows.value, keyword.trim(), filterValue),
+  mapRows: (items) => flattenDeptRows(items)
 });
 const deptOptions = computed(() => flattenDeptOptions(rows.value));
 const leaderOptions = computed(() => userRows.value.map((item) => ({
@@ -172,6 +170,41 @@ const leaderNameMap = computed(() => userRows.value.reduce((result, item) => {
   return result;
 }, {}));
 
+const { dialogVisible, isEdit, editingId, form, openCreate, openEdit, closeDialog } = useEntityDialogForm({
+  createForm: () => ({
+    parentId: ROOT_PARENT_ID,
+    deptName: '',
+    leaderUserId: 0,
+    phone: '',
+    email: '',
+    sortNo: 0,
+    status: STATUS_ENABLED
+  }),
+  mapForm: (row) => ({
+    parentId: row.parentId ?? ROOT_PARENT_ID,
+    deptName: row.deptName,
+    leaderUserId: row.leaderUserId,
+    phone: row.phone,
+    email: row.email,
+    sortNo: row.sortNo,
+    status: row.status
+  })
+});
+
+const { deleteLoadingId, handleDelete } = useEntityDeleteAction({
+  entityLabel: '部门',
+  getRowLabel: (row) => row.deptName,
+  deleteEntity: deleteDept,
+  reloadData: loadData,
+  successText: '删除部门'
+});
+
+const { submitLoading, handleSubmit: runSubmit } = useEntitySubmitAction({
+  closeDialog,
+  reloadData: loadData,
+  getSuccessText: () => (isEdit.value ? '更新部门' : '新增部门')
+});
+
 async function loadData() {
   await tableFeedback.run(async () => {
     const [depts, users] = await Promise.all([fetchDepts(), fetchUsers()]);
@@ -180,89 +213,22 @@ async function loadData() {
   });
 }
 
-function handleSearch() {
-  keyword.value = keywordInput.value.trim();
-  statusFilter.value = statusFilterInput.value;
-}
-
-function handleReset() {
-  keywordInput.value = '';
-  statusFilterInput.value = 'all';
-  handleSearch();
-}
-
-async function handleRefresh() {
-  await loadData();
-}
-
-watch([keyword, statusFilter], () => {
-  pageNo.value = 1;
-});
-
-function resetForm() {
-  form.value = {
-    parentId: ROOT_PARENT_ID,
-    deptName: '',
-    leaderUserId: 0,
-    phone: '',
-    email: '',
-    sortNo: 0,
-    status: STATUS_ENABLED
-  };
-}
-
-function openCreate() {
-  isEdit.value = false;
-  editingId.value = null;
-  resetForm();
-  dialogVisible.value = true;
-}
-
 function openCreateChild(row) {
-  isEdit.value = false;
-  editingId.value = null;
-  resetForm();
-  form.value.parentId = row.id;
-  dialogVisible.value = true;
-}
-
-function openEdit(row) {
-  isEdit.value = true;
-  editingId.value = row.id;
-  form.value = {
-    parentId: row.parentId ?? ROOT_PARENT_ID,
-    deptName: row.deptName,
-    leaderUserId: row.leaderUserId,
-    phone: row.phone,
-    email: row.email,
-    sortNo: row.sortNo,
-    status: row.status
-  };
-  dialogVisible.value = true;
+  openCreate((nextForm) => {
+    nextForm.parentId = row.id;
+  });
 }
 
 async function handleSubmit() {
   if (!form.value.deptName) {
     return;
   }
-  await submitAction.run(async () => {
+  await runSubmit(async () => {
     if (isEdit.value) {
       await updateDept(editingId.value, form.value);
     } else {
       await createDept(form.value);
     }
-    dialogVisible.value = false;
-    await loadData();
-    showSuccessMessage(isEdit.value ? '更新部门' : '新增部门');
-  });
-}
-
-async function handleDelete(row) {
-  await ElMessageBox.confirm(`确认删除部门「${row.deptName}」吗？`, '提示', { type: 'warning' });
-  await deleteAction.run(row.id, async () => {
-    await deleteDept(row.id);
-    await loadData();
-    showSuccessMessage('删除部门');
   });
 }
 
@@ -307,8 +273,12 @@ function filterTree(nodes, keywordValue, statusValue) {
 }
 
 onMounted(async () => {
-  await loadData();
-  handleSearch();
+  try {
+    await loadData();
+    handleSearch();
+  } catch (error) {
+    ignoreHandledError(error);
+  }
 });
 </script>
 

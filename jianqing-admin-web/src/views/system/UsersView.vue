@@ -4,7 +4,7 @@
       <div class="jq-toolbar-shell">
         <div class="jq-toolbar-group jq-toolbar-group--filters">
           <el-input v-model="keywordInput" clearable placeholder="搜索用户名/昵称" class="jq-toolbar-field" @keyup.enter="handleSearch" />
-          <el-select v-model="statusFilterInput" class="jq-toolbar-select--sm">
+          <el-select v-model="filterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
             <el-option label="启用" :value="STATUS_ENABLED" />
             <el-option label="禁用" :value="STATUS_DISABLED" />
@@ -52,7 +52,7 @@
         class="table-pagination"
         background
         layout="total, sizes, prev, pager, next"
-        :total="filteredRows.length"
+         :total="total"
         :page-sizes="pageSizes"
         v-model:current-page="pageNo"
         v-model:page-size="pageSize"
@@ -113,9 +113,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import {
   DEFAULT_LIST_PAGE_SIZE,
   PAGE_SIZE_OPTIONS,
@@ -133,37 +133,22 @@ import {
   fetchUsers,
   updateUser
 } from '../../api/system';
-import { useActionLoading, useRowActionLoading, useTableFeedback } from '../../composables/useAsyncState';
+import { useActionLoading, useTableFeedback } from '../../composables/useAsyncState';
+import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
+import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
+import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
+import { useSystemListPage } from '../../composables/useSystemListPage';
+import { ignoreHandledError } from '../../utils/errors';
 import { showSuccessMessage } from '../../utils/feedback';
 import { isValidEmail, isValidMobile } from '../../utils/validators';
 
 const rows = ref([]);
-const keywordInput = ref('');
-const statusFilterInput = ref(STATUS_FILTER_ALL);
-const keyword = ref('');
-const statusFilter = ref(STATUS_FILTER_ALL);
-const pageNo = ref(1);
-const pageSize = ref(DEFAULT_LIST_PAGE_SIZE);
-const pageSizes = PAGE_SIZE_OPTIONS;
-const dialogVisible = ref(false);
-const isEdit = ref(false);
-const editingId = ref(null);
 const roleDialogVisible = ref(false);
 const currentUser = ref(null);
 const allRoles = ref([]);
 const checkedRoleIds = ref([]);
 const deptRows = ref([]);
-const form = ref({
-  username: '',
-  password: '',
-  nickname: '',
-  realName: '',
-  mobile: '',
-  email: '',
-  deptId: 0,
-  status: STATUS_ENABLED
-});
 
 const { canAdd, canEdit, canDelete } = usePermissionGroup({
   canAdd: 'system:user:add',
@@ -171,43 +156,46 @@ const { canAdd, canEdit, canDelete } = usePermissionGroup({
   canDelete: 'system:user:remove'
 });
 
-const filteredRows = computed(() => {
-  const query = keyword.value.trim().toLowerCase();
-  if (!query) {
-    return rows.value.filter((item) => statusFilter.value === STATUS_FILTER_ALL || item.status === statusFilter.value);
+const {
+  keywordInput,
+  filterInput,
+  pageNo,
+  pageSize,
+  pageSizes,
+  pagedRows,
+  total,
+  handleSearch,
+  handleReset,
+  handleRefresh
+} = useSystemListPage({
+  initialFilterInput: STATUS_FILTER_ALL,
+  initialFilterValue: STATUS_FILTER_ALL,
+  defaultPageSize: DEFAULT_LIST_PAGE_SIZE,
+  pageSizes: PAGE_SIZE_OPTIONS,
+  loadData,
+  filterRows: ({ keyword, filterValue }) => {
+    const query = keyword.trim().toLowerCase();
+    return rows.value.filter((item) => {
+      const keywordMatched = !query
+        || item.username.toLowerCase().includes(query)
+        || (item.nickname || '').toLowerCase().includes(query)
+        || (item.realName || '').toLowerCase().includes(query);
+      const statusMatched = filterValue === STATUS_FILTER_ALL || item.status === filterValue;
+      return keywordMatched && statusMatched;
+    });
   }
-  return rows.value.filter((item) => {
-    const keywordMatched = item.username.toLowerCase().includes(query)
-      || (item.nickname || '').toLowerCase().includes(query)
-      || (item.realName || '').toLowerCase().includes(query);
-    const statusMatched = statusFilter.value === STATUS_FILTER_ALL || item.status === statusFilter.value;
-    return keywordMatched && statusMatched;
-  });
-});
-
-const pagedRows = computed(() => {
-  const start = (pageNo.value - 1) * pageSize.value;
-  return filteredRows.value.slice(start, start + pageSize.value);
 });
 
 const tableFeedback = useTableFeedback();
-const submitAction = useActionLoading();
 const roleAction = useActionLoading();
-const deleteAction = useRowActionLoading();
 const pageLoading = tableFeedback.loading;
-const submitLoading = submitAction.loading;
 const roleSaving = roleAction.loading;
-const deleteLoadingId = deleteAction.loadingId;
 const tableEmptyText = tableFeedback.emptyText;
 const deptOptions = computed(() => flattenDeptOptions(deptRows.value));
 const deptNameMap = computed(() => buildDeptNameMap(deptRows.value));
 
-watch([keyword, statusFilter], () => {
-  pageNo.value = 1;
-});
-
-function resetForm() {
-  form.value = {
+const { dialogVisible, isEdit, editingId, form, openCreate, openEdit, closeDialog } = useEntityDialogForm({
+  createForm: () => ({
     username: '',
     password: '',
     nickname: '',
@@ -216,20 +204,8 @@ function resetForm() {
     email: '',
     deptId: resolveDefaultDeptId(),
     status: STATUS_ENABLED
-  };
-}
-
-function openCreate() {
-  isEdit.value = false;
-  editingId.value = null;
-  resetForm();
-  dialogVisible.value = true;
-}
-
-function openEdit(row) {
-  isEdit.value = true;
-  editingId.value = row.id;
-  form.value = {
+  }),
+  mapForm: (row) => ({
     username: row.username,
     password: '',
     nickname: row.nickname,
@@ -238,9 +214,22 @@ function openEdit(row) {
     email: row.email,
     deptId: row.deptId || resolveDefaultDeptId(),
     status: row.status
-  };
-  dialogVisible.value = true;
-}
+  })
+});
+
+const { deleteLoadingId, handleDelete } = useEntityDeleteAction({
+  entityLabel: '用户',
+  getRowLabel: (row) => row.username,
+  deleteEntity: deleteUser,
+  reloadData: loadData,
+  successText: '删除用户'
+});
+
+const { submitLoading, handleSubmit: runSubmit } = useEntitySubmitAction({
+  closeDialog,
+  reloadData: loadData,
+  getSuccessText: () => (isEdit.value ? '更新用户' : '新增用户')
+});
 
 async function loadData() {
   await tableFeedback.run(async () => {
@@ -248,21 +237,6 @@ async function loadData() {
     rows.value = users;
     deptRows.value = depts;
   });
-}
-
-function handleSearch() {
-  keyword.value = keywordInput.value.trim();
-  statusFilter.value = statusFilterInput.value;
-}
-
-function handleReset() {
-  keywordInput.value = '';
-  statusFilterInput.value = STATUS_FILTER_ALL;
-  handleSearch();
-}
-
-async function handleRefresh() {
-  await loadData();
 }
 
 async function handleSubmit() {
@@ -282,7 +256,7 @@ async function handleSubmit() {
     ElMessage.warning('邮箱格式不正确');
     return;
   }
-  await submitAction.run(async () => {
+  await runSubmit(async () => {
     if (isEdit.value) {
       await updateUser(editingId.value, form.value);
     } else {
@@ -292,18 +266,6 @@ async function handleSubmit() {
       }
       await createUser(form.value);
     }
-    dialogVisible.value = false;
-    await loadData();
-    showSuccessMessage(isEdit.value ? '更新用户' : '新增用户');
-  });
-}
-
-async function handleDelete(row) {
-  await ElMessageBox.confirm(`确认删除用户「${row.username}」吗？`, '提示', { type: 'warning' });
-  await deleteAction.run(row.id, async () => {
-    await deleteUser(row.id);
-    await loadData();
-    showSuccessMessage('删除用户');
   });
 }
 
@@ -346,8 +308,12 @@ function buildDeptNameMap(nodes, prefix = '') {
 }
 
 onMounted(async () => {
-  await loadData();
-  handleSearch();
+  try {
+    await loadData();
+    handleSearch();
+  } catch (error) {
+    ignoreHandledError(error);
+  }
 });
 </script>
 

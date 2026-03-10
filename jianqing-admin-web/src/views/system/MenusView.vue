@@ -4,7 +4,7 @@
       <div class="jq-toolbar-shell">
         <div class="jq-toolbar-group jq-toolbar-group--filters">
           <el-input v-model="keywordInput" clearable placeholder="搜索菜单名称/权限" class="jq-toolbar-field" @keyup.enter="handleSearch" />
-          <el-select v-model="typeFilterInput" class="jq-toolbar-select--md">
+          <el-select v-model="filterInput" class="jq-toolbar-select--md">
             <el-option label="全部权限" value="all" />
             <el-option label="目录/菜单" value="menu" />
             <el-option label="仅按钮权限" value="button" />
@@ -69,7 +69,7 @@
         class="table-pagination"
         background
         layout="total, sizes, prev, pager, next"
-        :total="filteredRows.length"
+        :total="total"
         :page-sizes="pageSizes"
         v-model:current-page="pageNo"
         v-model:page-size="pageSize"
@@ -128,9 +128,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
 import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import {
   DEFAULT_LIST_PAGE_SIZE,
   MENU_TYPE_BUTTON,
@@ -141,34 +141,16 @@ import {
   STATUS_ENABLED
 } from '../../constants/app';
 import { createMenu, deleteMenu, fetchMenus, updateMenu } from '../../api/system';
-import { useActionLoading, useRowActionLoading, useTableFeedback } from '../../composables/useAsyncState';
+import { useTableFeedback } from '../../composables/useAsyncState';
+import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
+import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
-import { showSuccessMessage } from '../../utils/feedback';
+import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
+import { useSystemListPage } from '../../composables/useSystemListPage';
+import { ignoreHandledError } from '../../utils/errors';
 import { isValidPermissionCode } from '../../utils/validators';
 
 const rows = ref([]);
-const keywordInput = ref('');
-const typeFilterInput = ref('all');
-const keyword = ref('');
-const typeFilter = ref('all');
-const pageNo = ref(1);
-const pageSize = ref(DEFAULT_LIST_PAGE_SIZE);
-const pageSizes = PAGE_SIZE_OPTIONS;
-const dialogVisible = ref(false);
-const isEdit = ref(false);
-const editingId = ref(null);
-const form = ref({
-  parentId: 0,
-  menuType: MENU_TYPE_PAGE,
-  menuName: '',
-  routePath: '',
-  component: '',
-  perms: '',
-  icon: '',
-  sortNo: 0,
-  visible: STATUS_ENABLED,
-  status: STATUS_ENABLED
-});
 
 const { canAdd, canEdit, canDelete } = usePermissionGroup({
   canAdd: 'system:menu:add',
@@ -176,23 +158,70 @@ const { canAdd, canEdit, canDelete } = usePermissionGroup({
   canDelete: 'system:menu:remove'
 });
 
-const filteredRows = computed(() => {
-  const value = keyword.value.trim().toLowerCase();
-  return filterMenuTree(rows.value, value, typeFilter.value);
-});
-
-const pagedRows = computed(() => {
-  const start = (pageNo.value - 1) * pageSize.value;
-  return filteredRows.value.slice(start, start + pageSize.value);
+const {
+  keywordInput,
+  filterInput,
+  pageNo,
+  pageSize,
+  pageSizes,
+  pagedRows,
+  total,
+  handleSearch,
+  handleReset,
+  handleRefresh
+} = useSystemListPage({
+  initialFilterInput: 'all',
+  initialFilterValue: 'all',
+  defaultPageSize: DEFAULT_LIST_PAGE_SIZE,
+  pageSizes: PAGE_SIZE_OPTIONS,
+  loadData,
+  filterRows: ({ keyword, filterValue }) => filterMenuTree(rows.value, keyword.trim().toLowerCase(), filterValue)
 });
 
 const tableFeedback = useTableFeedback();
-const submitAction = useActionLoading();
-const deleteAction = useRowActionLoading();
 const pageLoading = tableFeedback.loading;
-const submitLoading = submitAction.loading;
-const deleteLoadingId = deleteAction.loadingId;
 const tableEmptyText = tableFeedback.emptyText;
+
+const { dialogVisible, isEdit, editingId, form, openCreate, openEdit, closeDialog } = useEntityDialogForm({
+  createForm: () => ({
+    parentId: 0,
+    menuType: MENU_TYPE_PAGE,
+    menuName: '',
+    routePath: '',
+    component: '',
+    perms: '',
+    icon: '',
+    sortNo: 0,
+    visible: STATUS_ENABLED,
+    status: STATUS_ENABLED
+  }),
+  mapForm: (row) => ({
+    parentId: row.parentId,
+    menuType: row.menuType,
+    menuName: row.menuName,
+    routePath: row.routePath,
+    component: row.component,
+    perms: row.perms,
+    icon: row.icon,
+    sortNo: row.sortNo,
+    visible: row.visible,
+    status: row.status
+  })
+});
+
+const { deleteLoadingId, handleDelete } = useEntityDeleteAction({
+  entityLabel: '菜单',
+  getRowLabel: (row) => row.menuName,
+  deleteEntity: deleteMenu,
+  reloadData: loadData,
+  successText: '删除菜单'
+});
+
+const { submitLoading, handleSubmit: runSubmit } = useEntitySubmitAction({
+  closeDialog,
+  reloadData: loadData,
+  getSuccessText: () => (isEdit.value ? '更新菜单' : '新增菜单')
+});
 
 function filterMenuTree(nodes, query, filterType, level = 1) {
   return (nodes || []).reduce((result, item) => {
@@ -244,76 +273,22 @@ function menuTypeTag(menuType) {
   return 'warning';
 }
 
-function resetForm(parentId = 0) {
-  form.value = {
-    parentId,
-    menuType: MENU_TYPE_PAGE,
-    menuName: '',
-    routePath: '',
-    component: '',
-    perms: '',
-    icon: '',
-    sortNo: 0,
-    visible: STATUS_ENABLED,
-    status: STATUS_ENABLED
-  };
-}
-
 function openCreateRoot() {
-  isEdit.value = false;
-  editingId.value = null;
-  resetForm(0);
-  dialogVisible.value = true;
+  openCreate((nextForm) => {
+    nextForm.parentId = 0;
+  });
 }
 
 function openCreateChild(row) {
-  isEdit.value = false;
-  editingId.value = null;
-  resetForm(row.id);
-  dialogVisible.value = true;
-}
-
-function openEdit(row) {
-  isEdit.value = true;
-  editingId.value = row.id;
-  form.value = {
-    parentId: row.parentId,
-    menuType: row.menuType,
-    menuName: row.menuName,
-    routePath: row.routePath,
-    component: row.component,
-    perms: row.perms,
-    icon: row.icon,
-    sortNo: row.sortNo,
-    visible: row.visible,
-    status: row.status
-  };
-  dialogVisible.value = true;
+  openCreate((nextForm) => {
+    nextForm.parentId = row.id;
+  });
 }
 
 async function loadData() {
   await tableFeedback.run(async () => {
     rows.value = await fetchMenus();
   });
-}
-
-watch([keyword, typeFilter], () => {
-  pageNo.value = 1;
-});
-
-function handleSearch() {
-  keyword.value = keywordInput.value.trim();
-  typeFilter.value = typeFilterInput.value;
-}
-
-function handleReset() {
-  keywordInput.value = '';
-  typeFilterInput.value = 'all';
-  handleSearch();
-}
-
-async function handleRefresh() {
-  await loadData();
 }
 
 async function handleSubmit() {
@@ -325,30 +300,22 @@ async function handleSubmit() {
     ElMessage.warning('权限标识仅支持字母数字及 : _ -');
     return;
   }
-  await submitAction.run(async () => {
+  await runSubmit(async () => {
     if (isEdit.value) {
       await updateMenu(editingId.value, form.value);
     } else {
       await createMenu(form.value);
     }
-    dialogVisible.value = false;
-    await loadData();
-    showSuccessMessage(isEdit.value ? '更新菜单' : '新增菜单');
-  });
-}
-
-async function handleDelete(row) {
-  await ElMessageBox.confirm(`确认删除菜单「${row.menuName}」吗？`, '提示', { type: 'warning' });
-  await deleteAction.run(row.id, async () => {
-    await deleteMenu(row.id);
-    await loadData();
-    showSuccessMessage('删除菜单');
   });
 }
 
 onMounted(async () => {
-  await loadData();
-  handleSearch();
+  try {
+    await loadData();
+    handleSearch();
+  } catch (error) {
+    ignoreHandledError(error);
+  }
 });
 </script>
 

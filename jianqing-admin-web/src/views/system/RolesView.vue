@@ -4,7 +4,7 @@
       <div class="jq-toolbar-shell">
         <div class="jq-toolbar-group jq-toolbar-group--filters">
           <el-input v-model="keywordInput" clearable placeholder="搜索角色名称/编码" class="jq-toolbar-field" @keyup.enter="handleSearch" />
-          <el-select v-model="statusFilterInput" class="jq-toolbar-select--sm">
+          <el-select v-model="filterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
             <el-option label="启用" :value="STATUS_ENABLED" />
             <el-option label="禁用" :value="STATUS_DISABLED" />
@@ -49,7 +49,7 @@
         class="table-pagination"
         background
         layout="total, sizes, prev, pager, next"
-        :total="filteredRows.length"
+        :total="total"
         :page-sizes="pageSizes"
         v-model:current-page="pageNo"
         v-model:page-size="pageSize"
@@ -120,9 +120,9 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import {
   DEFAULT_LIST_PAGE_SIZE,
   MENU_TYPE_BUTTON,
@@ -146,33 +146,22 @@ import {
   fetchRoles,
   updateRole
 } from '../../api/system';
-import { useActionLoading, useRowActionLoading, useTableFeedback } from '../../composables/useAsyncState';
+import { useActionLoading, useTableFeedback } from '../../composables/useAsyncState';
+import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
+import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
+import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
+import { useSystemListPage } from '../../composables/useSystemListPage';
+import { ignoreHandledError } from '../../utils/errors';
 import { showSuccessMessage } from '../../utils/feedback';
 import { isValidRoleCode } from '../../utils/validators';
 
 const rows = ref([]);
-const keywordInput = ref('');
-const statusFilterInput = ref(STATUS_FILTER_ALL);
-const keyword = ref('');
-const statusFilter = ref(STATUS_FILTER_ALL);
-const pageNo = ref(1);
-const pageSize = ref(DEFAULT_LIST_PAGE_SIZE);
-const pageSizes = PAGE_SIZE_OPTIONS;
-const dialogVisible = ref(false);
-const isEdit = ref(false);
-const editingId = ref(null);
 const menuDialogVisible = ref(false);
 const currentRole = ref(null);
 const menuTree = ref([]);
 const menuTreeRef = ref(null);
 const assignTypeFilter = ref('all');
-const form = ref({
-  roleName: '',
-  roleCode: '',
-  dataScope: DATA_SCOPE_ALL,
-  status: STATUS_ENABLED
-});
 const dataScopeOptions = DATA_SCOPE_OPTIONS;
 
 const { canAdd, canEdit, canDelete } = usePermissionGroup({
@@ -181,84 +170,74 @@ const { canAdd, canEdit, canDelete } = usePermissionGroup({
   canDelete: 'system:role:remove'
 });
 
-const filteredRows = computed(() => {
-  const query = keyword.value.trim().toLowerCase();
-  if (!query) {
-    return rows.value.filter((item) => statusFilter.value === STATUS_FILTER_ALL || item.status === statusFilter.value);
+const {
+  keywordInput,
+  filterInput,
+  pageNo,
+  pageSize,
+  pageSizes,
+  pagedRows,
+  total,
+  handleSearch,
+  handleReset,
+  handleRefresh
+} = useSystemListPage({
+  initialFilterInput: STATUS_FILTER_ALL,
+  initialFilterValue: STATUS_FILTER_ALL,
+  defaultPageSize: DEFAULT_LIST_PAGE_SIZE,
+  pageSizes: PAGE_SIZE_OPTIONS,
+  loadData,
+  filterRows: ({ keyword, filterValue }) => {
+    const query = keyword.trim().toLowerCase();
+    return rows.value.filter((item) => {
+      const keywordMatched = !query
+        || item.roleName.toLowerCase().includes(query)
+        || item.roleCode.toLowerCase().includes(query);
+      const statusMatched = filterValue === STATUS_FILTER_ALL || item.status === filterValue;
+      return keywordMatched && statusMatched;
+    });
   }
-  return rows.value.filter((item) => {
-    const keywordMatched = item.roleName.toLowerCase().includes(query) || item.roleCode.toLowerCase().includes(query);
-    const statusMatched = statusFilter.value === STATUS_FILTER_ALL || item.status === statusFilter.value;
-    return keywordMatched && statusMatched;
-  });
-});
-
-const pagedRows = computed(() => {
-  const start = (pageNo.value - 1) * pageSize.value;
-  return filteredRows.value.slice(start, start + pageSize.value);
 });
 
 const tableFeedback = useTableFeedback();
-const submitAction = useActionLoading();
 const menuAction = useActionLoading();
-const deleteAction = useRowActionLoading();
 const pageLoading = tableFeedback.loading;
-const submitLoading = submitAction.loading;
 const menuSaving = menuAction.loading;
-const deleteLoadingId = deleteAction.loadingId;
 const tableEmptyText = tableFeedback.emptyText;
 
-watch([keyword, statusFilter], () => {
-  pageNo.value = 1;
-});
-
-function resetForm() {
-  form.value = {
+const { dialogVisible, isEdit, editingId, form, openCreate, openEdit, closeDialog } = useEntityDialogForm({
+  createForm: () => ({
     roleName: '',
     roleCode: '',
     dataScope: DATA_SCOPE_ALL,
     status: STATUS_ENABLED
-  };
-}
-
-function openCreate() {
-  isEdit.value = false;
-  editingId.value = null;
-  resetForm();
-  dialogVisible.value = true;
-}
-
-function openEdit(row) {
-  isEdit.value = true;
-  editingId.value = row.id;
-  form.value = {
+  }),
+  mapForm: (row) => ({
     roleName: row.roleName,
     roleCode: row.roleCode,
     dataScope: row.dataScope,
     status: row.status
-  };
-  dialogVisible.value = true;
-}
+  })
+});
+
+const { deleteLoadingId, handleDelete } = useEntityDeleteAction({
+  entityLabel: '角色',
+  getRowLabel: (row) => row.roleName,
+  deleteEntity: deleteRole,
+  reloadData: loadData,
+  successText: '删除角色'
+});
+
+const { submitLoading, handleSubmit: runSubmit } = useEntitySubmitAction({
+  closeDialog,
+  reloadData: loadData,
+  getSuccessText: () => (isEdit.value ? '更新角色' : '新增角色')
+});
 
 async function loadData() {
   await tableFeedback.run(async () => {
     rows.value = await fetchRoles();
   });
-}
-
-function handleSearch() {
-  keyword.value = keywordInput.value.trim();
-  statusFilter.value = statusFilterInput.value;
-}
-
-function handleReset() {
-  keywordInput.value = '';
-  statusFilterInput.value = STATUS_FILTER_ALL;
-  handleSearch();
-}
-
-async function handleRefresh() {
-  await loadData();
 }
 
 async function handleSubmit() {
@@ -270,24 +249,12 @@ async function handleSubmit() {
     ElMessage.warning('角色编码仅支持字母数字及 : _ -');
     return;
   }
-  await submitAction.run(async () => {
+  await runSubmit(async () => {
     if (isEdit.value) {
       await updateRole(editingId.value, form.value);
     } else {
       await createRole(form.value);
     }
-    dialogVisible.value = false;
-    await loadData();
-    showSuccessMessage(isEdit.value ? '更新角色' : '新增角色');
-  });
-}
-
-async function handleDelete(row) {
-  await ElMessageBox.confirm(`确认删除角色「${row.roleName}」吗？`, '提示', { type: 'warning' });
-  await deleteAction.run(row.id, async () => {
-    await deleteRole(row.id);
-    await loadData();
-    showSuccessMessage('删除角色');
   });
 }
 
@@ -369,8 +336,12 @@ async function handleSaveMenus() {
 }
 
 onMounted(async () => {
-  await loadData();
-  handleSearch();
+  try {
+    await loadData();
+    handleSearch();
+  } catch (error) {
+    ignoreHandledError(error);
+  }
 });
 </script>
 
