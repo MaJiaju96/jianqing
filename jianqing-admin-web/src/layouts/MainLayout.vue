@@ -161,8 +161,8 @@ async function handleLogout() {
 }
 
 .jq-header {
-  margin: 14px 14px 0;
-  height: 72px;
+  margin: 14px 16px 0;
+  height: 76px;
   display: flex;
   justify-content: space-between;
   align-items: center;

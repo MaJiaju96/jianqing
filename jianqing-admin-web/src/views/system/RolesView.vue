@@ -1,54 +1,60 @@
 <template>
   <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
-      <div class="header-row">
-        <h2 class="jq-page-title">角色管理</h2>
-        <div class="toolbar-right">
-          <el-input v-model="keywordInput" clearable placeholder="搜索角色名称/编码" style="width: 220px;" @keyup.enter="handleSearch" />
-          <el-select v-model="statusFilterInput" style="width: 140px;">
+      <div class="jq-toolbar-shell">
+        <div class="jq-toolbar-group jq-toolbar-group--filters">
+          <el-input v-model="keywordInput" clearable placeholder="搜索角色名称/编码" class="jq-toolbar-field" @keyup.enter="handleSearch" />
+          <el-select v-model="statusFilterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
             <el-option label="启用" :value="STATUS_ENABLED" />
             <el-option label="禁用" :value="STATUS_DISABLED" />
           </el-select>
-          <el-button @click="handleSearch">查询</el-button>
+          <el-button :icon="Search" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
-          <el-button v-if="canAdd" type="primary" @click="openCreate">新增角色</el-button>
+        </div>
+        <div class="jq-toolbar-group jq-toolbar-group--actions">
+          <el-button class="jq-toolbar-icon-btn" :icon="RefreshRight" circle :loading="pageLoading" @click="handleRefresh" />
+          <el-button v-if="canAdd" type="primary" :icon="Plus" @click="openCreate">新增角色</el-button>
         </div>
       </div>
     </template>
-    <el-table :data="pagedRows" stripe :empty-text="tableEmptyText" :height="tableHeight">
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="roleName" label="角色名称" min-width="180" />
-      <el-table-column prop="roleCode" label="角色编码" min-width="180" />
-      <el-table-column label="数据范围" min-width="120">
-        <template #default="scope">
-          <el-tag effect="plain">{{ dataScopeText(scope.row.dataScope) }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="100">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'danger'">{{ scope.row.status === STATUS_ENABLED ? '启用' : '禁用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
-        <template #default="scope">
-          <div class="role-action-row">
-             <el-button v-if="canEdit" type="primary" link :loading="menuSaving && currentRole?.id === scope.row.id" @click="openAssignMenus(scope.row)">分配菜单</el-button>
-             <el-button v-if="canEdit" type="primary" link :disabled="submitLoading || deleteLoadingId === scope.row.id" @click="openEdit(scope.row)">编辑</el-button>
-             <el-button v-if="canDelete" type="danger" link :loading="deleteLoadingId === scope.row.id" :disabled="submitLoading" @click="handleDelete(scope.row)">删除</el-button>
-          </div>
-        </template>
-      </el-table-column>
-    </el-table>
-    <el-pagination
-      class="table-pagination"
-      background
-      layout="total, sizes, prev, pager, next"
-      :total="filteredRows.length"
-      :page-sizes="pageSizes"
-      v-model:current-page="pageNo"
-      v-model:page-size="pageSize"
-    />
+    <div class="jq-table-panel">
+      <el-table :data="pagedRows" stripe :empty-text="tableEmptyText" height="100%">
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="roleName" label="角色名称" min-width="180" />
+        <el-table-column prop="roleCode" label="角色编码" min-width="180" />
+        <el-table-column label="数据范围" min-width="120">
+          <template #default="scope">
+            <el-tag effect="plain">{{ dataScopeText(scope.row.dataScope) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="scope">
+            <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'danger'">{{ scope.row.status === STATUS_ENABLED ? '启用' : '禁用' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
+          <template #default="scope">
+            <div class="role-action-row">
+               <el-button v-if="canEdit" type="primary" link :loading="menuSaving && currentRole?.id === scope.row.id" @click="openAssignMenus(scope.row)">分配菜单</el-button>
+               <el-button v-if="canEdit" type="primary" link :disabled="submitLoading || deleteLoadingId === scope.row.id" @click="openEdit(scope.row)">编辑</el-button>
+               <el-button v-if="canDelete" type="danger" link :loading="deleteLoadingId === scope.row.id" :disabled="submitLoading" @click="handleDelete(scope.row)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+    <div class="jq-pagination-panel">
+      <el-pagination
+        class="table-pagination"
+        background
+        layout="total, sizes, prev, pager, next"
+        :total="filteredRows.length"
+        :page-sizes="pageSizes"
+        v-model:current-page="pageNo"
+        v-model:page-size="pageSize"
+      />
+    </div>
   </el-card>
 
   <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑角色' : '新增角色'" width="520px" append-to-body>
@@ -115,6 +121,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   DEFAULT_LIST_PAGE_SIZE,
@@ -140,7 +147,6 @@ import {
   updateRole
 } from '../../api/system';
 import { useActionLoading, useRowActionLoading, useTableFeedback } from '../../composables/useAsyncState';
-import { useAdaptiveTable } from '../../composables/useAdaptiveTable';
 import { usePermissionGroup } from '../../composables/usePermissions';
 import { showSuccessMessage } from '../../utils/feedback';
 import { isValidRoleCode } from '../../utils/validators';
@@ -193,7 +199,6 @@ const pagedRows = computed(() => {
 });
 
 const tableFeedback = useTableFeedback();
-const { tableHeight } = useAdaptiveTable();
 const submitAction = useActionLoading();
 const menuAction = useActionLoading();
 const deleteAction = useRowActionLoading();
@@ -250,6 +255,10 @@ function handleReset() {
   keywordInput.value = '';
   statusFilterInput.value = STATUS_FILTER_ALL;
   handleSearch();
+}
+
+async function handleRefresh() {
+  await loadData();
 }
 
 async function handleSubmit() {
@@ -366,18 +375,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.toolbar-right {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
 .assign-title {
   margin-bottom: 12px;
   color: var(--jq-card-subtitle);
@@ -413,7 +410,7 @@ onMounted(async () => {
 }
 
 .table-pagination {
-  margin-top: 14px;
+  margin-top: 0;
   justify-content: flex-end;
 }
 

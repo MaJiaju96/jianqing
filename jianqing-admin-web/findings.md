@@ -47,6 +47,10 @@
 - 已完成 768 / 640 宽度巡检：系统与审计列表页无主内容横向溢出；移动端分页区补齐左对齐与横向滚动，避免窄屏下分页控件拥挤。
 - 已完成最新一轮真实账号联调复核：角色页数据范围列与编辑值正常；部门页列表、分页与负责人展示正常；`dept_user` 仅见本部门用户，`self_user` 仅见自己。
 - 当前开发联调测试账号口径已统一：`admin/admin123`，其余测试账号统一使用 `test123`。
+- 已将系统页与审计页列表统一为“表格卡片 + 独立分页卡片”双区块布局，表格与分页行视觉彻底分离，页面层次更清晰。
+- 已进一步重构列表页顶部工具区：移除冗余页面标题，改为左侧筛选/查询、右侧刷新/新增的模块化布局，更贴近管理台内容区操作习惯。
+- 已为列表工具栏补齐主题变量：工具栏面板、输入框、普通按钮、刷新按钮、表格面板、分页面板均随主题联动，不再只有白色块感。
+- 已完成列表页高度逻辑重构：移除 `useAdaptiveTable` 与全局 `offset` 调参方案，统一改为 `flex` 布局分配高度（分页贴底、表格区 `height=100%` 填充剩余空间）。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -80,6 +84,9 @@
 | 列表表格优先使用固定 `height` 而非 `max-height` | 让空数据/少数据场景也占满工作区，保持整体布局稳定 |
 | 响应式布局优先通过共享样式与 composable 收口 | 减少各页面重复算高、重复写断点样式，统一宽高适配行为 |
 | 小屏分页优先允许横向滚动并靠左对齐 | 保证 640px 级别宽度下分页仍可操作，不强行压缩控件宽度 |
+| 列表区继续采用“表格面板 + 分页面板”双卡片 | 强化信息层次，让表格主体与翻页操作视觉解耦 |
+| 列表顶部不再重复展示页面标题 | 左侧菜单已提供当前位置，内容区优先留给筛选与操作模块 |
+| 列表布局优先 `flex` 结构，不再依赖魔法高度参数 | 减少反复微调 `offset` 造成的维护负担，保持结构稳定与可读性 |
 
 ## Resources
 - `src/router/index.js`
@@ -108,7 +115,6 @@
 - `src/views/system/MenusView.vue`
 - `src/views/audit/OperLogsView.vue`
 - `src/views/audit/LoginLogsView.vue`
-- `src/composables/useAdaptiveTable.js`
 - `src/views/system/RolesView.vue`
 - `src/views/system/MenusView.vue`
 - `src/layouts/MainLayout.vue`

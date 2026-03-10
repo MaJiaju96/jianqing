@@ -1,67 +1,73 @@
 <template>
   <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
-      <div class="header-row">
-        <h2 class="jq-page-title">部门管理</h2>
-        <div class="toolbar-right">
-          <el-input v-model="keywordInput" clearable placeholder="搜索部门名称" style="width: 220px;" @keyup.enter="handleSearch" />
-          <el-select v-model="statusFilterInput" style="width: 140px;">
+      <div class="jq-toolbar-shell">
+        <div class="jq-toolbar-group jq-toolbar-group--filters">
+          <el-input v-model="keywordInput" clearable placeholder="搜索部门名称" class="jq-toolbar-field" @keyup.enter="handleSearch" />
+          <el-select v-model="statusFilterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
             <el-option label="启用" :value="1" />
             <el-option label="停用" :value="0" />
           </el-select>
-          <el-button @click="handleSearch">查询</el-button>
+          <el-button :icon="Search" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
-          <el-button v-if="canAdd" type="primary" @click="openCreate">新增部门</el-button>
+        </div>
+        <div class="jq-toolbar-group jq-toolbar-group--actions">
+          <el-button class="jq-toolbar-icon-btn" :icon="RefreshRight" circle :loading="pageLoading" @click="handleRefresh" />
+          <el-button v-if="canAdd" type="primary" :icon="Plus" @click="openCreate">新增部门</el-button>
         </div>
       </div>
     </template>
-    <el-table
-      :data="pagedRows"
-      row-key="id"
-      stripe
-      :empty-text="tableEmptyText"
-      :height="tableHeight"
-    >
-      <el-table-column label="部门名称" min-width="220">
-        <template #default="scope">
-          <div class="dept-name-cell" :style="{ paddingLeft: `${Math.max(0, (scope.row.level - 1) * 20)}px` }">
-            <span>{{ scope.row.deptName }}</span>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="负责人" min-width="140">
-        <template #default="scope">
-          {{ leaderNameMap[scope.row.leaderUserId] || (scope.row.leaderUserId > 0 ? `用户#${scope.row.leaderUserId}` : '-') }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="phone" label="联系电话" min-width="150" />
-      <el-table-column prop="email" label="邮箱" min-width="180" />
-      <el-table-column prop="sortNo" label="排序" width="90" />
-      <el-table-column label="状态" width="100">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'info'">{{ scope.row.status === STATUS_ENABLED ? '启用' : '停用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="260">
-        <template #default="scope">
-          <div class="action-group">
-            <el-button v-if="canAdd" type="primary" link :disabled="submitLoading || deleteLoadingId === scope.row.id" @click="openCreateChild(scope.row)">新增子部门</el-button>
-            <el-button v-if="canEdit" type="primary" link :disabled="submitLoading || deleteLoadingId === scope.row.id" @click="openEdit(scope.row)">编辑</el-button>
-            <el-button v-if="canDelete" type="danger" link :loading="deleteLoadingId === scope.row.id" :disabled="submitLoading" @click="handleDelete(scope.row)">删除</el-button>
-          </div>
-        </template>
-      </el-table-column>
-    </el-table>
-    <el-pagination
-      class="table-pagination"
-      background
-      layout="total, sizes, prev, pager, next"
-      :total="flatRows.length"
-      :page-sizes="pageSizes"
-      v-model:current-page="pageNo"
-      v-model:page-size="pageSize"
-    />
+    <div class="jq-table-panel">
+      <el-table
+        :data="pagedRows"
+        row-key="id"
+        stripe
+        :empty-text="tableEmptyText"
+        height="100%"
+      >
+        <el-table-column label="部门名称" min-width="220">
+          <template #default="scope">
+            <div class="dept-name-cell" :style="{ paddingLeft: `${Math.max(0, (scope.row.level - 1) * 20)}px` }">
+              <span>{{ scope.row.deptName }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="负责人" min-width="140">
+          <template #default="scope">
+            {{ leaderNameMap[scope.row.leaderUserId] || (scope.row.leaderUserId > 0 ? `用户#${scope.row.leaderUserId}` : '-') }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="phone" label="联系电话" min-width="150" />
+        <el-table-column prop="email" label="邮箱" min-width="180" />
+        <el-table-column prop="sortNo" label="排序" width="90" />
+        <el-table-column label="状态" width="100">
+          <template #default="scope">
+            <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'info'">{{ scope.row.status === STATUS_ENABLED ? '启用' : '停用' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="260">
+          <template #default="scope">
+            <div class="action-group">
+              <el-button v-if="canAdd" type="primary" link :disabled="submitLoading || deleteLoadingId === scope.row.id" @click="openCreateChild(scope.row)">新增子部门</el-button>
+              <el-button v-if="canEdit" type="primary" link :disabled="submitLoading || deleteLoadingId === scope.row.id" @click="openEdit(scope.row)">编辑</el-button>
+              <el-button v-if="canDelete" type="danger" link :loading="deleteLoadingId === scope.row.id" :disabled="submitLoading" @click="handleDelete(scope.row)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+    <div class="jq-pagination-panel">
+      <el-pagination
+        class="table-pagination"
+        background
+        layout="total, sizes, prev, pager, next"
+        :total="flatRows.length"
+        :page-sizes="pageSizes"
+        v-model:current-page="pageNo"
+        v-model:page-size="pageSize"
+      />
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑部门' : '新增部门'" width="520px" append-to-body>
       <el-form label-width="90px">
@@ -106,11 +112,11 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus';
 import { DEFAULT_LIST_PAGE_SIZE, PAGE_SIZE_OPTIONS, ROOT_PARENT_ID, STATUS_DISABLED, STATUS_ENABLED } from '../../constants/app';
 import { createDept, deleteDept, fetchDepts, fetchUsers, updateDept } from '../../api/system';
 import { useActionLoading, useRowActionLoading, useTableFeedback } from '../../composables/useAsyncState';
-import { useAdaptiveTable } from '../../composables/useAdaptiveTable';
 import { usePermissionGroup } from '../../composables/usePermissions';
 import { showSuccessMessage } from '../../utils/feedback';
 
@@ -137,9 +143,9 @@ const form = ref({
 });
 
 const tableFeedback = useTableFeedback();
-const { tableHeight } = useAdaptiveTable();
 const submitAction = useActionLoading();
 const deleteAction = useRowActionLoading();
+const pageLoading = tableFeedback.loading;
 const submitLoading = submitAction.loading;
 const deleteLoadingId = deleteAction.loadingId;
 const tableEmptyText = tableFeedback.emptyText;
@@ -183,6 +189,10 @@ function handleReset() {
   keywordInput.value = '';
   statusFilterInput.value = 'all';
   handleSearch();
+}
+
+async function handleRefresh() {
+  await loadData();
 }
 
 watch([keyword, statusFilter], () => {
@@ -303,18 +313,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.toolbar-right {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
 .action-group {
   display: flex;
   gap: 8px;
@@ -322,7 +320,7 @@ onMounted(async () => {
 }
 
 .table-pagination {
-  margin-top: 14px;
+  margin-top: 0;
   justify-content: flex-end;
 }
 

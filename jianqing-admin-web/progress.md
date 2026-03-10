@@ -62,6 +62,12 @@
 - 已完成最新一轮数据范围联调复核：`dept_user/test123` 登录后用户页仅显示本部门 5 个用户；`self_user/test123` 登录后仅显示自己。
 - 已复核角色页数据范围展示（全部/本部门/仅本人）与部门页列表展示，未发现新的明显按钮文案、分页或空态问题。
 - 已统一记录当前联调账号：`admin/admin123`，其余测试账号统一为 `test123`。
+- 已完成列表区视觉收口：系统管理与审计日志页统一新增表格面板包裹层，分页区保持独立面板，表格与分页行完全分离。
+- 已同步增强共享列表样式：表格外层增加独立玻璃态面板、分页面板间距与阴影层次更明确，并微调自适应表格高度偏移避免布局拥挤。
+- 已完成列表页顶部操作区重构：移除用户/角色/菜单/部门/审计页标题，查询相关控件统一放左侧，刷新与新增动作统一放右侧。
+- 已接入工具栏主题化样式：新增工具栏/输入框/按钮/刷新图标的主题变量，五套主题下列表页顶部模块可随主题切换联动。
+- 已完成列表页布局重构：移除 `useAdaptiveTable` 与 `offset` 调参链路，统一采用 `flex` 高度分配（工具区固定、分页贴底、表格区填充）。
+- 已清理无效样式残留（旧版 `header-row` / `toolbar-right` 规则），减少历史补丁叠加造成的样式噪音。
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -91,8 +97,11 @@
 | frontend system-filter consistency | unify query/reset behavior on roles and menus + browser verify | roles and menus now match users and depts filter interaction | passed | ✓ |
 | frontend audit-filter consistency | unify query/reset behavior on audit pages + browser verify | oper/login logs now match the same search and reset interaction | passed | ✓ |
 | frontend full-workspace table layout | switch list tables from max-height to fixed adaptive height + responsive layout verify | query pages keep stable height on desktop and wrap controls correctly on smaller widths | passed | ✓ |
+| frontend modular toolbar redesign | `npm run build` | build succeeds after removing list titles and introducing left filters + right refresh/add modular toolbar | passed | ✓ |
+| frontend list layout refactor | `npm run build` | build succeeds after removing adaptive table offset composable and switching all list tables to flex-driven `height=100%` layout | passed | ✓ |
 | frontend small-screen list verification | 768/640 viewport browser verify + pager mobile patch | no main horizontal overflow and pagination remains operable on narrow screens | passed | ✓ |
 | frontend latest data-scope regression | admin/dept_user/self_user browser verification | role/dept pages render normally, dept scope sees same dept only, self scope sees self only | passed | ✓ |
+| frontend table/pagination visual split | `npm run build` | build succeeds after separating table panel and pagination panel UI | passed | ✓ |
 
 ## 5-Question Reboot Check
 | Question | Answer |
