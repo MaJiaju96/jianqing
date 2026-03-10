@@ -125,7 +125,7 @@
    - 已完成服务协作重构：`SystemService` 通过 `RoleService/MenuService` 完成跨实体协作，`AuthService` 通过 `AuditLogService` 写登录日志。
 
 ### Phase 7: v0.2 数据权限最小闭环
-- **Status:** in_progress
+- **Status:** complete
 - Actions taken:
   - 已确认 `jq_sys_role.data_scope` 可直接复用，无需新增首批数据范围字段。
   - 已在后端接入角色数据范围配置，当前支持 `全部数据 / 本部门数据 / 仅本人数据`。
@@ -135,6 +135,8 @@
   - 已完成真实账号验证：`dept_user`（本部门数据）可见同部门用户且不可见跨部门用户；`self_user`（仅本人数据）仅可见自己。
   - 已补齐部门管理后端最小闭环：部门树查询、创建、更新、删除接口均已可用。
   - 已新增 `SystemServiceImplTest`，覆盖数据权限首批核心分支：`super_admin` 全量查询、`仅本人` 查询、`仅本人` 禁止新增、`本部门` 禁止越权编辑。
+  - 已重新校准联调测试账号密码：`admin` 保持 `admin123`，其余测试账号统一为 `test123`。
+  - 已完成最新一轮真实账号回归：`dept_user` 列表仅见本部门 5 个用户，`self_user` 列表仅见自己，角色数据范围展示与部门列表均正常。
 - Files created/modified:
   - `src/main/java/com/jianqing/module/system/constant/DataScopeConstants.java` (created)
   - `src/main/java/com/jianqing/module/system/entity/SysRole.java` (updated)
@@ -182,6 +184,7 @@
 | data scope real-account verification | create test users/roles + browser login verification | dept scope sees same dept only, self scope sees self only | passed | ✓ |
 | dept backend minimal CRUD | `mvn test` | dept entity/mapper/service/controller changes compile and backend tests still pass | passed | ✓ |
 | backend data scope unit tests | `mvn test` | SystemServiceImpl data-scope branches are covered and all backend tests pass | passed（21 passed, 0 failed） | ✓ |
+| latest data scope regression | admin/dept_user/self_user real-account verification | dept scope only sees same dept, self scope only sees self, role/dept pages render normally | passed | ✓ |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

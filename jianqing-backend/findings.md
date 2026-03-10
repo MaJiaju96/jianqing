@@ -63,6 +63,8 @@
 - 用户管理模块已作为首个闭环模块接入数据范围控制：列表查询与按 ID 的编辑/删除/分配角色均受当前登录用户数据范围约束。
 - `jq_sys_dept` 表此前只有 SQL seed，本轮已补齐后端 `SysDept` 实体、Mapper、Service、Controller，部门管理从“仅有菜单 seed”变为可用模块。
 - 后端数据权限专项测试已补齐首批单测，沿用现有 Mockito 服务层测试风格，优先覆盖 `super_admin`、`本部门`、`仅本人` 三条关键分支。
+- 已完成一轮最新真实账号联调复核：`dept_user` 仅可见本部门用户（当前为 admin/test/dept_user/self_user/other_user），`self_user` 仅可见自己，`outside_user` 位于“外部协作部”。
+- 当前开发联调测试账号口径已统一：`admin/admin123`，其余测试账号统一使用 `test123`。
 
 ## Technical Decisions
 | Decision | Rationale |

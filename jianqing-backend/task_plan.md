@@ -55,8 +55,8 @@ Phase 7
 - [x] 将角色数据范围字段接入后端 DTO / 实体 / 服务
 - [x] 在用户管理模块落首批数据范围校验
 - [x] 补齐部门管理后端最小 CRUD
-- [ ] 补齐前后端联调与回归测试
-- **Status:** in_progress
+- [x] 补齐前后端联调与回归测试
+- **Status:** complete
 
 ## Key Questions
 1. v0.1 是否只交付后端内核（不绑定前端）？
@@ -94,6 +94,7 @@ Phase 7
 | 工具调用出现乱码/参数异常 | 1 | 重新发起调用并补齐必填参数后继续 |
 
 ## Notes
+- 开发联调测试账号：`admin/admin123`；`dept_user/test123`；`self_user/test123`；`other_user/test123`；`outside_user/test123`。
 - 每完成一个 Phase 都同步更新状态。
 - 每次关键技术决策先回看本计划文件。
 - 错误先记录再修复，避免重复踩坑。
