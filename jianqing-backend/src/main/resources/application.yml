@@ -5,15 +5,15 @@ spring:
   application:
     name: jianqing-backend
   datasource:
-    url: jdbc:mysql://localhost:1010/jianqing?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: Root999.
+    url: jdbc:mysql://10.66.66.2:3306/jianqing?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: jianqing
+    password: jianqing123!@#
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
-      host: ${REDIS_HOST:127.0.0.1}
+      host: ${REDIS_HOST:10.66.66.2}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD:MaRedis123!}
       database: ${REDIS_DATABASE:0}
       timeout: ${REDIS_TIMEOUT:3s}
 
