@@ -166,6 +166,13 @@
 - `scripts/check-mapper-layering.sh`
 - `src/main/java/com/jianqing/module/system/controller/SystemController.java`
 - `src/main/java/com/jianqing/framework/web/OperationLogInterceptor.java`
+- `src/main/java/com/jianqing/framework/security/JwtAuthenticationFilter.java`
+
+## Additional Findings
+- 已完成后端首轮热点扫描：`SystemServiceImpl`（391 行）是当前主要复杂度集中点，后续应按“用户域操作/缓存失效/数据范围判定”继续拆分职责。
+- 已修复安全过滤器异常吞掉问题：`JwtAuthenticationFilter` 捕获 JWT 解析异常后新增 `warn` 级日志，避免无痕失败导致排障困难。
+- 已完成 `SystemServiceImpl` 第二批重构：抽离数据范围判定与校验职责到 `UserDataScopeResolver`，主服务类聚焦编排逻辑。
+- 当前后端热点复杂度已初步下降，后续可继续抽离用户写操作与缓存失效策略，进一步压缩主服务体积。
 
 ## Visual/Browser Findings
 - 本轮无网页或图像类输入。

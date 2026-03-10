@@ -68,6 +68,8 @@
 - 已接入工具栏主题化样式：新增工具栏/输入框/按钮/刷新图标的主题变量，五套主题下列表页顶部模块可随主题切换联动。
 - 已完成列表页布局重构：移除 `useAdaptiveTable` 与 `offset` 调参链路，统一采用 `flex` 高度分配（工具区固定、分页贴底、表格区填充）。
 - 已清理无效样式残留（旧版 `header-row` / `toolbar-right` 规则），减少历史补丁叠加造成的样式噪音。
+- 已完成前端首轮代码味道扫描并落地首批重构：新增 `useAuditListPage`，收敛操作日志/登录日志页重复分页查询状态逻辑。
+- 审计页两处列表已改为共享组合式状态流（`loadData/search/reset/refresh/page`），行为保持一致且页面脚本体积下降。
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -102,6 +104,7 @@
 | frontend small-screen list verification | 768/640 viewport browser verify + pager mobile patch | no main horizontal overflow and pagination remains operable on narrow screens | passed | ✓ |
 | frontend latest data-scope regression | admin/dept_user/self_user browser verification | role/dept pages render normally, dept scope sees same dept only, self scope sees self only | passed | ✓ |
 | frontend table/pagination visual split | `npm run build` | build succeeds after separating table panel and pagination panel UI | passed | ✓ |
+| frontend audit composable refactor | `npm run build` | build succeeds after extracting shared audit list state into `useAuditListPage` | passed | ✓ |
 
 ## 5-Question Reboot Check
 | Question | Answer |

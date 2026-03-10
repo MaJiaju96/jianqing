@@ -185,6 +185,13 @@
 | dept backend minimal CRUD | `mvn test` | dept entity/mapper/service/controller changes compile and backend tests still pass | passed | ✓ |
 | backend data scope unit tests | `mvn test` | SystemServiceImpl data-scope branches are covered and all backend tests pass | passed（21 passed, 0 failed） | ✓ |
 | latest data scope regression | admin/dept_user/self_user real-account verification | dept scope only sees same dept, self scope only sees self, role/dept pages render normally | passed | ✓ |
+| backend jwt filter observability fix | `mvn -q -DskipTests compile` + `mvn -q checkstyle:check` | compile/checkstyle pass after replacing swallowed exception with warn logging | passed | ✓ |
+| backend system-service split step2 | `mvn -q -DskipTests compile` + `mvn -q checkstyle:check` | compile/checkstyle pass after extracting user data-scope logic to `UserDataScopeResolver` | passed | ✓ |
+
+## Latest Updates
+- 已完成后端热点扫描，识别 `SystemServiceImpl` 为当前优先重构目标（职责集中、行数最高）。
+- 已修复 `JwtAuthenticationFilter` 异常吞掉问题：保留鉴权失败清上下文逻辑，同时输出 `warn` 级日志提升排障可观测性。
+- 已完成 `SystemServiceImpl` 第二批重构：新增 `UserDataScopeResolver`，将数据范围解析/查询构造/访问校验从主类中抽离。
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

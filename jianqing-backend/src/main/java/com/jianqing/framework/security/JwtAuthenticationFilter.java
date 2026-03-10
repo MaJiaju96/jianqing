@@ -9,12 +9,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtTokenService jwtTokenService;
     private final TokenSessionService tokenSessionService;
@@ -43,7 +47,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(username, null, Collections.emptyList());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-            } catch (Exception ignored) {
+            } catch (Exception ex) {
+                log.warn("jwt parse failed, uri={}, message={}", request.getRequestURI(), ex.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }

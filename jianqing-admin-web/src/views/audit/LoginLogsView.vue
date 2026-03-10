@@ -57,66 +57,49 @@
 import { onMounted, ref } from 'vue';
 import { RefreshRight, Search } from '@element-plus/icons-vue';
 import {
-  DEFAULT_AUDIT_PAGE_SIZE,
   EMPTY_FILTER_VALUE,
-  PAGE_SIZE_OPTIONS,
   STATUS_ENABLED
 } from '../../constants/app';
 import { fetchLoginLogs } from '../../api/audit';
-import { useTableFeedback } from '../../composables/useAsyncState';
+import { useAuditListPage } from '../../composables/useAuditListPage';
 
-const rows = ref([]);
-const total = ref(0);
-const pageNo = ref(1);
-const pageSize = ref(DEFAULT_AUDIT_PAGE_SIZE);
-const pageSizes = PAGE_SIZE_OPTIONS;
 const keywordInput = ref('');
 const statusFilterInput = ref(EMPTY_FILTER_VALUE);
 const loginTypeFilterInput = ref(EMPTY_FILTER_VALUE);
 const keyword = ref('');
 const statusFilter = ref(EMPTY_FILTER_VALUE);
 const loginTypeFilter = ref(EMPTY_FILTER_VALUE);
-const tableFeedback = useTableFeedback();
-const loading = tableFeedback.loading;
-const tableEmptyText = tableFeedback.emptyText;
-
-async function loadData() {
-  await tableFeedback.run(async () => {
-    const page = await fetchLoginLogs({
-      page: pageNo.value,
-      size: pageSize.value,
-      keyword: keyword.value.trim(),
-      status: statusFilter.value,
-      loginType: loginTypeFilter.value
-    });
-    rows.value = page.records || [];
-    total.value = Number(page.total || 0);
-  });
-}
-
-function handleSizeChange() {
-  pageNo.value = 1;
-  loadData();
-}
-
-function handleSearch() {
-  pageNo.value = 1;
-  keyword.value = keywordInput.value.trim();
-  statusFilter.value = statusFilterInput.value;
-  loginTypeFilter.value = loginTypeFilterInput.value;
-  loadData();
-}
-
-function handleReset() {
-  keywordInput.value = '';
-  statusFilterInput.value = EMPTY_FILTER_VALUE;
-  loginTypeFilterInput.value = EMPTY_FILTER_VALUE;
-  handleSearch();
-}
-
-function handleRefresh() {
-  loadData();
-}
+const {
+  rows,
+  total,
+  pageNo,
+  pageSize,
+  pageSizes,
+  loading,
+  tableEmptyText,
+  loadData,
+  handleSizeChange,
+  handleSearch,
+  handleReset,
+  handleRefresh
+} = useAuditListPage({
+  fetchPage: fetchLoginLogs,
+  buildQuery: () => ({
+    keyword: keyword.value.trim(),
+    status: statusFilter.value,
+    loginType: loginTypeFilter.value
+  }),
+  syncQuery: () => {
+    keyword.value = keywordInput.value.trim();
+    statusFilter.value = statusFilterInput.value;
+    loginTypeFilter.value = loginTypeFilterInput.value;
+  },
+  resetInputs: () => {
+    keywordInput.value = '';
+    statusFilterInput.value = EMPTY_FILTER_VALUE;
+    loginTypeFilterInput.value = EMPTY_FILTER_VALUE;
+  }
+});
 
 onMounted(async () => {
   handleSearch();
