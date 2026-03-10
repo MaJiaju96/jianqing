@@ -39,9 +39,9 @@ Phase 5
 - [x] 在角色页展示数据范围字段
 - [x] 在角色表单支持编辑数据范围
 - [x] 补齐部门管理页面与路由接入
-- [ ] 补一轮数据范围联调验证
-- [ ] 做一轮整体 UI 细节巡检（表格列宽/分页信息/按钮文案/空态文案）
-- **Status:** in_progress
+- [x] 补一轮数据范围联调验证
+- [x] 做一轮整体 UI 细节巡检（表格列宽/分页信息/按钮文案/空态文案）
+- **Status:** complete
 
 ## Decisions Made
 | Decision | Rationale |
@@ -59,6 +59,7 @@ Phase 5
 | 前端公共约定收敛到规范文档与常量模块 | 降低 AI/人工协作时的隐式约定理解成本 |
 
 ## Sync Rules
+- 开发联调测试账号：`admin/admin123`；`dept_user/test123`；`self_user/test123`；`other_user/test123`；`outside_user/test123`。
 - 前后端均维护独立 `task_plan.md / findings.md / progress.md`。
 - 发生跨项目变更时，两个目录的计划文件都要同步记录。
 - 注释执行规则：仅在关键逻辑/复杂流程处添加必要注释，避免无意义注释噪音。

@@ -59,6 +59,9 @@
 - 已统一审计页筛选区交互，操作日志/登录日志现与系统管理页保持一致的查询与重置模式。
 - 已进一步将所有查询列表改为“固定占满可用工作区高度”，并补齐主内容区与工具栏的响应式宽高适配：大屏占满、小屏换行、数据超出时内部滚动。
 - 已完成 768/640 小屏巡检与补丁：列表页无主内容横向溢出，移动端分页区支持左对齐与横向滚动。
+- 已完成最新一轮数据范围联调复核：`dept_user/test123` 登录后用户页仅显示本部门 5 个用户；`self_user/test123` 登录后仅显示自己。
+- 已复核角色页数据范围展示（全部/本部门/仅本人）与部门页列表展示，未发现新的明显按钮文案、分页或空态问题。
+- 已统一记录当前联调账号：`admin/admin123`，其余测试账号统一为 `test123`。
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -89,6 +92,7 @@
 | frontend audit-filter consistency | unify query/reset behavior on audit pages + browser verify | oper/login logs now match the same search and reset interaction | passed | ✓ |
 | frontend full-workspace table layout | switch list tables from max-height to fixed adaptive height + responsive layout verify | query pages keep stable height on desktop and wrap controls correctly on smaller widths | passed | ✓ |
 | frontend small-screen list verification | 768/640 viewport browser verify + pager mobile patch | no main horizontal overflow and pagination remains operable on narrow screens | passed | ✓ |
+| frontend latest data-scope regression | admin/dept_user/self_user browser verification | role/dept pages render normally, dept scope sees same dept only, self scope sees self only | passed | ✓ |
 
 ## 5-Question Reboot Check
 | Question | Answer |
