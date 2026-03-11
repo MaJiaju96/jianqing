@@ -4,7 +4,7 @@
 构建一个可直接联调 `jianqing-backend` 的前端管理台，界面不死板、交互流畅，并保持纯 `JavaScript` 实现。
 
 ## Current Phase
-Phase 7
+Phase 8
 
 ## Phases
 
@@ -60,6 +60,13 @@ Phase 7
 - [x] 同步更新前端规划文件与统一开发规范，固化后续约束
 - **Status:** complete
 
+### Phase 8: CRUD 代码生成器前端最小闭环
+- [x] 对齐后端 `dev/gen` 元数据接口结构与字段语义
+- [x] 设计代码生成器页最小交互（选表 / 看字段 / 预览 / 下载）
+- [x] 复用现有列表页头部与反馈节奏，避免新页面风格分叉
+- [x] 接入前端 API / 路由 / 页面骨架并完成构建验证
+- **Status:** complete
+
 ## Decisions Made
 | Decision | Rationale |
 |----------|-----------|
@@ -77,6 +84,7 @@ Phase 7
 | 列表高度布局统一采用 `flex` 分配 | 避免持续调 `offset` 这类魔法参数，减少样式补丁累积 |
 | 列表页头部工具栏统一走共享组件 | 保持系统页与审计页操作骨架一致，减少样式和交互漂移 |
 | 树工具与菜单元数据优先抽公共层 | 避免重复逻辑重新散落回视图页，保持页面脚本轻量 |
+| 代码生成器页先做“元数据查看 + 预览/下载” | 先验证产品闭环与模板输出，避免首版引入复杂在线编辑器 |
 
 ## Sync Rules
 - 开发联调测试账号：`admin/admin123`；`dept_user/test123`；`self_user/test123`；`other_user/test123`；`outside_user/test123`。

@@ -4,7 +4,7 @@
 在保留后台管理系统高效率开发体验的前提下，完成 `简擎` 的可开源后端内核：以 `MySQL` 为首发数据源，预留 `Elasticsearch`、`Nacos`、`RocketMQ` 的可插拔集成能力。
 
 ## Current Phase
-Phase 9
+Phase 10
 
 ## Phases
 
@@ -76,6 +76,16 @@ Phase 9
 - [x] 同步更新后端规划文件与统一开发规范，固化后续优化规则
 - **Status:** complete
 
+### Phase 10: CRUD 代码生成器 MVP（预览前置）
+- [x] 明确生成器 MVP 边界：仅支持单表、先做预览/下载、不直接落盘
+- [x] 建立后端 `dev/gen` 模块骨架与元数据 DTO / service / controller
+- [x] 提供表列表、字段列表元数据接口（`/api/dev/gen/tables`、`/columns`）
+- [x] 实现 preview/download 接口与模板渲染骨架
+- [x] 输出首批后端代码模板（entity/mapper/xml/service/controller/dto）
+- [x] 输出前端 API / 业务列表页 / 路由片段模板
+- [x] 评估并接入前端生成器页最小闭环
+- **Status:** complete
+
 ## Key Questions
 1. v0.1 是否只交付后端内核（不绑定前端）？
 2. 鉴权方案选 `Spring Security + JWT` 还是 `Sa-Token`？
@@ -108,6 +118,7 @@ Phase 9
 | 热点服务优先按职责分层拆分（解析/编排/失效） | 降低单类复杂度，避免在历史代码上持续叠补丁 |
 | `SystemServiceImpl` 定位为聚合入口 | 仅保留访问控制、事务边界与跨域编排，避免再次膨胀 |
 | 跨表写先保证事务与提交后缓存失效 | 正确性优先于抽象与性能，减少数据与缓存不一致风险 |
+| 代码生成器 MVP 先走“预览/下载，不直接落盘” | 先验证模板与约束一致性，避免首版写盘带来的破坏性风险 |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

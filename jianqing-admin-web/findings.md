@@ -69,6 +69,19 @@
 - 已完成 Dashboard 统计加载逻辑收口：新增 `src/composables/useOverviewCounts.js`，统一承载权限判断、统计请求、菜单节点计数与失败兜底展示。
 - 已完成页面初始化收口：新增 `src/composables/usePageInitializer.js`，统一 `onMounted + try/catch + ignoreHandledError + 初始加载` 的固定节奏。
 - 已完成状态标签收口：新增 `src/components/StatusTag.vue`，统一启用/禁用、成功/失败、停用等状态标签展示语义。
+- 已完成列表页基础层统一：新增 `src/composables/useListPage.js`，`useAuditListPage` / `useSystemListPage` 均已降为轻 wrapper，分别承载远程分页列表与本地筛选列表语义。
+- 已进入 CRUD 代码生成器主线的前端准备阶段：后端已先提供 `dev/gen` 元数据接口，前端下一步只需围绕“选表 / 字段查看 / 预览 / 下载”做最小页面闭环。
+- 代码生成器页首版不应偏离当前管理台骨架，建议继续复用 `ListPageHeader`、统一按钮反馈与现有路由 `meta.perm` 约定。
+- 已新增 `src/api/generator.js`，其中 JSON 接口继续复用 `http` 拦截器，ZIP 下载则改用原生 `axios + blob`，避免被统一 `ApiResponse` 拦截逻辑误处理。
+- 已新增 `src/views/system/GeneratorView.vue`，首版采用“双栏布局：字段元数据 + 代码预览 tabs”，并继续复用 `ListPageHeader`、全局反馈与主题样式。
+- 已在 `router/index.js` 与 `MainLayout.vue` 补齐生成器路由与系统菜单入口，权限标识使用 `system:generator:list`。
+- 生成器页当前只做构建验证，尚未补浏览器真实回归；若继续收口，应优先补一轮下载与表切换 smoke 测试。
+- 浏览器回归时发现 `MainLayout.vue` 首次接入“代码生成”菜单后，脚本层遗漏了 `canViewGenerator` 权限计算，已补齐，避免 Vue runtime warning。
+- 在后端不可联通的情况下，已使用 Playwright mock 跑通生成器页 smoke：登录 → 进入 `/system/generator` → 选表 → 查询预览 → 触发 ZIP 下载，页面主链路正常。
+- 当前已补做真实浏览器 smoke：使用真实后端登录后进入 `/system/generator`，成功加载表列表、选中 `jq_sys_dept`、生成 9 份预览文件并触发 ZIP 下载。
+- 本轮真实回归未发现新的生成器页运行错误；控制台仅出现一次登录页初始化阶段的 `/api/auth/me` 401 噪音，不影响生成器链路本身。
+- 根据最新产品预期，生成器不应只产出后端与权限 SQL；当前后端模板已继续补齐前端 API 模板、前端 CRUD 列表页模板与路由片段输出。
+- 当前生成器产出的前端模板精度已进一步提升：日期/时间、长文本备注、布尔开关、数值输入等控件会按字段类型自动分配，不再全部退化成普通输入框。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -114,6 +127,8 @@
 | Dashboard 统计逻辑优先抽组合式工具 | 保持页面只负责展示与绑定，权限判断/请求编排留在 composable |
 | 页面初始化优先复用共享收口工具 | 避免各页重复书写 `onMounted + try/catch + ignoreHandledError` 样板代码 |
 | 状态展示优先复用共享标签组件 | 保持系统页与审计页状态语义、色彩与文案表达一致 |
+| 列表基础能力优先统一到底层 composable | 先收敛分页/查询/刷新基础节奏，再由上层 wrapper 保留本地/远程语义差异 |
+| 代码生成器页首版先追求可用与一致性 | 先复用现有管理台骨架，不为低频工具页额外发明复杂交互模型 |
 
 ## Resources
 - `src/router/index.js`

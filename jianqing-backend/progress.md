@@ -150,6 +150,38 @@
   - `findings.md` (updated)
   - `progress.md` (updated)
 
+### Phase 10: CRUD 代码生成器 MVP（进行中）
+- **Status:** complete
+- Actions taken:
+  - 已收敛代码生成器首版边界：仅支持单表，先做元数据、代码预览与下载，不直接写入仓库。
+  - 已新增后端 `module/dev` 代码生成器骨架，落地 `GeneratorMetadataService` 与 `DevGeneratorController`。
+  - 已新增表列表接口 `GET /api/dev/gen/tables` 与字段元数据接口 `GET /api/dev/gen/tables/{tableName}/columns`。
+  - 元数据查询基于当前数据源 `catalog + information_schema`，并对表名做正则校验，防止非法输入。
+  - 已新增控制器与 service 单测，覆盖表列表、字段列表及非法表名场景。
+  - 已新增 `GeneratorPreviewService`，支持 `POST /api/dev/gen/preview` 与 `POST /api/dev/gen/download` 两个接口。
+  - 已完成首批后端模板渲染：entity、saveRequest、summary、mapper、mapper.xml、service、serviceImpl、controller，外加菜单 SQL。
+  - 已补齐 preview/download 控制器测试与 preview service 测试，覆盖主键缺失拒绝生成、ZIP 下载与关键文件内容断言。
+  - 本轮中途遇到 1 个断言失败与 1 个无用导入问题，已修正后重新验证通过。
+  - 已补齐生成器菜单初始化与增量 patch SQL，保证 `admin/super_admin` 可见前端入口。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/dev/controller/DevGeneratorController.java` (created)
+  - `src/main/java/com/jianqing/module/dev/dto/GenTableSummary.java` (created)
+  - `src/main/java/com/jianqing/module/dev/dto/GenColumnMeta.java` (created)
+  - `src/main/java/com/jianqing/module/dev/dto/GenPreviewFile.java` (created)
+  - `src/main/java/com/jianqing/module/dev/dto/GenPreviewRequest.java` (created)
+  - `src/main/java/com/jianqing/module/dev/service/GeneratorMetadataService.java` (created)
+  - `src/main/java/com/jianqing/module/dev/service/GeneratorPreviewService.java` (created)
+  - `src/main/java/com/jianqing/module/dev/service/impl/GeneratorMetadataServiceImpl.java` (created)
+  - `src/main/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImpl.java` (created)
+  - `src/test/java/com/jianqing/module/dev/controller/DevGeneratorControllerTest.java` (created)
+  - `src/test/java/com/jianqing/module/dev/service/impl/GeneratorMetadataServiceImplTest.java` (created)
+  - `src/test/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImplTest.java` (created)
+  - `sql/jianqing-init-v0.1.sql` (updated)
+  - `sql/patch/20260311_generator_menu.sql` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -201,6 +233,10 @@
 | non-admin login dashboard regression | Playwright + outside_user login | dashboard no longer triggers roles/menus unauthorized noise; unauthorized stats show `--` | passed | ✓ |
 | backend p0 safety refactor | `mvn test` + pre-commit hooks | config hardening, transaction boundaries and after-commit cache eviction all pass | passed | ✓ |
 | backend service split checkpoint | `mvn test` | handler-based `SystemServiceImpl` refactor keeps behavior stable | passed（42 passed, 0 failed） | ✓ |
+| generator metadata baseline | `mvn test` + `mvn checkstyle:check` | dev/gen metadata APIs compile, tests pass, style passes | passed（47 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| generator preview baseline | `mvn test` + `mvn checkstyle:check` | preview/download APIs and first backend templates pass tests and style checks | passed（52 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| generator fullstack templates | `mvn test` + `mvn checkstyle:check` | preview/download now includes frontend API/view/route snippet templates | passed（52 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| generator smart field mapping | `mvn test` + `mvn checkstyle:check` | generated frontend templates map date/time/textarea/switch/number controls correctly | passed（52 passed, 0 failed；checkstyle 0 violations） | ✓ |
 
 ## Latest Updates
 - 已完成后端热点扫描，识别 `SystemServiceImpl` 为当前优先重构目标（职责集中、行数最高）。
@@ -225,20 +261,31 @@
 - 已新增 `SystemCacheEvictorTest`、`SystemTransactionAnnotationTest` 以及各 handler 单测，后端当前测试数提升至 42 个且全部通过。
 - 已新增根目录 `.github/workflows/frontend-ci.yml`，并将后端 CI 迁移到仓库根目录统一管理，前后端门禁入口已对齐。
 - 已将本轮优化经验同步进统一开发规范：后续后端新增复杂写流程时，优先走“聚合入口 + 轻量执行器”，先保证正确性，再做抽象与性能优化。
+- 已启动 CRUD 代码生成器主线：后端先完成 `dev/gen` 元数据接口骨架，下一步进入 preview/download 与模板渲染。
+- 已完成 CRUD 代码生成器第二步：preview/download 与首批后端模板渲染已打通，下一步可切到前端生成器页或继续扩展模板精度。
+- 已完成 CRUD 代码生成器 MVP 最小闭环：后端元数据/预览/下载 + 前端生成器页入口已对齐，下一步可转向浏览器回归或模板精度增强。
+- 浏览器真实联调在本轮被本地环境阻断：重启后端后发现 README 默认 MySQL 地址 `127.0.0.1:3306` 当前不可达，暂未恢复真实后端联通，只完成了前端 mock 回归。
+- 当前环境已恢复后端真实联通：重新验证 `admin/admin123` 登录成功，`/api/dev/gen/tables` 可正常返回真实库表列表。
+- 已继续增强代码生成器产物完整度：preview/download 新增前端 API 文件、前端业务列表页 `.vue` 与路由 snippet，生成器不再只输出后端和 SQL。
+- 已继续增强前端模板字段映射：生成视图现在能按字段类型输出 `el-date-picker`、`el-time-picker`、`textarea`、`el-switch`、`el-input-number` 等更贴近真实业务的控件。
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
 |-----------|-------|---------|------------|
 | 2026-03-03 | 工具调用参数缺失/显示乱码 | 1 | 重试并补齐参数后执行成功 |
+| 2026-03-11 | Java LSP `jdtls` 未安装，无法执行 `lsp_diagnostics` | 1 | 改用 `mvn test` 与 `mvn checkstyle:check` 完成本轮编译与静态校验 |
+| 2026-03-11 | `GeneratorPreviewServiceImplTest` 路由断言失败 | 1 | 将生成控制器路由补全为 `/api/{module}/{business}` 后复测通过 |
+| 2026-03-11 | `GeneratorPreviewServiceImpl` 存在无用导入 `Locale` | 1 | 删除无用导入并重新执行 Checkstyle，通过 |
+| 2026-03-11 | 重启后端后 MySQL `127.0.0.1:3306` 不可达 | 1 | 记录为本地环境阻断项，浏览器回归改用 Playwright mock 验证前端链路 |
 
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 9（架构收口与规范固化） |
-| Where am I going? | 在保持当前结构优势的前提下，继续选择高收益的小步优化或回到功能开发主线 |
+| Where am I? | Phase 10（CRUD 代码生成器 MVP） |
+| Where am I going? | 继续补前端生成器页，或扩展 preview 模板质量与可配置项 |
 | What's the goal? | 构建可开源的简擎后端内核，并预留 ES/Nacos/RocketMQ 扩展 |
-| What have I learned? | 后端热点服务应先做事务/缓存正确性加固，再按“聚合入口 + 轻量执行器”方式小步收口 |
-| What have I done? | 已完成 system 关键写路径一致性加固、`SystemServiceImpl` handler 化收口，以及相关规划/规范文档同步 |
+| What have I learned? | 代码生成器首版应先固定约束与模板质量，先做预览/下载，再做更重的写盘与前端编辑能力 |
+| What have I done? | 已完成 dev/gen 元数据接口、preview/download 接口与首批后端模板渲染，并通过 52 条后端测试 |
 
 ---
 *Update after completing each phase or encountering errors*

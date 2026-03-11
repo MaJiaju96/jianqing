@@ -7,6 +7,7 @@ const MainLayout = () => import('../layouts/MainLayout.vue');
 const LoginView = () => import('../views/LoginView.vue');
 const DashboardView = () => import('../views/DashboardView.vue');
 const DeptsView = () => import('../views/system/DeptsView.vue');
+const GeneratorView = () => import('../views/system/GeneratorView.vue');
 const UsersView = () => import('../views/system/UsersView.vue');
 const RolesView = () => import('../views/system/RolesView.vue');
 const MenusView = () => import('../views/system/MenusView.vue');
@@ -22,6 +23,7 @@ const routes = [
       { path: '', redirect: '/dashboard' },
       { path: '/dashboard', component: DashboardView },
       { path: '/system/depts', component: DeptsView, meta: { perm: 'system:dept:list' } },
+      { path: '/system/generator', component: GeneratorView, meta: { perm: 'system:generator:list' } },
       { path: '/system/users', component: UsersView, meta: { perm: 'system:user:list' } },
       { path: '/system/roles', component: RolesView, meta: { perm: 'system:role:list' } },
       { path: '/system/menus', component: MenusView, meta: { perm: 'system:menu:list' } },

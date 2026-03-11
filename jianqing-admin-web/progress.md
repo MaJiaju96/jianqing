@@ -128,12 +128,36 @@
 | dashboard overview composable refactor | `npm run build` | overview counts move into `useOverviewCounts` and dashboard behavior stays unchanged | passed | ✓ |
 | page initializer composable refactor | `npm run build` | repeated page init flow moves into `usePageInitializer` and list/dashboard pages keep behavior unchanged | passed | ✓ |
 | shared status tag refactor | `npm run build` | system/audit status rendering uses `StatusTag` and visual semantics stay unchanged | passed | ✓ |
+| list page foundation refactor | `npm run build` | `useAuditListPage` and `useSystemListPage` now share `useListPage` foundation and frontend build stays green | passed | ✓ |
+| generator page baseline | `npm run build` | generator API/page/route/menu changes build successfully | passed | ✓ |
+| generator page real smoke | Playwright + real backend | login, table load, preview generation and ZIP download all work | passed | ✓ |
+
+### Phase 8: CRUD 代码生成器前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 已新增 `src/api/generator.js`，封装表列表、字段列表、代码预览与 ZIP 下载接口。
+  - 已新增 `src/views/system/GeneratorView.vue`，支持选表、字段查看、代码预览 tabs 与 ZIP 下载。
+  - 已新增 `/system/generator` 路由，并在 `MainLayout` 系统菜单中补齐“代码生成”入口。
+  - ZIP 下载链路采用 `axios + blob + objectURL` 单独实现，避免被统一 JSON 响应拦截器误判。
+  - 已完成前端构建验证；浏览器真实回归留待下一轮补齐。
+  - 已修复 `MainLayout.vue` 中新增菜单项遗漏 `canViewGenerator` 的问题，消除 runtime warning。
+  - 已通过 Playwright mock 完成生成器页 smoke：mock 登录与生成器相关接口后，验证了选表、字段展示、代码预览与 ZIP 下载触发。
+  - 已补做真实浏览器 smoke：真实登录后在生成器页完成选表、查询预览与 ZIP 下载，下载文件名为 `sys_depts-generator-preview.zip`。
+  - 已确认代码生成器产物继续增强为“前后端+SQL”输出，前端侧将收到 API 模板、业务列表页模板与路由片段，避免生成结果只剩后端文件。
+- Files created/modified:
+  - `src/api/generator.js` (created)
+  - `src/views/system/GeneratorView.vue` (created)
+  - `src/router/index.js` (updated)
+  - `src/layouts/MainLayout.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
 
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 7 |
-| Where am I going? | 继续做前端代码健康治理与审美一致性收口 |
+| Where am I? | Phase 8（前端代码生成器最小闭环已完成） |
+| Where am I going? | 补浏览器 smoke 回归，或继续提升生成器页面交互与模板说明能力 |
 | What's the goal? | 构建可联调且有质感的简擎前端管理台 |
-| What have I learned? | 高重复列表页除了骨架外，还应继续收口初始化节奏与状态表达；共享层负责固定模式，页面保留领域差异 |
-| What have I done? | 已完成共享头部、部门树工具、菜单元数据、Dashboard 统计、页面初始化与状态标签等多轮前端收口，并保持构建通过 |
+| What have I learned? | 工具型页面同样适合复用现有管理台骨架；下载类接口则要与统一 JSON 拦截器分开处理 |
+| What have I done? | 已完成代码生成器页的 API、路由、菜单与页面骨架接入，并通过前端构建验证 |

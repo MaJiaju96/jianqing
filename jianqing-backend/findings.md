@@ -65,6 +65,25 @@
 - 后端数据权限专项测试已补齐首批单测，沿用现有 Mockito 服务层测试风格，优先覆盖 `super_admin`、`本部门`、`仅本人` 三条关键分支。
 - 已完成一轮最新真实账号联调复核：`dept_user` 仅可见本部门用户（当前为 admin/test/dept_user/self_user/other_user），`self_user` 仅可见自己；`outside_user` 当前数据库实际挂载角色为 `Test_User`（`dataScope=ALL`），因此可见全部 6 人，不应再按“跨部门受限账号”理解。
 - 当前开发联调测试账号口径已统一：`admin/admin123`，其余测试账号统一使用 `test123`。
+- 已确认 CRUD 代码生成器 MVP 的最稳边界：仅支持单表，首版只做元数据 + 预览/下载，不直接写入仓库。
+- 当前后端已新增 `module/dev` 代码生成器骨架，先落 `GeneratorMetadataService` 与 `/api/dev/gen/tables`、`/tables/{tableName}/columns` 两个元数据接口。
+- 元数据查询采用当前数据源的 `information_schema`，以数据库 catalog 作为 schema 名，兼容项目当前 MySQL First 约束。
+- 元数据字段首批统一返回：字段名、注释、`dataType`、`columnType`、推导 `javaType`、是否可空、是否主键、是否自增，用于后续 preview 模板直接消费。
+- 当前仓库虽已存在 `jq_sys_dict_type`、`jq_sys_dict_data`、`jq_sys_config` 表，但尚无实际模块实现，因此“代码生成器优先于字典/参数页实现”的排序仍成立。
+- 本地 `jdtls` 未安装，无法使用 Java LSP 诊断；本轮改以 `mvn test` + `mvn checkstyle:check` 作为编译与静态校验兜底，结果均通过。
+- 已完成 `POST /api/dev/gen/preview` 与 `POST /api/dev/gen/download`，首版返回后端模板文件预览并支持 ZIP 下载。
+- 预览输出当前包含 9 份文件：entity、saveRequest、summary、mapper、mapper.xml、service、serviceImpl、controller、菜单 SQL。
+- 生成模板首版已对齐现有约束：接口方法仅 `GET/POST`、`IService + ServiceImpl`、Mapper XML 共置、默认软删字段 `is_deleted` 优先走逻辑删除。
+- 生成控制器路由已改为 `/api/{module}/{business}`，与现有模块化路由风格保持一致。
+- preview 服务当前要求表存在主键，否则直接拒绝生成，避免输出不可执行的 CRUD 模板。
+- 已同步补齐生成器菜单 seed：初始化 SQL 新增“代码生成”菜单与查询权限，另补 `sql/patch/20260311_generator_menu.sql` 兼容已有数据库。
+- 为避免破坏原有初始化脚本的硬编码父子 ID，本轮将“代码生成”菜单插入移动到现有 system/audit 初始化段尾部，避免把历史菜单 ID 整体顶乱。
+- README 仍然声明本地默认后端依赖 `DB_URL=jdbc:mysql://127.0.0.1:3306/jianqing...` 与 `REDIS_HOST=127.0.0.1`；但本轮重启后端时，当前机器上的 `127.0.0.1:3306` 实际不可达，因此无法恢复真实后端联调链路。
+- 本轮浏览器回归改为 mock 模式执行：已通过 Playwright mock 登录、`/api/dev/gen/tables`、`/columns`、`/preview`、`/download`，确认生成器页最小交互链路可走通。
+- 环境恢复后已完成真实后端验证：`/api/auth/login` 与 `/api/dev/gen/tables` 均已返回成功，当前真实可选表包括 `jq_sys_dept`、`jq_sys_user`、`jq_sys_config` 等系统表。
+- 代码生成器现已补齐“前后端+SQL”三件套输出：除后端 8+1 文件外，新增前端 API 模板、业务列表页模板与路由接入片段。
+- 当前 preview/download 总输出文件数提升为 12 个：后端 8 个、前端 3 个、SQL 1 个。
+- 前端模板字段控件映射已增强：`status` 走下拉、`LocalDate/LocalDateTime/LocalTime` 走日期时间控件、长文本/备注描述字段走 textarea、`Boolean` 走 switch、数值字段走 input-number。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -102,6 +121,8 @@
 | 数据权限测试优先落服务层单测 | 当前项目已有 Mockito 风格服务测试，先覆盖核心分支再补更重的集成测试 |
 | 后端热点重构优先采用“聚合入口 + 轻量执行器” | 在保持行为不变前提下降低主服务复杂度，避免继续堆补丁 |
 | 先修正确性再做抽象收口 | 事务边界、缓存提交后失效、安全配置优先于进一步模式化优化 |
+| 代码生成器元数据阶段优先读取 `information_schema` | 简单直接，足够支撑 MySQL 首发场景，避免过早抽象多数据库适配 |
+| 代码生成器模板首版先固定输出后端 8+1 文件 | 先验证主干模板质量，再决定是否继续扩展前端页与更多 SQL 片段 |
 
 ## Issues Encountered
 | Issue | Resolution |

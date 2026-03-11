@@ -227,7 +227,10 @@ VALUES
 (16, 2, '操作日志', 'oper-logs', 'audit/oper/index', 'audit:oper-log:list', 'List', 1, 1, 1, 0, 1, 1),
 (16, 2, '登录日志', 'login-logs', 'audit/login/index', 'audit:login-log:list', 'Tickets', 2, 1, 1, 0, 1, 1),
 (17, 3, '操作日志查询', '', '', 'audit:oper-log:query', '', 1, 1, 1, 0, 1, 1),
-(18, 3, '登录日志查询', '', '', 'audit:login-log:query', '', 1, 1, 1, 0, 1, 1);
+(18, 3, '登录日志查询', '', '', 'audit:login-log:query', '', 1, 1, 1, 0, 1, 1),
+
+(1, 2, '代码生成', 'generator', 'system/generator/index', 'system:generator:list', 'MagicStick', 7, 1, 1, 0, 1, 1),
+(19, 3, '代码生成查询', '', '', 'system:generator:query', '', 1, 1, 1, 0, 1, 1);
 
 INSERT INTO jq_sys_role_menu (role_id, menu_id)
 SELECT 1, id FROM jq_sys_menu;

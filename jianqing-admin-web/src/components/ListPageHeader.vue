@@ -2,7 +2,7 @@
   <div class="jq-toolbar-shell">
     <div class="jq-toolbar-group jq-toolbar-group--filters">
       <slot name="filters" />
-      <el-button :icon="Search" :loading="searchLoading" @click="$emit('search')">查询</el-button>
+      <el-button :icon="Search" :loading="searchLoading" @click="$emit('search')">{{ searchText }}</el-button>
       <el-button @click="$emit('reset')">重置</el-button>
     </div>
     <div class="jq-toolbar-group jq-toolbar-group--actions">
@@ -26,6 +26,10 @@ defineProps({
   searchLoading: {
     type: Boolean,
     default: false
+  },
+  searchText: {
+    type: String,
+    default: '查询'
   },
   refreshLoading: {
     type: Boolean,
