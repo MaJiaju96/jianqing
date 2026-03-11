@@ -30,7 +30,7 @@
         <el-table-column prop="email" label="邮箱" min-width="180" />
         <el-table-column label="状态" width="100">
           <template #default="scope">
-            <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'danger'">{{ scope.row.status === STATUS_ENABLED ? '启用' : '禁用' }}</el-tag>
+            <StatusTag :status="scope.row.status" :enabled-value="STATUS_ENABLED" enabled-text="启用" disabled-text="禁用" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
@@ -114,6 +114,7 @@ import { computed, ref } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import ListPageHeader from '../../components/ListPageHeader.vue';
+import StatusTag from '../../components/StatusTag.vue';
 import {
   DEFAULT_LIST_PAGE_SIZE,
   PAGE_SIZE_OPTIONS,
