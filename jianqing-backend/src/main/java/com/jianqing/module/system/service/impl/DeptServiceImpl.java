@@ -8,6 +8,7 @@ import com.jianqing.module.system.entity.SysDept;
 import com.jianqing.module.system.mapper.SysDeptMapper;
 import com.jianqing.module.system.service.DeptService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,6 +25,7 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public DeptTreeNode createDept(DeptSaveRequest request) {
         validateParent(request.getParentId());
         SysDept dept = new SysDept();
@@ -34,6 +36,7 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public DeptTreeNode updateDept(Long id, DeptSaveRequest request) {
         SysDept dept = getDeptOrThrow(id);
         if (id.equals(request.getParentId())) {
@@ -46,6 +49,7 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteDept(Long id) {
         SysDept dept = getDeptOrThrow(id);
         Long childCount = baseMapper.countChildren(id);

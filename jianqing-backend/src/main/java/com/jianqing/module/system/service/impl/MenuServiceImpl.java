@@ -8,6 +8,7 @@ import com.jianqing.module.system.entity.SysMenu;
 import com.jianqing.module.system.mapper.SysMenuMapper;
 import com.jianqing.module.system.service.MenuService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -30,6 +31,7 @@ public class MenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public MenuTreeNode createMenu(MenuSaveRequest request) {
         validateMenuParent(request.getParentId());
         SysMenu menu = new SysMenu();
@@ -40,6 +42,7 @@ public class MenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public MenuTreeNode updateMenu(Long id, MenuSaveRequest request) {
         SysMenu menu = getMenuOrThrow(id);
         validateMenuParent(request.getParentId());
@@ -57,6 +60,7 @@ public class MenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impleme
      * @throws IllegalArgumentException 菜单不存在或存在子菜单
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteMenu(Long id) {
         SysMenu menu = getMenuOrThrow(id);
         Long childCount = baseMapper.countChildren(id);

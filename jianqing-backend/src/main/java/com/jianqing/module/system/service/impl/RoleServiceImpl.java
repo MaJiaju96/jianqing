@@ -10,6 +10,7 @@ import com.jianqing.module.system.mapper.SysRoleMapper;
 import com.jianqing.module.system.service.MenuService;
 import com.jianqing.module.system.service.RoleService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +34,7 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public RoleSummary createRole(RoleSaveRequest request) {
         validateRoleCodeUnique(request.getRoleCode(), null);
         validateDataScope(request.getDataScope());
@@ -47,6 +49,7 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public RoleSummary updateRole(Long id, RoleSaveRequest request) {
         SysRole role = getRoleOrThrow(id);
         validateRoleCodeUnique(request.getRoleCode(), id);
@@ -60,6 +63,7 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteRole(Long id) {
         SysRole role = getRoleOrThrow(id);
         role.setIsDeleted(1);
@@ -75,6 +79,7 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void assignRoleMenus(Long roleId, List<Long> menuIds) {
         getRoleOrThrow(roleId);
         List<Long> validMenuIds = menuIds == null ? Collections.emptyList() : menuIds.stream().distinct().toList();
