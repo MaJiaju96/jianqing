@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import ListPageHeader from '../../components/ListPageHeader.vue';
 import { DEFAULT_LIST_PAGE_SIZE, PAGE_SIZE_OPTIONS, ROOT_PARENT_ID, STATUS_DISABLED, STATUS_ENABLED } from '../../constants/app';
@@ -117,9 +117,9 @@ import { useTableFeedback } from '../../composables/useAsyncState';
 import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
 import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
+import { usePageInitializer } from '../../composables/usePageInitializer';
 import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
 import { useSystemListPage } from '../../composables/useSystemListPage';
-import { ignoreHandledError } from '../../utils/errors';
 import { filterDeptTree, flattenDeptOptions, flattenDeptRows } from './deptTreeUtils';
 
 const rows = ref([]);
@@ -227,13 +227,9 @@ async function handleSubmit() {
   });
 }
 
-onMounted(async () => {
-  try {
-    await loadData();
-    handleSearch();
-  } catch (error) {
-    ignoreHandledError(error);
-  }
+usePageInitializer(async () => {
+  await loadData();
+  handleSearch();
 });
 </script>
 

@@ -125,7 +125,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import ListPageHeader from '../../components/ListPageHeader.vue';
@@ -143,9 +143,9 @@ import { useTableFeedback } from '../../composables/useAsyncState';
 import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
 import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
+import { usePageInitializer } from '../../composables/usePageInitializer';
 import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
 import { useSystemListPage } from '../../composables/useSystemListPage';
-import { ignoreHandledError } from '../../utils/errors';
 import { isValidPermissionCode } from '../../utils/validators';
 import { getMenuTypeTag as menuTypeTag, getMenuTypeText as menuTypeText, matchMenuType as matchType } from './menuMeta';
 
@@ -278,13 +278,9 @@ async function handleSubmit() {
   });
 }
 
-onMounted(async () => {
-  try {
-    await loadData();
-    handleSearch();
-  } catch (error) {
-    ignoreHandledError(error);
-  }
+usePageInitializer(async () => {
+  await loadData();
+  handleSearch();
 });
 </script>
 
