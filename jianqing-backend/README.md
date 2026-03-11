@@ -62,14 +62,18 @@ public class BcryptTool {
 
 ### 4) 本地启动
 
-可选环境变量（不配置则使用默认值）：
+请先基于 `src/main/resources/application-example.yml` 复制一份本地配置，例如：
 
 ```bash
-export DB_HOST=127.0.0.1
-export DB_PORT=3306
-export DB_NAME=jianqing
-export DB_USER=root
-export DB_PASS=root
+cp src/main/resources/application-example.yml src/main/resources/application-local.yml
+```
+
+然后通过环境变量覆盖敏感配置：
+
+```bash
+export DB_URL='jdbc:mysql://127.0.0.1:3306/jianqing?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true'
+export DB_USERNAME=root
+export DB_PASSWORD=root
 export REDIS_HOST=127.0.0.1
 export REDIS_PORT=6379
 export REDIS_PASSWORD=''
@@ -88,6 +92,11 @@ mvn spring-boot:run
 ```
 
 服务默认地址：`http://127.0.0.1:8080`
+
+说明：
+
+- `application.yml` 已不再内置数据库/Redis 默认凭据，避免开源仓库泄露敏感配置。
+- `application-local.yml` 已加入 `.gitignore`，仅用于本地开发。
 
 ## API 文档与示例
 
@@ -144,7 +153,7 @@ npm run dev
 
 ## 质量门禁（CI）
 
-- 工作流文件：`.github/workflows/backend-ci.yml`
+- 工作流文件：`../.github/workflows/backend-ci.yml`
 - 触发时机：`main/master` 分支的 `push` 与 `pull_request`
 - 当前门禁：
   - `mvn -DskipTests compile`
@@ -163,7 +172,7 @@ npm run dev
 - token 过期时间由 `jianqing.jwt.expire-seconds` 配置，登录后会将 token 写入 Redis 并设置相同 TTL。
 - 请求鉴权采用“JWT 解析 + Redis token 会话校验”双重检查，过期或已登出 token 会自动失效。
 - 热点缓存通过 Redis 承载（用户角色/权限/菜单树、系统用户/角色/菜单列表）。
-- DB 与缓存一致性采用延迟双删策略，延迟时间由 `jianqing.cache.delay-double-delete-millis` 配置。
+- DB 与缓存一致性采用提交后触发的延迟双删策略，延迟时间由 `jianqing.cache.delay-double-delete-millis` 配置。
 
 ## 目录结构（节选）
 
@@ -179,3 +188,5 @@ jianqing-backend
 ├── CONTRIBUTING.md
 └── ARCHITECTURE.md
 ```
+
+其中 `module/system/service/impl` 当前采用“聚合入口 + 轻量执行器”结构，`SystemServiceImpl` 负责入口编排，用户/角色/菜单/部门写路径分别下沉到独立 handler，便于持续小步演进。

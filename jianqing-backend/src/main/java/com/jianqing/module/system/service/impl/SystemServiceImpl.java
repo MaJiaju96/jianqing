@@ -19,8 +19,8 @@ import com.jianqing.module.system.entity.SysUser;
 import com.jianqing.module.system.service.impl.UserDataScopeResolver.CurrentDataScope;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -38,23 +38,35 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     private final DeptService deptService;
     private final MenuService menuService;
     private final UserDataScopeResolver userDataScopeResolver;
-    private final SystemCacheEvictor systemCacheEvictor;
     private final UserWriteOperationHandler userWriteOperationHandler;
+    private final UserRoleAssignmentHandler userRoleAssignmentHandler;
+    private final RoleMenuAssignmentHandler roleMenuAssignmentHandler;
+    private final RoleWriteOperationHandler roleWriteOperationHandler;
+    private final MenuWriteOperationHandler menuWriteOperationHandler;
+    private final DeptWriteOperationHandler deptWriteOperationHandler;
 
     public SystemServiceImpl(SysUserMapper sysUserMapper,
                              RoleService roleService,
                              DeptService deptService,
                              MenuService menuService,
                              UserDataScopeResolver userDataScopeResolver,
-                             SystemCacheEvictor systemCacheEvictor,
-                             UserWriteOperationHandler userWriteOperationHandler) {
+                             UserWriteOperationHandler userWriteOperationHandler,
+                             UserRoleAssignmentHandler userRoleAssignmentHandler,
+                             RoleMenuAssignmentHandler roleMenuAssignmentHandler,
+                             RoleWriteOperationHandler roleWriteOperationHandler,
+                             MenuWriteOperationHandler menuWriteOperationHandler,
+                             DeptWriteOperationHandler deptWriteOperationHandler) {
         this.baseMapper = sysUserMapper;
         this.roleService = roleService;
         this.deptService = deptService;
         this.menuService = menuService;
         this.userDataScopeResolver = userDataScopeResolver;
-        this.systemCacheEvictor = systemCacheEvictor;
         this.userWriteOperationHandler = userWriteOperationHandler;
+        this.userRoleAssignmentHandler = userRoleAssignmentHandler;
+        this.roleMenuAssignmentHandler = roleMenuAssignmentHandler;
+        this.roleWriteOperationHandler = roleWriteOperationHandler;
+        this.menuWriteOperationHandler = menuWriteOperationHandler;
+        this.deptWriteOperationHandler = deptWriteOperationHandler;
     }
 
     @Cacheable(cacheNames = CACHE_SYSTEM_USERS, key = "'" + ALL_CACHE_KEY + "'")
@@ -67,6 +79,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public UserSummary createUser(UserSaveRequest request) {
         CurrentDataScope currentDataScope = userDataScopeResolver.resolveCurrentDataScope();
         userDataScopeResolver.validateUserCreatePermission(request, currentDataScope);
@@ -76,6 +89,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public UserSummary updateUser(Long id, UserSaveRequest request) {
         CurrentDataScope currentDataScope = userDataScopeResolver.resolveCurrentDataScope();
         SysUser user = getAccessibleUserOrThrow(id, currentDataScope);
@@ -86,6 +100,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteUser(Long id) {
         SysUser user = getAccessibleUserOrThrow(id, userDataScopeResolver.resolveCurrentDataScope());
         userWriteOperationHandler.deleteUser(user);
@@ -98,16 +113,10 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void assignUserRoles(Long userId, List<Long> roleIds) {
         getAccessibleUserOrThrow(userId, userDataScopeResolver.resolveCurrentDataScope());
-        List<Long> validRoleIds = roleIds == null ? Collections.emptyList() : roleIds.stream().distinct().toList();
-        roleService.validateRoleIds(validRoleIds);
-
-        baseMapper.deleteUserRoleByUserId(userId);
-        if (!validRoleIds.isEmpty()) {
-            baseMapper.batchInsertUserRole(userId, validRoleIds);
-        }
-        systemCacheEvictor.evictUserAuth(userId);
+        userRoleAssignmentHandler.assignUserRoles(userId, roleIds);
     }
 
     @Cacheable(cacheNames = CACHE_SYSTEM_ROLES, key = "'" + ALL_CACHE_KEY + "'")
@@ -117,27 +126,21 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public RoleSummary createRole(RoleSaveRequest request) {
-        RoleSummary summary = roleService.createRole(request);
-        systemCacheEvictor.evictSystemRoles();
-        return summary;
+        return roleWriteOperationHandler.createRole(request);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public RoleSummary updateRole(Long id, RoleSaveRequest request) {
-        List<Long> affectedUserIds = baseMapper.selectUserIdsByRoleId(id);
-        RoleSummary summary = roleService.updateRole(id, request);
-        systemCacheEvictor.evictSystemRoles();
-        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
-        return summary;
+        return roleWriteOperationHandler.updateRole(id, request);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteRole(Long id) {
-        List<Long> affectedUserIds = baseMapper.selectUserIdsByRoleId(id);
-        roleService.deleteRole(id);
-        systemCacheEvictor.evictSystemRoles();
-        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
+        roleWriteOperationHandler.deleteRole(id);
     }
 
     @Override
@@ -146,11 +149,9 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void assignRoleMenus(Long roleId, List<Long> menuIds) {
-        List<Long> affectedUserIds = baseMapper.selectUserIdsByRoleId(roleId);
-        // 角色与菜单关系由角色服务维护，当前服务仅负责跨实体缓存一致性收敛。
-        roleService.assignRoleMenus(roleId, menuIds);
-        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
+        roleMenuAssignmentHandler.assignRoleMenus(roleId, menuIds);
     }
 
     @Override
@@ -160,17 +161,17 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
 
     @Override
     public DeptTreeNode createDept(DeptSaveRequest request) {
-        return deptService.createDept(request);
+        return deptWriteOperationHandler.createDept(request);
     }
 
     @Override
     public DeptTreeNode updateDept(Long id, DeptSaveRequest request) {
-        return deptService.updateDept(id, request);
+        return deptWriteOperationHandler.updateDept(id, request);
     }
 
     @Override
     public void deleteDept(Long id) {
-        deptService.deleteDept(id);
+        deptWriteOperationHandler.deleteDept(id);
     }
 
     @Cacheable(cacheNames = CACHE_SYSTEM_MENUS, key = "'" + ALL_CACHE_KEY + "'")
@@ -180,27 +181,21 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public MenuTreeNode createMenu(MenuSaveRequest request) {
-        MenuTreeNode node = menuService.createMenu(request);
-        systemCacheEvictor.evictSystemMenus();
-        return node;
+        return menuWriteOperationHandler.createMenu(request);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public MenuTreeNode updateMenu(Long id, MenuSaveRequest request) {
-        List<Long> affectedUserIds = baseMapper.selectUserIdsByMenuId(id);
-        MenuTreeNode node = menuService.updateMenu(id, request);
-        systemCacheEvictor.evictSystemMenus();
-        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
-        return node;
+        return menuWriteOperationHandler.updateMenu(id, request);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteMenu(Long id) {
-        List<Long> affectedUserIds = baseMapper.selectUserIdsByMenuId(id);
-        menuService.deleteMenu(id);
-        systemCacheEvictor.evictSystemMenus();
-        systemCacheEvictor.evictUserAuthBatch(affectedUserIds);
+        menuWriteOperationHandler.deleteMenu(id);
     }
 
     @Cacheable(cacheNames = CACHE_USER_MENU_TREE, key = "#userId")

@@ -74,6 +74,19 @@ com.jianqing
 - 数据权限字段：`jq_sys_role.data_scope`（已存在）。
 - 在 `service` 层统一注入数据权限条件，避免散落在 controller。
 
+### 3.2.1 System 模块服务收口约定
+
+- `SystemServiceImpl` 作为系统聚合入口，负责：用户数据范围校验、查询面聚合、事务边界声明。
+- 具体写路径下沉到轻量执行器，避免单个 ServiceImpl 持续膨胀：
+  - `UserWriteOperationHandler`
+  - `UserRoleAssignmentHandler`
+  - `RoleWriteOperationHandler`
+  - `RoleMenuAssignmentHandler`
+  - `MenuWriteOperationHandler`
+  - `DeptWriteOperationHandler`
+- 执行器只处理单一写路径编排，不承接无关查询职责。
+- 跨表写操作统一通过事务边界和提交后缓存失效保障一致性。
+
 ## 3.3 审计与可观测
 
 - 操作日志：写入 `jq_sys_oper_log`。
