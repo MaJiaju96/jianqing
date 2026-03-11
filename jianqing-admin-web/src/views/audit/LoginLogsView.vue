@@ -1,8 +1,8 @@
 <template>
   <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
-      <div class="jq-toolbar-shell">
-        <div class="jq-toolbar-group jq-toolbar-group--filters">
+      <ListPageHeader :search-loading="loading" :refresh-loading="loading" @search="handleSearch" @reset="handleReset" @refresh="handleRefresh">
+        <template #filters>
           <el-input v-model="keywordInput" clearable placeholder="搜索用户名/IP/信息" class="jq-toolbar-field" @keyup.enter="handleSearch" />
           <el-select v-model="loginTypeFilterInput" class="jq-toolbar-select--sm">
             <el-option label="全部方式" value="" />
@@ -13,13 +13,8 @@
             <el-option label="成功" :value="1" />
             <el-option label="失败" :value="0" />
           </el-select>
-          <el-button :icon="Search" :loading="loading" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </div>
-        <div class="jq-toolbar-group jq-toolbar-group--actions">
-          <el-button class="jq-toolbar-icon-btn" :icon="RefreshRight" circle :loading="loading" @click="handleRefresh" />
-        </div>
-      </div>
+        </template>
+      </ListPageHeader>
     </template>
     <div class="jq-table-panel">
       <el-table :data="rows" stripe :empty-text="tableEmptyText" height="100%">
@@ -55,12 +50,12 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { RefreshRight, Search } from '@element-plus/icons-vue';
 import {
   EMPTY_FILTER_VALUE,
   STATUS_ENABLED
 } from '../../constants/app';
 import { fetchLoginLogs } from '../../api/audit';
+import ListPageHeader from '../../components/ListPageHeader.vue';
 import { useAuditListPage } from '../../composables/useAuditListPage';
 import { ignoreHandledError } from '../../utils/errors';
 
