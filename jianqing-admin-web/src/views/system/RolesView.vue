@@ -1,22 +1,19 @@
 <template>
   <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
-      <div class="jq-toolbar-shell">
-        <div class="jq-toolbar-group jq-toolbar-group--filters">
+      <ListPageHeader :refresh-loading="pageLoading" @search="handleSearch" @reset="handleReset" @refresh="handleRefresh">
+        <template #filters>
           <el-input v-model="keywordInput" clearable placeholder="搜索角色名称/编码" class="jq-toolbar-field" @keyup.enter="handleSearch" />
           <el-select v-model="filterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
             <el-option label="启用" :value="STATUS_ENABLED" />
             <el-option label="禁用" :value="STATUS_DISABLED" />
           </el-select>
-          <el-button :icon="Search" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </div>
-        <div class="jq-toolbar-group jq-toolbar-group--actions">
-          <el-button class="jq-toolbar-icon-btn" :icon="RefreshRight" circle :loading="pageLoading" @click="handleRefresh" />
+        </template>
+        <template #actions>
           <el-button v-if="canAdd" type="primary" :icon="Plus" @click="openCreate">新增角色</el-button>
-        </div>
-      </div>
+        </template>
+      </ListPageHeader>
     </template>
     <div class="jq-table-panel">
       <el-table :data="pagedRows" stripe :empty-text="tableEmptyText" height="100%">
@@ -121,8 +118,9 @@
 
 <script setup>
 import { nextTick, onMounted, ref } from 'vue';
-import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
+import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import ListPageHeader from '../../components/ListPageHeader.vue';
 import {
   DEFAULT_LIST_PAGE_SIZE,
   MENU_TYPE_BUTTON,
@@ -155,6 +153,7 @@ import { useSystemListPage } from '../../composables/useSystemListPage';
 import { ignoreHandledError } from '../../utils/errors';
 import { showSuccessMessage } from '../../utils/feedback';
 import { isValidRoleCode } from '../../utils/validators';
+import { getMenuTypeTag as menuTypeTag, getMenuTypeText as menuTypeText } from './menuMeta';
 
 const rows = ref([]);
 const menuDialogVisible = ref(false);
@@ -289,26 +288,6 @@ function filterAssignNode(value, data) {
     return data.menuType === MENU_TYPE_BUTTON;
   }
   return true;
-}
-
-function menuTypeText(menuType) {
-  if (menuType === MENU_TYPE_DIRECTORY) {
-    return '目录';
-  }
-  if (menuType === MENU_TYPE_PAGE) {
-    return '菜单';
-  }
-  return '按钮';
-}
-
-function menuTypeTag(menuType) {
-  if (menuType === MENU_TYPE_DIRECTORY) {
-    return 'info';
-  }
-  if (menuType === MENU_TYPE_PAGE) {
-    return 'success';
-  }
-  return 'warning';
 }
 
 function dataScopeText(dataScope) {

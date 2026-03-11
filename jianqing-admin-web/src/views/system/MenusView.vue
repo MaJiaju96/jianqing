@@ -1,22 +1,19 @@
 <template>
   <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
-      <div class="jq-toolbar-shell">
-        <div class="jq-toolbar-group jq-toolbar-group--filters">
+      <ListPageHeader :refresh-loading="pageLoading" @search="handleSearch" @reset="handleReset" @refresh="handleRefresh">
+        <template #filters>
           <el-input v-model="keywordInput" clearable placeholder="搜索菜单名称/权限" class="jq-toolbar-field" @keyup.enter="handleSearch" />
           <el-select v-model="filterInput" class="jq-toolbar-select--md">
             <el-option label="全部权限" value="all" />
             <el-option label="目录/菜单" value="menu" />
             <el-option label="仅按钮权限" value="button" />
           </el-select>
-          <el-button :icon="Search" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </div>
-        <div class="jq-toolbar-group jq-toolbar-group--actions">
-          <el-button class="jq-toolbar-icon-btn" :icon="RefreshRight" circle :loading="pageLoading" @click="handleRefresh" />
+        </template>
+        <template #actions>
           <el-button v-if="canAdd" type="primary" :icon="Plus" @click="openCreateRoot">新增根菜单</el-button>
-        </div>
-      </div>
+        </template>
+      </ListPageHeader>
     </template>
     <div class="jq-table-panel">
       <el-table
@@ -129,8 +126,9 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
-import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
+import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import ListPageHeader from '../../components/ListPageHeader.vue';
 import {
   DEFAULT_LIST_PAGE_SIZE,
   MENU_TYPE_BUTTON,
@@ -149,6 +147,7 @@ import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
 import { useSystemListPage } from '../../composables/useSystemListPage';
 import { ignoreHandledError } from '../../utils/errors';
 import { isValidPermissionCode } from '../../utils/validators';
+import { getMenuTypeTag as menuTypeTag, getMenuTypeText as menuTypeText, matchMenuType as matchType } from './menuMeta';
 
 const rows = ref([]);
 
@@ -241,36 +240,6 @@ function filterMenuTree(nodes, query, filterType, level = 1) {
     }
     return result;
   }, []);
-}
-
-function matchType(menuType, filterType) {
-  if (filterType === 'menu') {
-    return menuType === MENU_TYPE_DIRECTORY || menuType === MENU_TYPE_PAGE;
-  }
-  if (filterType === 'button') {
-    return menuType === MENU_TYPE_BUTTON;
-  }
-  return true;
-}
-
-function menuTypeText(menuType) {
-  if (menuType === MENU_TYPE_DIRECTORY) {
-    return '目录';
-  }
-  if (menuType === MENU_TYPE_PAGE) {
-    return '菜单';
-  }
-  return '按钮';
-}
-
-function menuTypeTag(menuType) {
-  if (menuType === MENU_TYPE_DIRECTORY) {
-    return 'info';
-  }
-  if (menuType === MENU_TYPE_PAGE) {
-    return 'success';
-  }
-  return 'warning';
 }
 
 function openCreateRoot() {
