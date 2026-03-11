@@ -23,7 +23,7 @@
         <el-table-column prop="costMs" label="耗时(ms)" width="100" />
         <el-table-column label="状态" width="90">
           <template #default="scope">
-            <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'danger'">{{ scope.row.status === STATUS_ENABLED ? '成功' : '失败' }}</el-tag>
+            <StatusTag :status="scope.row.status" :enabled-value="STATUS_ENABLED" enabled-text="成功" disabled-text="失败" />
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="时间" min-width="180" />
