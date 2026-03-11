@@ -1,22 +1,19 @@
 <template>
   <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
-      <div class="jq-toolbar-shell">
-        <div class="jq-toolbar-group jq-toolbar-group--filters">
+      <ListPageHeader :refresh-loading="pageLoading" @search="handleSearch" @reset="handleReset" @refresh="handleRefresh">
+        <template #filters>
           <el-input v-model="keywordInput" clearable placeholder="搜索用户名/昵称" class="jq-toolbar-field" @keyup.enter="handleSearch" />
           <el-select v-model="filterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
             <el-option label="启用" :value="STATUS_ENABLED" />
             <el-option label="禁用" :value="STATUS_DISABLED" />
           </el-select>
-          <el-button :icon="Search" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </div>
-        <div class="jq-toolbar-group jq-toolbar-group--actions">
-          <el-button class="jq-toolbar-icon-btn" :icon="RefreshRight" circle :loading="pageLoading" @click="handleRefresh" />
+        </template>
+        <template #actions>
           <el-button v-if="canAdd" type="primary" :icon="Plus" @click="openCreate">新增用户</el-button>
-        </div>
-      </div>
+        </template>
+      </ListPageHeader>
     </template>
     <div class="jq-table-panel">
       <el-table :data="pagedRows" stripe :empty-text="tableEmptyText" height="100%">
@@ -114,8 +111,9 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
+import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import ListPageHeader from '../../components/ListPageHeader.vue';
 import {
   DEFAULT_LIST_PAGE_SIZE,
   PAGE_SIZE_OPTIONS,
@@ -142,6 +140,7 @@ import { useSystemListPage } from '../../composables/useSystemListPage';
 import { ignoreHandledError } from '../../utils/errors';
 import { showSuccessMessage } from '../../utils/feedback';
 import { isValidEmail, isValidMobile } from '../../utils/validators';
+import { buildDeptNameMap, flattenDeptOptions } from './deptTreeUtils';
 
 const rows = ref([]);
 const roleDialogVisible = ref(false);
@@ -288,23 +287,8 @@ async function handleSaveRoles() {
   });
 }
 
-function flattenDeptOptions(nodes, prefix = '') {
-  return nodes.flatMap((node) => {
-    const current = [{ id: node.id, label: `${prefix}${node.deptName}` }];
-    return current.concat(flattenDeptOptions(node.children || [], `${prefix}${node.deptName} / `));
-  });
-}
-
 function resolveDefaultDeptId() {
   return deptOptions.value[0]?.id ?? 0;
-}
-
-function buildDeptNameMap(nodes, prefix = '') {
-  return nodes.reduce((result, node) => {
-    result[node.id] = `${prefix}${node.deptName}`;
-    Object.assign(result, buildDeptNameMap(node.children || [], `${prefix}${node.deptName} / `));
-    return result;
-  }, {});
 }
 
 onMounted(async () => {

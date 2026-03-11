@@ -1,22 +1,19 @@
 <template>
   <el-card class="jq-glass-card jq-list-page" shadow="never">
     <template #header>
-      <div class="jq-toolbar-shell">
-        <div class="jq-toolbar-group jq-toolbar-group--filters">
+      <ListPageHeader :refresh-loading="pageLoading" @search="handleSearch" @reset="handleReset" @refresh="handleRefresh">
+        <template #filters>
           <el-input v-model="keywordInput" clearable placeholder="搜索部门名称" class="jq-toolbar-field" @keyup.enter="handleSearch" />
           <el-select v-model="filterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
             <el-option label="启用" :value="1" />
             <el-option label="停用" :value="0" />
           </el-select>
-          <el-button :icon="Search" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </div>
-        <div class="jq-toolbar-group jq-toolbar-group--actions">
-          <el-button class="jq-toolbar-icon-btn" :icon="RefreshRight" circle :loading="pageLoading" @click="handleRefresh" />
+        </template>
+        <template #actions>
           <el-button v-if="canAdd" type="primary" :icon="Plus" @click="openCreate">新增部门</el-button>
-        </div>
-      </div>
+        </template>
+      </ListPageHeader>
     </template>
     <div class="jq-table-panel">
       <el-table
@@ -112,7 +109,8 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { Plus, RefreshRight, Search } from '@element-plus/icons-vue';
+import { Plus } from '@element-plus/icons-vue';
+import ListPageHeader from '../../components/ListPageHeader.vue';
 import { DEFAULT_LIST_PAGE_SIZE, PAGE_SIZE_OPTIONS, ROOT_PARENT_ID, STATUS_DISABLED, STATUS_ENABLED } from '../../constants/app';
 import { createDept, deleteDept, fetchDepts, fetchUsers, updateDept } from '../../api/system';
 import { useTableFeedback } from '../../composables/useAsyncState';
@@ -122,6 +120,7 @@ import { usePermissionGroup } from '../../composables/usePermissions';
 import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
 import { useSystemListPage } from '../../composables/useSystemListPage';
 import { ignoreHandledError } from '../../utils/errors';
+import { filterDeptTree, flattenDeptOptions, flattenDeptRows } from './deptTreeUtils';
 
 const rows = ref([]);
 const userRows = ref([]);
@@ -136,18 +135,14 @@ const { canAdd, canEdit, canDelete } = usePermissionGroup({
   canDelete: 'system:dept:delete'
 });
 
-const filteredRows = computed(() => filterTree(rows.value, keyword.value.trim(), filterValue.value));
 const {
   keywordInput,
   filterInput,
-  keyword,
-  filterValue,
   pageNo,
   pageSize,
   pageSizes,
   total,
   pagedRows,
-  displayRows: flatRows,
   handleSearch,
   handleReset,
   handleRefresh
@@ -157,7 +152,7 @@ const {
   defaultPageSize: DEFAULT_LIST_PAGE_SIZE,
   pageSizes: PAGE_SIZE_OPTIONS,
   loadData,
-  filterRows: ({ keyword, filterValue }) => filterTree(rows.value, keyword.trim(), filterValue),
+  filterRows: ({ keyword, filterValue }) => filterDeptTree(rows.value, keyword.trim(), filterValue),
   mapRows: (items) => flattenDeptRows(items)
 });
 const deptOptions = computed(() => flattenDeptOptions(rows.value));
@@ -230,46 +225,6 @@ async function handleSubmit() {
       await createDept(form.value);
     }
   });
-}
-
-function flattenDeptOptions(nodes, prefix = '') {
-  return nodes.flatMap((node) => {
-    const current = [{ id: node.id, label: `${prefix}${node.deptName}` }];
-    return current.concat(flattenDeptOptions(node.children || [], `${prefix}${node.deptName} / `));
-  });
-}
-
-function flattenDeptRows(nodes, level = 1) {
-  return nodes.flatMap((node) => {
-    const current = {
-      id: node.id,
-      parentId: node.parentId,
-      deptName: node.deptName,
-      leaderUserId: node.leaderUserId,
-      phone: node.phone,
-      email: node.email,
-      sortNo: node.sortNo,
-      status: node.status,
-      level
-    };
-    return [current].concat(flattenDeptRows(node.children || [], level + 1));
-  });
-}
-
-function filterTree(nodes, keywordValue, statusValue) {
-  return nodes.reduce((result, node) => {
-    const children = filterTree(node.children || [], keywordValue, statusValue);
-    const keywordMatched = !keywordValue || node.deptName.includes(keywordValue);
-    const statusMatched = statusValue === 'all' || node.status === statusValue;
-    if (keywordMatched && statusMatched) {
-      result.push({ ...node, children });
-      return result;
-    }
-    if (children.length > 0) {
-      result.push({ ...node, children });
-    }
-    return result;
-  }, []);
 }
 
 onMounted(async () => {
