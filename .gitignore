@@ -11,6 +11,7 @@ jianqing-admin-web/.ai-logs/
 jianqing-backend/target/
 jianqing-backend/.idea/
 jianqing-backend/.ai-logs/
+jianqing-backend/src/main/resources/application-local.yml
 
 # env
 .env

@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jianqing-backend
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/jianqing?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: your_db_username
+    password: your_db_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password: ""
+      database: 0
+      timeout: 3s
+
+mybatis-plus:
+  mapper-locations: classpath*:com/jianqing/**/mapper/*Mapper.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jianqing:
+  jwt:
+    secret: change-this-secret-at-least-32-bytes-long
+    expire-seconds: 7200
+    token-key-prefix: "jq:token:"
+  cache:
+    key-prefix: "jq:cache:"
+    hot-data-expire-seconds: 300
+    delay-double-delete-millis: 500
+  integration:
+    search:
+      enabled: false
+    nacos:
+      enabled: false
+      server-addr: 127.0.0.1:8848
+      namespace: public
+      group: DEFAULT_GROUP
+    rocketmq:
+      enabled: false
+      namesrv-addr: 127.0.0.1:9876
