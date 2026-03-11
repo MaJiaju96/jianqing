@@ -27,47 +27,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
-import { fetchRoles, fetchUsers, fetchMenuTree } from '../api/system';
+import { computed, onMounted } from 'vue';
+import { useOverviewCounts } from '../composables/useOverviewCounts';
 import { authStore } from '../stores/auth';
-import { hasPerm } from '../utils/permission';
-import { ignoreHandledError } from '../utils/errors';
-
-const usersCount = ref(null);
-const rolesCount = ref(null);
-const menuCount = ref(null);
 
 const profileName = computed(() => authStore.profile?.nickname || authStore.profile?.username || '管理员');
-const usersCountDisplay = computed(() => (usersCount.value == null ? '--' : usersCount.value));
-const rolesCountDisplay = computed(() => (rolesCount.value == null ? '--' : rolesCount.value));
-const menuCountDisplay = computed(() => (menuCount.value == null ? '--' : menuCount.value));
-
-function countMenus(tree) {
-  return tree.reduce((total, item) => total + 1 + countMenus(item.children || []), 0);
-}
+const { usersCountDisplay, rolesCountDisplay, menuCountDisplay, loadCounts } = useOverviewCounts();
 
 onMounted(async () => {
-  try {
-    const requests = [];
-    if (hasPerm('system:user:list')) {
-      requests.push(fetchUsers().then((users) => {
-        usersCount.value = users.length;
-      }));
-    }
-    if (hasPerm('system:role:list')) {
-      requests.push(fetchRoles().then((roles) => {
-        rolesCount.value = roles.length;
-      }));
-    }
-    if (hasPerm('system:menu:list')) {
-      requests.push(fetchMenuTree().then((menus) => {
-        menuCount.value = countMenus(menus);
-      }));
-    }
-    await Promise.all(requests);
-  } catch (error) {
-    ignoreHandledError(error);
-  }
+  await loadCounts();
 });
 </script>
 
