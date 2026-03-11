@@ -110,7 +110,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import ListPageHeader from '../../components/ListPageHeader.vue';
@@ -135,9 +135,9 @@ import { useActionLoading, useTableFeedback } from '../../composables/useAsyncSt
 import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
 import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
+import { usePageInitializer } from '../../composables/usePageInitializer';
 import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
 import { useSystemListPage } from '../../composables/useSystemListPage';
-import { ignoreHandledError } from '../../utils/errors';
 import { showSuccessMessage } from '../../utils/feedback';
 import { isValidEmail, isValidMobile } from '../../utils/validators';
 import { buildDeptNameMap, flattenDeptOptions } from './deptTreeUtils';
@@ -291,13 +291,9 @@ function resolveDefaultDeptId() {
   return deptOptions.value[0]?.id ?? 0;
 }
 
-onMounted(async () => {
-  try {
-    await loadData();
-    handleSearch();
-  } catch (error) {
-    ignoreHandledError(error);
-  }
+usePageInitializer(async () => {
+  await loadData();
+  handleSearch();
 });
 </script>
 

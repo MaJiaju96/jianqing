@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, ref } from 'vue';
+import { nextTick, ref } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import ListPageHeader from '../../components/ListPageHeader.vue';
@@ -148,9 +148,9 @@ import { useActionLoading, useTableFeedback } from '../../composables/useAsyncSt
 import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
 import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
+import { usePageInitializer } from '../../composables/usePageInitializer';
 import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
 import { useSystemListPage } from '../../composables/useSystemListPage';
-import { ignoreHandledError } from '../../utils/errors';
 import { showSuccessMessage } from '../../utils/feedback';
 import { isValidRoleCode } from '../../utils/validators';
 import { getMenuTypeTag as menuTypeTag, getMenuTypeText as menuTypeText } from './menuMeta';
@@ -314,13 +314,9 @@ async function handleSaveMenus() {
   });
 }
 
-onMounted(async () => {
-  try {
-    await loadData();
-    handleSearch();
-  } catch (error) {
-    ignoreHandledError(error);
-  }
+usePageInitializer(async () => {
+  await loadData();
+  handleSearch();
 });
 </script>
 
