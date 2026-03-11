@@ -62,6 +62,10 @@
 - 已完成审计页真实回归：`/audit/oper-logs` 与 `/audit/login-logs` 的查询、重置、分页流程正常，当前两页各展示 20 条数据。
 - 已新增 `src/utils/errors.js` 中的 `ignoreHandledError`，并接入 system/audit/dashboard 相关页面与列表 composable，用于吞掉已由 HTTP 拦截器弹出的失败请求，减少控制台未处理 Promise 警告噪音。
 - 已修复非 admin 账号登录后的 dashboard 噪音：`src/views/DashboardView.vue` 不再无差别请求 users/roles/menus，而是按 `hasPerm` 逐项拉取；无权限统计显示为 `--`。
+- 已完成系统页部门树工具抽离：新增 `src/views/system/deptTreeUtils.js`，统一收敛 dept options、nameMap、flatten rows 与 tree filter。
+- 已完成系统页菜单元数据抽离：新增 `src/views/system/menuMeta.js`，统一收敛菜单类型文本、tag 与类型筛选判断。
+- 已完成列表页头部工具栏共享化：新增 `src/components/ListPageHeader.vue`，系统页与审计页共 6 个列表页已统一接入。
+- 已将“第二次重复就评估抽共享层”“共享组件优先承载外壳结构与固定节奏”“保持统一列表骨架和交互美感”等规则同步进统一开发规范，用于约束后续开发。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -102,6 +106,8 @@
 | 弹窗表单先抽状态层，不抽业务提交层 | 保持校验、接口调用与领域差异留在页面内，降低通用层失控风险 |
 | 删除链路先抽操作编排层 | 统一确认/执行/刷新/提示节奏，实体差异通过参数注入保持轻量 |
 | 保存链路只抽固定收尾节奏 | loading、关闭、刷新、提示可复用，字段校验与 create/update 分支仍留页面内 |
+| 列表页头部工具栏统一走共享组件 | 保持系统页与审计页骨架一致，避免后续页面风格分叉 |
+| 第二次出现重复时就评估抽共享层 | 尽早收敛重复逻辑，避免样板代码重新扩散 |
 
 ## Resources
 - `src/router/index.js`

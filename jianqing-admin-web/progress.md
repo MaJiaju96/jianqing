@@ -123,12 +123,14 @@
 | frontend audit pages browser regression | Playwright + admin session | oper/login logs query/reset/pagination all pass and each page loads 20 rows | passed | ✓ |
 | frontend failure-handling regression | Playwright + mocked audit failure | request failure shows message, loading recovers, query button remains usable, no unhandled warning appears | passed | ✓ |
 | non-admin login dashboard regression | Playwright + outside_user real login | dashboard redirects normally, unauthorized stats render `--`, no extra error/warning noise | passed | ✓ |
+| frontend system tree utils refactor | `npm run build` | dept tree helpers are shared and system pages keep original behavior | passed | ✓ |
+| frontend shared list header refactor | `npm run build` | system/audit list pages share one header shell and build still passes | passed | ✓ |
 
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 6 |
-| Where am I going? | 继续做前端代码健康治理与轻量去重复 |
+| Where am I? | Phase 7 |
+| Where am I going? | 继续做前端代码健康治理与审美一致性收口 |
 | What's the goal? | 构建可联调且有质感的简擎前端管理台 |
-| What have I learned? | 保存链路也适合只抽固定收尾节奏，避免把表单校验和 create/update 业务判断过度封到通用层 |
-| What have I done? | 已完成审计页列表、系统页列表、系统页弹窗表单、系统页删除链路、系统页保存链路五批 composable 收口，并保持构建通过 |
+| What have I learned? | 高重复列表页应优先抽共享骨架与稳定节奏，领域差异继续留在页面内，既能保持统一美感，也不会过度抽象 |
+| What have I done? | 已完成系统/审计列表页共享头部、部门树工具、菜单元数据工具等收口，并保持构建通过 |
