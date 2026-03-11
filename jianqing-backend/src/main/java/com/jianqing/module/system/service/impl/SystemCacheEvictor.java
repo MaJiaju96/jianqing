@@ -2,6 +2,8 @@ package com.jianqing.module.system.service.impl;
 
 import com.jianqing.framework.cache.CacheConsistencyService;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 
@@ -23,21 +25,23 @@ public class SystemCacheEvictor {
     }
 
     public void evictSystemUsers() {
-        evict(CACHE_SYSTEM_USERS, ALL_CACHE_KEY);
+        afterCommit(() -> evict(CACHE_SYSTEM_USERS, ALL_CACHE_KEY));
     }
 
     public void evictSystemRoles() {
-        evict(CACHE_SYSTEM_ROLES, ALL_CACHE_KEY);
+        afterCommit(() -> evict(CACHE_SYSTEM_ROLES, ALL_CACHE_KEY));
     }
 
     public void evictSystemMenus() {
-        evict(CACHE_SYSTEM_MENUS, ALL_CACHE_KEY);
+        afterCommit(() -> evict(CACHE_SYSTEM_MENUS, ALL_CACHE_KEY));
     }
 
     public void evictUserAuth(Long userId) {
-        evict(CACHE_USER_ROLE_CODES, userId);
-        evict(CACHE_USER_PERMS, userId);
-        evict(CACHE_USER_MENU_TREE, userId);
+        afterCommit(() -> {
+            evict(CACHE_USER_ROLE_CODES, userId);
+            evict(CACHE_USER_PERMS, userId);
+            evict(CACHE_USER_MENU_TREE, userId);
+        });
     }
 
     public void evictUserAuthBatch(List<Long> userIds) {
@@ -51,5 +55,19 @@ public class SystemCacheEvictor {
 
     private void evict(String cacheName, Object key) {
         cacheConsistencyService.deleteWithDelay(cacheName, key);
+    }
+
+    private void afterCommit(Runnable task) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()
+                || !TransactionSynchronizationManager.isActualTransactionActive()) {
+            task.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                task.run();
+            }
+        });
     }
 }
