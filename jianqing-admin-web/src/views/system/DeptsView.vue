@@ -40,7 +40,7 @@
         <el-table-column prop="sortNo" label="排序" width="90" />
         <el-table-column label="状态" width="100">
           <template #default="scope">
-            <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'info'">{{ scope.row.status === STATUS_ENABLED ? '启用' : '停用' }}</el-tag>
+            <StatusTag :status="scope.row.status" :enabled-value="STATUS_ENABLED" enabled-text="启用" disabled-text="停用" disabled-type="info" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="260">

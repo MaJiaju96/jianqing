@@ -44,7 +44,7 @@
         <el-table-column prop="component" label="组件" min-width="160" show-overflow-tooltip />
         <el-table-column label="状态" width="90" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.status === STATUS_ENABLED ? 'success' : 'danger'">{{ scope.row.status === STATUS_ENABLED ? '启用' : '禁用' }}</el-tag>
+            <StatusTag :status="scope.row.status" :enabled-value="STATUS_ENABLED" enabled-text="启用" disabled-text="禁用" />
           </template>
         </el-table-column>
         <el-table-column label="可见" width="90" align="center">
