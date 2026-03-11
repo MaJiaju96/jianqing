@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import {
   EMPTY_FILTER_VALUE,
   STATUS_ENABLED
@@ -57,7 +57,7 @@ import {
 import { fetchLoginLogs } from '../../api/audit';
 import ListPageHeader from '../../components/ListPageHeader.vue';
 import { useAuditListPage } from '../../composables/useAuditListPage';
-import { ignoreHandledError } from '../../utils/errors';
+import { usePageInitializer } from '../../composables/usePageInitializer';
 
 const keywordInput = ref('');
 const statusFilterInput = ref(EMPTY_FILTER_VALUE);
@@ -97,12 +97,8 @@ const {
   }
 });
 
-onMounted(async () => {
-  try {
-    handleSearch();
-  } catch (error) {
-    ignoreHandledError(error);
-  }
+usePageInitializer(async () => {
+  handleSearch();
 });
 </script>
 

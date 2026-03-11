@@ -27,16 +27,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useOverviewCounts } from '../composables/useOverviewCounts';
+import { usePageInitializer } from '../composables/usePageInitializer';
 import { authStore } from '../stores/auth';
 
 const profileName = computed(() => authStore.profile?.nickname || authStore.profile?.username || '管理员');
 const { usersCountDisplay, rolesCountDisplay, menuCountDisplay, loadCounts } = useOverviewCounts();
 
-onMounted(async () => {
-  await loadCounts();
-});
+usePageInitializer(loadCounts);
 </script>
 
 <style scoped>
