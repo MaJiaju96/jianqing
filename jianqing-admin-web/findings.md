@@ -66,6 +66,7 @@
 - 已完成系统页菜单元数据抽离：新增 `src/views/system/menuMeta.js`，统一收敛菜单类型文本、tag 与类型筛选判断。
 - 已完成列表页头部工具栏共享化：新增 `src/components/ListPageHeader.vue`，系统页与审计页共 6 个列表页已统一接入。
 - 已将“第二次重复就评估抽共享层”“共享组件优先承载外壳结构与固定节奏”“保持统一列表骨架和交互美感”等规则同步进统一开发规范，用于约束后续开发。
+- 已完成 Dashboard 统计加载逻辑收口：新增 `src/composables/useOverviewCounts.js`，统一承载权限判断、统计请求、菜单节点计数与失败兜底展示。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -108,6 +109,7 @@
 | 保存链路只抽固定收尾节奏 | loading、关闭、刷新、提示可复用，字段校验与 create/update 分支仍留页面内 |
 | 列表页头部工具栏统一走共享组件 | 保持系统页与审计页骨架一致，避免后续页面风格分叉 |
 | 第二次出现重复时就评估抽共享层 | 尽早收敛重复逻辑，避免样板代码重新扩散 |
+| Dashboard 统计逻辑优先抽组合式工具 | 保持页面只负责展示与绑定，权限判断/请求编排留在 composable |
 
 ## Resources
 - `src/router/index.js`

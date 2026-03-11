@@ -125,6 +125,7 @@
 | non-admin login dashboard regression | Playwright + outside_user real login | dashboard redirects normally, unauthorized stats render `--`, no extra error/warning noise | passed | ✓ |
 | frontend system tree utils refactor | `npm run build` | dept tree helpers are shared and system pages keep original behavior | passed | ✓ |
 | frontend shared list header refactor | `npm run build` | system/audit list pages share one header shell and build still passes | passed | ✓ |
+| dashboard overview composable refactor | `npm run build` | overview counts move into `useOverviewCounts` and dashboard behavior stays unchanged | passed | ✓ |
 
 ## 5-Question Reboot Check
 | Question | Answer |
@@ -133,4 +134,4 @@
 | Where am I going? | 继续做前端代码健康治理与审美一致性收口 |
 | What's the goal? | 构建可联调且有质感的简擎前端管理台 |
 | What have I learned? | 高重复列表页应优先抽共享骨架与稳定节奏，领域差异继续留在页面内，既能保持统一美感，也不会过度抽象 |
-| What have I done? | 已完成系统/审计列表页共享头部、部门树工具、菜单元数据工具等收口，并保持构建通过 |
+| What have I done? | 已完成系统/审计列表页共享头部、部门树工具、菜单元数据工具，以及 Dashboard 统计加载逻辑收口，并保持构建通过 |
