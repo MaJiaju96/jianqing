@@ -67,6 +67,8 @@
 - 已完成列表页头部工具栏共享化：新增 `src/components/ListPageHeader.vue`，系统页与审计页共 6 个列表页已统一接入。
 - 已将“第二次重复就评估抽共享层”“共享组件优先承载外壳结构与固定节奏”“保持统一列表骨架和交互美感”等规则同步进统一开发规范，用于约束后续开发。
 - 已完成 Dashboard 统计加载逻辑收口：新增 `src/composables/useOverviewCounts.js`，统一承载权限判断、统计请求、菜单节点计数与失败兜底展示。
+- 已完成页面初始化收口：新增 `src/composables/usePageInitializer.js`，统一 `onMounted + try/catch + ignoreHandledError + 初始加载` 的固定节奏。
+- 已完成状态标签收口：新增 `src/components/StatusTag.vue`，统一启用/禁用、成功/失败、停用等状态标签展示语义。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -110,6 +112,8 @@
 | 列表页头部工具栏统一走共享组件 | 保持系统页与审计页骨架一致，避免后续页面风格分叉 |
 | 第二次出现重复时就评估抽共享层 | 尽早收敛重复逻辑，避免样板代码重新扩散 |
 | Dashboard 统计逻辑优先抽组合式工具 | 保持页面只负责展示与绑定，权限判断/请求编排留在 composable |
+| 页面初始化优先复用共享收口工具 | 避免各页重复书写 `onMounted + try/catch + ignoreHandledError` 样板代码 |
+| 状态展示优先复用共享标签组件 | 保持系统页与审计页状态语义、色彩与文案表达一致 |
 
 ## Resources
 - `src/router/index.js`
