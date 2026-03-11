@@ -199,6 +199,8 @@
 | audit pages browser regression | Playwright + admin session | oper/login logs query/reset/pagination work and both pages load 20 rows | passed | ✓ |
 | frontend failure-handling regression | Playwright + mocked audit 500 response | page keeps operable, loading recovers, and no unhandled warning is emitted | passed | ✓ |
 | non-admin login dashboard regression | Playwright + outside_user login | dashboard no longer triggers roles/menus unauthorized noise; unauthorized stats show `--` | passed | ✓ |
+| backend p0 safety refactor | `mvn test` + pre-commit hooks | config hardening, transaction boundaries and after-commit cache eviction all pass | passed | ✓ |
+| backend service split checkpoint | `mvn test` | handler-based `SystemServiceImpl` refactor keeps behavior stable | passed（42 passed, 0 failed） | ✓ |
 
 ## Latest Updates
 - 已完成后端热点扫描，识别 `SystemServiceImpl` 为当前优先重构目标（职责集中、行数最高）。
@@ -217,6 +219,12 @@
 - 已完成审计页真实回归：操作日志与登录日志页的查询、重置、分页均通过，当前无新增异常。
 - 已补一轮前端异常处理收口：system/audit/dashboard 页面在请求失败时不再额外抛出未处理 Promise 警告，loading 能正确回收，失败提示继续由 HTTP 拦截器统一输出。
 - 已修复非 admin 账号登录噪音：dashboard 统计卡片改为按权限请求，低权限账号登录后不再因无权限的 roles/menus 请求产生 401 噪音，未授权统计显示为 `--`。
+- 已完成后端 P0 收口：移除默认敏感配置，新增 `application-example.yml`，并将本地配置切换为环境变量 + `application-local.yml` 模式。
+- 已完成关键写路径一致性加固：`SystemServiceImpl`、`RoleServiceImpl`、`MenuServiceImpl`、`DeptServiceImpl` 关键写方法补齐事务边界，`SystemCacheEvictor` 改为提交后触发失效。
+- 已完成 `SystemServiceImpl` 新一轮结构收口：新增 `UserRoleAssignmentHandler`、`RoleMenuAssignmentHandler`、`RoleWriteOperationHandler`、`MenuWriteOperationHandler`、`DeptWriteOperationHandler`，主服务进一步聚焦访问控制、事务边界与跨域编排。
+- 已新增 `SystemCacheEvictorTest`、`SystemTransactionAnnotationTest` 以及各 handler 单测，后端当前测试数提升至 42 个且全部通过。
+- 已新增根目录 `.github/workflows/frontend-ci.yml`，并将后端 CI 迁移到仓库根目录统一管理，前后端门禁入口已对齐。
+- 已将本轮优化经验同步进统一开发规范：后续后端新增复杂写流程时，优先走“聚合入口 + 轻量执行器”，先保证正确性，再做抽象与性能优化。
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
@@ -226,11 +234,11 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 8（代码健康治理） |
-| Where am I going? | 完成 Phase 8 收口，并准备进入下一轮前端/跨端精简优化 |
+| Where am I? | Phase 9（架构收口与规范固化） |
+| Where am I going? | 在保持当前结构优势的前提下，继续选择高收益的小步优化或回到功能开发主线 |
 | What's the goal? | 构建可开源的简擎后端内核，并预留 ES/Nacos/RocketMQ 扩展 |
-| What have I learned? | 跨端重复 UI 状态流适合先抽轻量 composable，只收口 loading/关闭/刷新/提示这类固定节奏，不抬高业务校验 |
-| What have I done? | 已完成后端热点重构收口，并联动前端落地系统列表、弹窗表单、删除操作、保存提交四层轻量 composable |
+| What have I learned? | 后端热点服务应先做事务/缓存正确性加固，再按“聚合入口 + 轻量执行器”方式小步收口 |
+| What have I done? | 已完成 system 关键写路径一致性加固、`SystemServiceImpl` handler 化收口，以及相关规划/规范文档同步 |
 
 ---
 *Update after completing each phase or encountering errors*
