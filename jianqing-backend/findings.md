@@ -84,6 +84,14 @@
 - 代码生成器现已补齐“前后端+SQL”三件套输出：除后端 8+1 文件外，新增前端 API 模板、业务列表页模板与路由接入片段。
 - 当前 preview/download 总输出文件数提升为 12 个：后端 8 个、前端 3 个、SQL 1 个。
 - 前端模板字段控件映射已增强：`status` 走下拉、`LocalDate/LocalDateTime/LocalTime` 走日期时间控件、长文本/备注描述字段走 textarea、`Boolean` 走 switch、数值字段走 input-number。
+- 已完成生成器参数治理：后端对 `tableName/moduleName/businessName/className/permPrefix` 统一做 `trim + pattern` 校验，并在 preview/download/write 全链路透传规范化参数，减少命名与路径漂移。
+- 已完成生成器写入安全增强：`/api/dev/gen/write` 默认先做目标文件冲突检测，检测到已存在文件时阻断写入并返回可读提示；需要覆盖时显式传 `overwrite=true`。
+- 已新增冲突清单查询接口：`POST /api/dev/gen/write/conflicts`，可在真正写盘前返回将被覆盖的文件路径列表，便于前端先展示风险再确认。
+- 已新增生成标记能力：`/api/dev/gen/write` 写入成功后返回 `markerId` 并落地标记文件，后续可通过标记精确定位该次写入文件集合。
+- 已新增按标记快速删除接口：`POST /api/dev/gen/write/delete-by-marker`，可在不改动模板内容的前提下回滚本次生成写入。
+- 已新增写入记录落库：仅当用户点击“写入项目”时记录 marker 与生成参数快照，未写入场景不入库。
+- 已新增写入记录查询接口：`GET /api/dev/gen/write/records`，供前端快速删除列表优先展示服务端记录。
+- 写入记录查询已支持过滤：可按 `tableName` 与 `startAt/endAt` 筛选，便于在高频生成场景快速定位目标 marker。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -123,6 +131,12 @@
 | 先修正确性再做抽象收口 | 事务边界、缓存提交后失效、安全配置优先于进一步模式化优化 |
 | 代码生成器元数据阶段优先读取 `information_schema` | 简单直接，足够支撑 MySQL 首发场景，避免过早抽象多数据库适配 |
 | 代码生成器模板首版先固定输出后端 8+1 文件 | 先验证主干模板质量，再决定是否继续扩展前端页与更多 SQL 片段 |
+| 生成器参数先做服务端规范化再参与模板渲染 | 避免前端输入空白或格式差异导致路径、文件名和权限前缀不一致 |
+| 生成器写盘默认禁止静默覆盖 | 优先保护现有代码安全，覆盖行为必须显式确认 |
+| 冲突清单查询与写入动作分离 | 让前端在写盘前可视化风险，避免“先失败再提示”的被动体验 |
+| 生成标记与模板内容解耦 | 避免向模板注入额外注释导致代码风格漂移，同时支持可追溯删除 |
+| 仅对“写入项目”行为落库 | 区分草稿态与落盘态历史，避免无效数据污染数据库 |
+| 写入记录查询提供轻量过滤能力 | 降低历史记录检索成本，提升按 marker 回滚效率 |
 
 ## Issues Encountered
 | Issue | Resolution |

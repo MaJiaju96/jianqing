@@ -182,6 +182,106 @@
   - `findings.md` (updated)
   - `progress.md` (updated)
 
+### Phase 11: 代码生成器参数治理与稳定性
+- **Status:** complete
+- Actions taken:
+  - 已为生成器参数新增服务端规范化校验：`tableName/moduleName/businessName/className/permPrefix` 统一走 `trim + pattern`。
+  - 已将 preview/download/write 全链路收口为规范化参数透传，避免路径、文件名和权限前缀出现输入态漂移。
+  - 已补充生成器参数规范化单测，覆盖前后空白输入场景。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/controller/DevGeneratorController.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImplTest.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/controller/DevGeneratorControllerTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 12: 代码写入安全增强（冲突保护）
+- **Status:** complete
+- Actions taken:
+  - 已为生成器写盘接口增加冲突保护：写入前检测已存在文件，默认阻断覆盖并返回冲突提示。
+  - 已新增 `overwrite` 显式开关，只有明确传 `overwrite=true` 才允许覆盖写入。
+  - 已补齐控制器与服务测试，覆盖默认阻断和显式覆盖两条链路。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/dev/service/GeneratorPreviewService.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/controller/DevGeneratorController.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImplTest.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/controller/DevGeneratorControllerTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 13: 冲突清单查询接口与可视化支撑
+- **Status:** complete
+- Actions taken:
+  - 已新增 `POST /api/dev/gen/write/conflicts`，支持写盘前返回冲突文件清单。
+  - 已复用 preview 产物路径做冲突比对，保持与真实写盘目标一致。
+  - 已补齐控制器与服务测试，覆盖冲突清单查询链路。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/dev/service/GeneratorPreviewService.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/controller/DevGeneratorController.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/controller/DevGeneratorControllerTest.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImplTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 14: 生成标记与按标记快速删除
+- **Status:** complete
+- Actions taken:
+  - 已将 `write` 接口返回升级为包含 `markerId` 的写入结果，写入后自动落标记文件。
+  - 已新增 `POST /api/dev/gen/write/delete-by-marker`，支持按标记批量删除该次生成文件。
+  - 已补齐控制器与服务测试，覆盖写入标记与按标记删除链路。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/dev/dto/GenWriteResult.java` (created)
+  - `src/main/java/com/jianqing/module/dev/dto/GenDeleteResult.java` (created)
+  - `src/main/java/com/jianqing/module/dev/service/GeneratorPreviewService.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/controller/DevGeneratorController.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/controller/DevGeneratorControllerTest.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImplTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 15: 写入记录落库与前端按写入记录删除
+- **Status:** complete
+- Actions taken:
+  - 新增 `jq_dev_gen_write_record` 写入记录模型与持久化逻辑，写入项目成功后自动记录 marker 与参数快照。
+  - 新增 `GET /api/dev/gen/write/records` 查询接口，返回最近写入记录供前端快速删除选择。
+  - 删除 marker 时同步清理写入记录，保持标记与记录一致性。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/dev/entity/GenWriteRecord.java` (created)
+  - `src/main/java/com/jianqing/module/dev/mapper/GenWriteRecordMapper.java` (created)
+  - `src/main/java/com/jianqing/module/dev/dto/GenWriteRecordItem.java` (created)
+  - `src/main/java/com/jianqing/module/dev/service/GeneratorPreviewService.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/controller/DevGeneratorController.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/controller/DevGeneratorControllerTest.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImplTest.java` (updated)
+  - `sql/patch/20260312_generator_write_record.sql` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 16: 写入记录过滤查询能力
+- **Status:** complete
+- Actions taken:
+  - 写入记录接口支持 `tableName/startAt/endAt` 过滤参数。
+  - 过滤查询保持 `limit` 限制与倒序返回策略，避免列表无限增长。
+  - 控制器测试已覆盖写入记录接口链路。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/dev/service/GeneratorPreviewService.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/service/impl/GeneratorPreviewServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/dev/controller/DevGeneratorController.java` (updated)
+  - `src/test/java/com/jianqing/module/dev/controller/DevGeneratorControllerTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -237,6 +337,12 @@
 | generator preview baseline | `mvn test` + `mvn checkstyle:check` | preview/download APIs and first backend templates pass tests and style checks | passed（52 passed, 0 failed；checkstyle 0 violations） | ✓ |
 | generator fullstack templates | `mvn test` + `mvn checkstyle:check` | preview/download now includes frontend API/view/route snippet templates | passed（52 passed, 0 failed；checkstyle 0 violations） | ✓ |
 | generator smart field mapping | `mvn test` + `mvn checkstyle:check` | generated frontend templates map date/time/textarea/switch/number controls correctly | passed（52 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| generator param normalization | `mvn test` + `mvn checkstyle:check` | preview/download/write use normalized request params and tests cover trim scenarios | passed | ✓ |
+| generator write conflict safety | `mvn test` + `mvn checkstyle:check` | write endpoint blocks overwrite by default and supports explicit overwrite=true | passed | ✓ |
+| generator write conflict listing | `mvn test` + `mvn checkstyle:check` | write/conflicts endpoint returns deterministic conflict file list before write | passed | ✓ |
+| generator marker write and delete | `mvn test` + `mvn checkstyle:check` | write returns markerId and delete-by-marker removes generated files safely | passed（62 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| generator write records persist | `mvn test` + `mvn checkstyle:check` | write actions persist marker records and expose /write/records query endpoint | passed（62 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| generator write records filter | `mvn test` + `mvn checkstyle:check` | /write/records supports table/time filters while preserving limit ordering | passed（63 passed, 0 failed；checkstyle 0 violations） | ✓ |
 
 ## Latest Updates
 - 已完成后端热点扫描，识别 `SystemServiceImpl` 为当前优先重构目标（职责集中、行数最高）。
@@ -268,6 +374,10 @@
 - 当前环境已恢复后端真实联通：重新验证 `admin/admin123` 登录成功，`/api/dev/gen/tables` 可正常返回真实库表列表。
 - 已继续增强代码生成器产物完整度：preview/download 新增前端 API 文件、前端业务列表页 `.vue` 与路由 snippet，生成器不再只输出后端和 SQL。
 - 已继续增强前端模板字段映射：生成视图现在能按字段类型输出 `el-date-picker`、`el-time-picker`、`textarea`、`el-switch`、`el-input-number` 等更贴近真实业务的控件。
+- 已完成生成器参数治理：服务端统一 `trim + pattern` 校验并透传规范化参数，下载文件名也同步按规范化业务名生成。
+- 已完成生成器写盘安全增强：`write` 默认冲突阻断，需显式 `overwrite=true` 才允许覆盖，避免误覆盖已有源码。
+- 已完成冲突清单查询能力：`write/conflicts` 可在写入前返回将被覆盖的文件列表，为前端风险可视化提供稳定数据源。
+- 已完成生成标记与按标记删除闭环：写入成功返回 `markerId`，并可通过 `delete-by-marker` 快速回滚该次生成文件，模板内容保持不变。
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |

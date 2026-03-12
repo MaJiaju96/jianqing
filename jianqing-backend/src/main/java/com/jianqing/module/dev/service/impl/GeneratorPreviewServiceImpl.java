@@ -1,24 +1,38 @@
 package com.jianqing.module.dev.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.jianqing.module.dev.dto.GenDeleteResult;
 import com.jianqing.module.dev.dto.GenColumnMeta;
 import com.jianqing.module.dev.dto.GenPreviewFile;
 import com.jianqing.module.dev.dto.GenPreviewRequest;
+import com.jianqing.module.dev.dto.GenWriteRecordItem;
+import com.jianqing.module.dev.dto.GenWriteResult;
+import com.jianqing.module.dev.entity.GenWriteRecord;
+import com.jianqing.framework.security.SecurityUtils;
+import com.jianqing.module.dev.mapper.GenWriteRecordMapper;
 import com.jianqing.module.dev.service.GeneratorMetadataService;
 import com.jianqing.module.dev.service.GeneratorPreviewService;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -26,29 +40,35 @@ import java.util.zip.ZipOutputStream;
 @Service
 public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
 
-    private final GeneratorMetadataService generatorMetadataService;
+    private static final String MARKER_DIR = ".jianqing-generator/markers";
+    private static final DateTimeFormatter MARKER_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
-    public GeneratorPreviewServiceImpl(GeneratorMetadataService generatorMetadataService) {
+    private final GeneratorMetadataService generatorMetadataService;
+    private final GenWriteRecordMapper genWriteRecordMapper;
+
+    public GeneratorPreviewServiceImpl(GeneratorMetadataService generatorMetadataService,
+                                       GenWriteRecordMapper genWriteRecordMapper) {
         this.generatorMetadataService = generatorMetadataService;
+        this.genWriteRecordMapper = genWriteRecordMapper;
     }
 
     @Override
     public List<GenPreviewFile> preview(GenPreviewRequest request) {
-        validateRequest(request);
-        List<GenColumnMeta> columns = generatorMetadataService.listColumns(request.getTableName());
+        NormalizedRequest normalized = validateRequest(request);
+        List<GenColumnMeta> columns = generatorMetadataService.listColumns(normalized.tableName());
         if (columns.isEmpty()) {
             throw new IllegalArgumentException("表字段不存在，无法生成代码");
         }
         GenColumnMeta primaryKey = requirePrimaryKey(columns);
-        String basePackage = "com.jianqing.module." + request.getModuleName();
+        String basePackage = "com.jianqing.module." + normalized.moduleName();
         String entityPackage = basePackage + ".entity";
         String dtoPackage = basePackage + ".dto";
         String mapperPackage = basePackage + ".mapper";
         String servicePackage = basePackage + ".service";
         String serviceImplPackage = servicePackage + ".impl";
         String controllerPackage = basePackage + ".controller";
-        String className = normalizeClassName(request.getClassName());
-        String businessName = normalizeBusinessName(request.getBusinessName());
+        String className = normalized.className();
+        String businessName = normalized.businessName();
         String entityVar = lowerFirst(className);
         String saveRequestName = className + "SaveRequest";
         String summaryName = className + "Summary";
@@ -60,7 +80,7 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
         String rootPath = pathOf("src/main/java", entityPackage);
         List<GenPreviewFile> files = new ArrayList<>();
         files.add(new GenPreviewFile(rootPath + "/" + className + ".java",
-                buildEntity(entityPackage, request.getTableName(), className, columns, primaryKey)));
+                buildEntity(entityPackage, normalized.tableName(), className, columns, primaryKey)));
         files.add(new GenPreviewFile(pathOf("src/main/java", dtoPackage) + "/" + saveRequestName + ".java",
                 buildSaveRequest(dtoPackage, saveRequestName, columns, primaryKey)));
         files.add(new GenPreviewFile(pathOf("src/main/java", dtoPackage) + "/" + summaryName + ".java",
@@ -78,16 +98,16 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
                         businessName, entityVar, columns, primaryKey)));
         files.add(new GenPreviewFile(pathOf("src/main/java", controllerPackage) + "/" + controllerName + ".java",
                 buildController(controllerPackage, controllerName, servicePackage, serviceName, dtoPackage,
-                        saveRequestName, summaryName, request.getModuleName(), businessName, className, pkJavaType)));
-        files.add(new GenPreviewFile("jianqing-admin-web/src/api/" + buildFrontendApiFileName(request.getModuleName(), businessName),
-                buildFrontendApi(request.getModuleName(), businessName, className)));
-        files.add(new GenPreviewFile("jianqing-admin-web/src/views/" + request.getModuleName() + "/"
+                        saveRequestName, summaryName, normalized.moduleName(), businessName, className, pkJavaType)));
+        files.add(new GenPreviewFile("jianqing-admin-web/src/api/" + buildFrontendApiFileName(normalized.moduleName(), businessName),
+                buildFrontendApi(normalized.moduleName(), businessName, className)));
+        files.add(new GenPreviewFile("jianqing-admin-web/src/views/" + normalized.moduleName() + "/"
                 + upperFirst(toCamelCase(businessName)) + "View.vue",
-                buildFrontendView(request, className, businessName, columns, primaryKey)));
+                buildFrontendView(normalized, className, businessName, columns, primaryKey)));
         files.add(new GenPreviewFile("jianqing-admin-web/src/router/snippets/" + businessName + ".js",
-                buildFrontendRouteSnippet(request, businessName)));
-        files.add(new GenPreviewFile("sql/patch/codegen/" + request.getBusinessName() + "_menu.sql",
-                buildMenuSql(request, businessName)));
+                buildFrontendRouteSnippet(normalized, businessName)));
+        files.add(new GenPreviewFile("sql/patch/codegen/" + businessName + "_menu.sql",
+                buildMenuSql(normalized, businessName)));
         files.sort(Comparator.comparing(GenPreviewFile::getFilePath));
         return files;
     }
@@ -110,38 +130,250 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
     }
 
     @Override
-    public List<GenPreviewFile> generateToProject(GenPreviewRequest request, String projectRoot) {
-        validateRequest(request);
+    public List<String> listConflictFiles(GenPreviewRequest request, String projectRoot) {
         List<GenPreviewFile> files = preview(request);
-        if (projectRoot == null || projectRoot.isBlank()) {
-            projectRoot = System.getProperty("user.dir");
+        return findConflictFiles(resolveProjectRoot(projectRoot), files);
+    }
+
+    @Override
+    public GenWriteResult generateToProject(GenPreviewRequest request, String projectRoot, boolean overwrite) {
+        List<GenPreviewFile> files = preview(request);
+        projectRoot = resolveProjectRoot(projectRoot);
+        List<String> conflictFiles = findConflictFiles(projectRoot, files);
+        if (!overwrite && !conflictFiles.isEmpty()) {
+            throw new IllegalArgumentException(buildConflictMessage(conflictFiles));
         }
-        int writtenCount = 0;
         for (GenPreviewFile file : files) {
-            String fullPath = projectRoot + "/" + file.getFilePath();
-            java.io.File targetFile = new java.io.File(fullPath);
-            java.io.File parentDir = targetFile.getParentFile();
+            File targetFile = resolveTargetFile(projectRoot, file.getFilePath());
+            File parentDir = targetFile.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 if (!parentDir.mkdirs()) {
                     throw new IllegalStateException("无法创建目录: " + parentDir.getAbsolutePath());
                 }
             }
             try {
-                java.nio.file.Files.write(targetFile.toPath(), file.getContent().getBytes(StandardCharsets.UTF_8));
-                writtenCount++;
+                Files.write(targetFile.toPath(), file.getContent().getBytes(StandardCharsets.UTF_8));
             } catch (IOException e) {
-                throw new IllegalStateException("写入文件失败: " + fullPath, e);
+                throw new IllegalStateException("写入文件失败: " + targetFile.getAbsolutePath(), e);
             }
         }
-        return files;
+        String markerId = buildMarkerId();
+        writeMarkerFile(projectRoot, markerId, files);
+        NormalizedRequest normalized = validateRequest(request);
+        saveWriteRecord(markerId, normalized);
+        GenWriteResult result = new GenWriteResult();
+        result.setMarkerId(markerId);
+        result.setFiles(files);
+        return result;
     }
 
-    private void validateRequest(GenPreviewRequest request) {
-        requirePattern(request.getTableName(), "^[a-zA-Z0-9_]+$", "表名不合法");
-        requirePattern(request.getModuleName(), "^[a-z][a-z0-9_]*$", "模块名不合法");
-        requirePattern(request.getBusinessName(), "^[a-z][a-z0-9_-]*$", "业务名不合法");
-        requirePattern(request.getClassName(), "^[A-Z][A-Za-z0-9]*$", "实体名不合法");
-        requirePattern(request.getPermPrefix(), "^[a-z][a-z0-9:-]*$", "权限前缀不合法");
+    @Override
+    public List<GenWriteRecordItem> listWriteRecords(int limit, String tableName, LocalDateTime startAt, LocalDateTime endAt) {
+        if (genWriteRecordMapper == null) {
+            return List.of();
+        }
+        int safeLimit = Math.min(Math.max(1, limit), 100);
+        LambdaQueryWrapper<GenWriteRecord> queryWrapper = new LambdaQueryWrapper<GenWriteRecord>()
+                .like(tableName != null && !tableName.isBlank(), GenWriteRecord::getTableName, tableName == null ? "" : tableName.trim())
+                .ge(startAt != null, GenWriteRecord::getCreatedAt, startAt)
+                .le(endAt != null, GenWriteRecord::getCreatedAt, endAt)
+                .orderByDesc(GenWriteRecord::getId)
+                .last("limit " + safeLimit);
+        List<GenWriteRecord> records = genWriteRecordMapper.selectList(queryWrapper);
+        return records.stream().map(this::toWriteRecordItem).toList();
+    }
+
+    @Override
+    public GenDeleteResult deleteByMarker(String markerId, String projectRoot) {
+        requirePattern(normalizeIdentifier(markerId), "^[a-zA-Z0-9_-]+$", "标记不合法");
+        projectRoot = resolveProjectRoot(projectRoot);
+        Path markerPath = markerFilePath(projectRoot, markerId);
+        if (!Files.exists(markerPath)) {
+            throw new IllegalArgumentException("标记不存在或已删除: " + markerId);
+        }
+        List<String> filePaths;
+        try {
+            filePaths = Files.readAllLines(markerPath, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            throw new IllegalStateException("读取标记文件失败: " + markerPath, exception);
+        }
+        GenDeleteResult result = new GenDeleteResult();
+        result.setMarkerId(markerId);
+        List<String> deletedFiles = new ArrayList<>();
+        List<String> missingFiles = new ArrayList<>();
+        for (String filePath : filePaths) {
+            String normalizedPath = normalizeIdentifier(filePath);
+            if (normalizedPath.isEmpty()) {
+                continue;
+            }
+            Path targetPath = resolveTargetFile(projectRoot, normalizedPath).toPath();
+            try {
+                if (Files.deleteIfExists(targetPath)) {
+                    deletedFiles.add(normalizedPath);
+                } else {
+                    missingFiles.add(normalizedPath);
+                }
+            } catch (IOException exception) {
+                throw new IllegalStateException("删除文件失败: " + normalizedPath, exception);
+            }
+        }
+        try {
+            Files.deleteIfExists(markerPath);
+        } catch (IOException exception) {
+            throw new IllegalStateException("删除标记文件失败: " + markerPath, exception);
+        }
+        result.setDeletedFiles(deletedFiles);
+        result.setDeletedCount(deletedFiles.size());
+        result.setMissingFiles(missingFiles);
+        result.setMissingCount(missingFiles.size());
+        if (genWriteRecordMapper != null) {
+            genWriteRecordMapper.delete(new LambdaQueryWrapper<GenWriteRecord>().eq(GenWriteRecord::getMarkerId, markerId));
+        }
+        return result;
+    }
+
+    private void saveWriteRecord(String markerId, NormalizedRequest request) {
+        if (genWriteRecordMapper == null) {
+            return;
+        }
+        GenWriteRecord record = new GenWriteRecord();
+        record.setMarkerId(markerId);
+        record.setTableName(request.tableName());
+        record.setModuleName(request.moduleName());
+        record.setBusinessName(request.businessName());
+        record.setClassName(request.className());
+        record.setPermPrefix(request.permPrefix());
+        record.setUsername(SecurityUtils.currentUsername());
+        record.setCreatedAt(LocalDateTime.now());
+        genWriteRecordMapper.insert(record);
+    }
+
+    private GenWriteRecordItem toWriteRecordItem(GenWriteRecord record) {
+        GenWriteRecordItem item = new GenWriteRecordItem();
+        item.setMarkerId(record.getMarkerId());
+        item.setTableName(record.getTableName());
+        item.setModuleName(record.getModuleName());
+        item.setBusinessName(record.getBusinessName());
+        item.setClassName(record.getClassName());
+        item.setPermPrefix(record.getPermPrefix());
+        item.setUsername(record.getUsername());
+        item.setCreatedAt(record.getCreatedAt());
+        return item;
+    }
+
+    private List<String> findConflictFiles(String projectRoot, List<GenPreviewFile> files) {
+        List<String> conflicts = new ArrayList<>();
+        for (GenPreviewFile file : files) {
+            File targetFile = resolveTargetFile(projectRoot, file.getFilePath());
+            if (targetFile.exists()) {
+                conflicts.add(file.getFilePath());
+            }
+        }
+        return conflicts;
+    }
+
+    private String resolveProjectRoot(String projectRoot) {
+        if (projectRoot == null || projectRoot.isBlank()) {
+            return System.getProperty("user.dir");
+        }
+        return projectRoot;
+    }
+
+    private String buildMarkerId() {
+        String timePart = LocalDateTime.now().format(MARKER_TIME_FORMATTER);
+        String randomPart = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+        return "gen-" + timePart + "-" + randomPart;
+    }
+
+    private void writeMarkerFile(String projectRoot, String markerId, List<GenPreviewFile> files) {
+        Path markerPath = markerFilePath(projectRoot, markerId);
+        Path markerDir = markerPath.getParent();
+        if (markerDir != null && !Files.exists(markerDir)) {
+            try {
+                Files.createDirectories(markerDir);
+            } catch (IOException exception) {
+                throw new IllegalStateException("创建标记目录失败: " + markerDir, exception);
+            }
+        }
+        List<String> lines = new ArrayList<>();
+        for (GenPreviewFile file : files) {
+            lines.add(file.getFilePath());
+        }
+        try {
+            Files.write(markerPath, lines, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            throw new IllegalStateException("写入标记文件失败: " + markerPath, exception);
+        }
+    }
+
+    private Path markerFilePath(String projectRoot, String markerId) {
+        return Paths.get(projectRoot, MARKER_DIR, markerId + ".txt");
+    }
+
+    private File resolveTargetFile(String projectRoot, String relativePath) {
+        Path baseRoot = resolveBaseRoot(projectRoot, relativePath);
+        Path targetPath = baseRoot.resolve(relativePath).normalize();
+        if (!targetPath.startsWith(baseRoot)) {
+            throw new IllegalArgumentException("标记文件存在非法路径: " + relativePath);
+        }
+        return targetPath.toFile();
+    }
+
+    private Path resolveBaseRoot(String projectRoot, String relativePath) {
+        Path rootPath = Paths.get(projectRoot).toAbsolutePath().normalize();
+        Path workspaceRoot = detectWorkspaceRoot(rootPath);
+        Path backendRoot = workspaceRoot.resolve("jianqing-backend").normalize();
+        if (relativePath.startsWith("jianqing-admin-web/") || relativePath.startsWith("sql/")) {
+            return workspaceRoot;
+        }
+        if (relativePath.startsWith("src/") && Files.exists(backendRoot)) {
+            return backendRoot;
+        }
+        return rootPath;
+    }
+
+    private Path detectWorkspaceRoot(Path rootPath) {
+        if (hasWorkspaceChildren(rootPath)) {
+            return rootPath;
+        }
+        Path parent = rootPath.getParent();
+        if (parent != null && hasWorkspaceChildren(parent)) {
+            return parent;
+        }
+        return rootPath;
+    }
+
+    private boolean hasWorkspaceChildren(Path path) {
+        return Files.exists(path.resolve("jianqing-backend"))
+                && Files.exists(path.resolve("jianqing-admin-web"));
+    }
+
+    private String buildConflictMessage(List<String> conflictFiles) {
+        int previewSize = Math.min(conflictFiles.size(), 5);
+        String previewList = String.join("、", conflictFiles.subList(0, previewSize));
+        if (conflictFiles.size() > previewSize) {
+            return "检测到 " + conflictFiles.size() + " 个已存在文件，写入已中止。示例：" + previewList
+                    + "。如需覆盖请传 overwrite=true";
+        }
+        return "检测到已存在文件，写入已中止：" + previewList + "。如需覆盖请传 overwrite=true";
+    }
+
+    private NormalizedRequest validateRequest(GenPreviewRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("生成参数不能为空");
+        }
+        String tableName = normalizeIdentifier(request.getTableName());
+        String moduleName = normalizeIdentifier(request.getModuleName());
+        String businessName = normalizeBusinessName(request.getBusinessName());
+        String className = normalizeClassName(request.getClassName());
+        String permPrefix = normalizePermPrefix(request.getPermPrefix());
+
+        requirePattern(tableName, "^[a-zA-Z0-9_]+$", "表名不合法");
+        requirePattern(moduleName, "^[a-z][a-z0-9_]*$", "模块名不合法");
+        requirePattern(businessName, "^[a-z][a-z0-9_-]*$", "业务名不合法");
+        requirePattern(className, "^[A-Z][A-Za-z0-9]*$", "实体名不合法");
+        requirePattern(permPrefix, "^[a-z][a-z0-9:-]*$", "权限前缀不合法");
+        return new NormalizedRequest(tableName, moduleName, businessName, className, permPrefix);
     }
 
     private void requirePattern(String value, String pattern, String message) {
@@ -518,17 +750,17 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
         return builder.toString();
     }
 
-    private String buildMenuSql(GenPreviewRequest request, String businessName) {
+    private String buildMenuSql(NormalizedRequest request, String businessName) {
         String menuName = upperFirst(toCamelCase(businessName));
         return "INSERT INTO jq_sys_menu\n"
                 + "(parent_id, menu_type, menu_name, route_path, component, perms, icon, sort_no, visible, status, is_deleted, created_by, updated_by)\n"
                 + "VALUES\n"
-                + "(1, 2, '" + menuName + "管理', '" + businessName + "', '" + request.getModuleName() + "/"
-                + businessName + "/index', '" + request.getPermPrefix() + ":list', 'Grid', 99, 1, 1, 0, 1, 1),\n"
-                + "(LAST_INSERT_ID(), 3, '查询', '', '', '" + request.getPermPrefix() + ":query', '', 1, 1, 1, 0, 1, 1),\n"
-                + "(LAST_INSERT_ID(), 3, '新增', '', '', '" + request.getPermPrefix() + ":add', '', 2, 1, 1, 0, 1, 1),\n"
-                + "(LAST_INSERT_ID(), 3, '修改', '', '', '" + request.getPermPrefix() + ":edit', '', 3, 1, 1, 0, 1, 1),\n"
-                + "(LAST_INSERT_ID(), 3, '删除', '', '', '" + request.getPermPrefix() + ":remove', '', 4, 1, 1, 0, 1, 1);\n";
+                + "(1, 2, '" + menuName + "管理', '" + businessName + "', '" + request.moduleName() + "/"
+                + businessName + "/index', '" + request.permPrefix() + ":list', 'Grid', 99, 1, 1, 0, 1, 1),\n"
+                + "(LAST_INSERT_ID(), 3, '查询', '', '', '" + request.permPrefix() + ":query', '', 1, 1, 1, 0, 1, 1),\n"
+                + "(LAST_INSERT_ID(), 3, '新增', '', '', '" + request.permPrefix() + ":add', '', 2, 1, 1, 0, 1, 1),\n"
+                + "(LAST_INSERT_ID(), 3, '修改', '', '', '" + request.permPrefix() + ":edit', '', 3, 1, 1, 0, 1, 1),\n"
+                + "(LAST_INSERT_ID(), 3, '删除', '', '', '" + request.permPrefix() + ":remove', '', 4, 1, 1, 0, 1, 1);\n";
     }
 
     private String buildFrontendApi(String moduleName, String businessName, String className) {
@@ -553,7 +785,7 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
         return builder.toString().replace("lowerSingularName", lowerSingularName);
     }
 
-    private String buildFrontendView(GenPreviewRequest request, String className, String businessName,
+    private String buildFrontendView(NormalizedRequest request, String className, String businessName,
                                      List<GenColumnMeta> columns, GenColumnMeta primaryKey) {
         List<GenColumnMeta> summaryColumns = filterSummaryColumns(columns, primaryKey);
         List<GenColumnMeta> editableColumns = filterEditableColumns(columns, primaryKey);
@@ -561,7 +793,7 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
                 .filter(column -> Objects.equals(column.getJavaType(), String.class.getSimpleName()))
                 .limit(2)
                 .toList();
-        String apiFileName = buildFrontendApiFileName(request.getModuleName(), businessName).replace(".js", "");
+        String apiFileName = buildFrontendApiFileName(request.moduleName(), businessName).replace(".js", "");
         String apiImportName = upperFirst(toCamelCase(businessName));
         String viewName = upperFirst(toCamelCase(businessName)) + "View";
         StringBuilder builder = new StringBuilder();
@@ -634,9 +866,9 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
         }
         builder.append("\nconst rows = ref([]);\n\n")
                 .append("const { canAdd, canEdit, canDelete } = usePermissionGroup({\n")
-                .append("  canAdd: '").append(request.getPermPrefix()).append(":add',\n")
-                .append("  canEdit: '").append(request.getPermPrefix()).append(":edit',\n")
-                .append("  canDelete: '").append(request.getPermPrefix()).append(":remove'\n")
+                .append("  canAdd: '").append(request.permPrefix()).append(":add',\n")
+                .append("  canEdit: '").append(request.permPrefix()).append(":edit',\n")
+                .append("  canDelete: '").append(request.permPrefix()).append(":remove'\n")
                 .append("});\n\n")
                 .append("const { keywordInput, pageNo, pageSize, pageSizes, pagedRows, total, handleSearch, handleReset, handleRefresh } = useSystemListPage({\n")
                 .append("  defaultPageSize: DEFAULT_LIST_PAGE_SIZE,\n")
@@ -698,12 +930,12 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
         return builder.toString();
     }
 
-    private String buildFrontendRouteSnippet(GenPreviewRequest request, String businessName) {
+    private String buildFrontendRouteSnippet(NormalizedRequest request, String businessName) {
         String viewName = upperFirst(toCamelCase(businessName)) + "View";
         return "// Add this route into src/router/index.js\n"
-                + "const " + viewName + " = () => import('../views/" + request.getModuleName() + "/" + viewName + ".vue');\n\n"
-                + "// children.push({ path: '/" + request.getModuleName() + "/" + businessName + "', component: "
-                + viewName + ", meta: { perm: '" + request.getPermPrefix() + ":list' } });\n";
+                + "const " + viewName + " = () => import('../views/" + request.moduleName() + "/" + viewName + ".vue');\n\n"
+                + "// children.push({ path: '/" + request.moduleName() + "/" + businessName + "', component: "
+                + viewName + ", meta: { perm: '" + request.permPrefix() + ":list' } });\n";
     }
 
     private String buildFrontendApiFileName(String moduleName, String businessName) {
@@ -868,11 +1100,19 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
     }
 
     private String normalizeClassName(String className) {
-        return className.trim();
+        return normalizeIdentifier(className);
     }
 
     private String normalizeBusinessName(String businessName) {
-        return businessName.trim();
+        return normalizeIdentifier(businessName).toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizePermPrefix(String permPrefix) {
+        return normalizeIdentifier(permPrefix).toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeIdentifier(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private void appendPackageAndImports(StringBuilder builder, String packageName, Set<String> imports) {
@@ -1117,5 +1357,9 @@ public class GeneratorPreviewServiceImpl implements GeneratorPreviewService {
             return upperFirst(fieldName);
         }
         return "get" + upperFirst(fieldName);
+    }
+
+    private record NormalizedRequest(String tableName, String moduleName, String businessName,
+                                     String className, String permPrefix) {
     }
 }

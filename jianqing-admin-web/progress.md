@@ -131,6 +131,44 @@
 | list page foundation refactor | `npm run build` | `useAuditListPage` and `useSystemListPage` now share `useListPage` foundation and frontend build stays green | passed | ✓ |
 | generator page baseline | `npm run build` | generator API/page/route/menu changes build successfully | passed | ✓ |
 | generator page real smoke | Playwright + real backend | login, table load, preview generation and ZIP download all work | passed | ✓ |
+| generator preview guidance polish | `npm run build` | preview explanation area renders and frontend build stays green | passed | ✓ |
+| generator field notice polish | `npm run build` | field/template notice area renders and frontend build stays green | passed | ✓ |
+| generator guidance browser regression | Playwright + real backend | guidance/notice render correctly, preview summary classifies files correctly, ZIP download still works | passed | ✓ |
+| generator layout readability refactor | `npm run build` + Playwright | notice block moves behind warning button drawer, field table regains readable height, no browser warning | passed | ✓ |
+| generator toolbar and code viewer polish | `npm run build` + Playwright | toolbar avoids accidental wrap, preview uses scrollable code viewer, browser/network remain clean | passed | ✓ |
+| generator toolbar visual hierarchy polish | `npm run build` + Playwright | top controls render as labeled config/action cards and remain browser-clean | passed | ✓ |
+| generator toolbar simplification pass | `npm run build` + Playwright | remove overly heavy card chrome, keep unified toolbar with clear labels/actions, browser remains clean | passed | ✓ |
+| generator toolbar alignment refinement | `npm run build` + Playwright | remove redundant table badge and align title/description with centered action buttons | passed | ✓ |
+| generator notice button relocation | `npm run build` + Playwright | move notice button into field metadata header and keep top action area clean | passed | ✓ |
+| generator notice icon polish | `npm run build` + Playwright | replace text notice button with rounded warning icon trigger plus tooltip | passed | ✓ |
+| generator dynamic notice enhancement | `npm run build` + Playwright | notices now react to real schema issues like missing comments and non-null fields | passed | ✓ |
+| generator notice severity tiers | `npm run build` + Playwright | notices now show danger/warning/advice/info visual tiers | passed | ✓ |
+| generator triangle warning trigger | `npm run build` + Playwright | replace rounded notice button with triangular warning trigger | passed | ✓ |
+| generator warning mark cleanup | `npm run build` + Playwright | replace nested warning icon with simple exclamation mark inside triangle | passed | ✓ |
+| generator notice and history usefulness pass | `npm run build` + Playwright | restore circular hint button and make history records show recoverable config details | passed | ✓ |
+| generator history auto-save fix | `npm run build` + Playwright | auto-save history after preview/download/write so dropdown is not empty in normal use | passed | ✓ |
+| generator preview file guidance | `npm run build` + Playwright | preview tabs now explain current file role and review focus | passed | ✓ |
+| generator module visibility fix | `npm run build` + Playwright | outer generator module stays fully visible while only inner regions scroll | passed | ✓ |
+| generator tab arrow contrast fix | `npm run build` + Playwright | preview tab scroll arrows stay visible in dark theme | passed | ✓ |
+| menu status warning cleanup | `npm run build` + Playwright | normalize menu status/visible fields so MenusView no longer emits StatusTag warnings | passed | ✓ |
+| generator preview copy actions | `npm run build` + Playwright | copy current file path and content from preview panel | passed | ✓ |
+| generator preview wrap toggle | `npm run build` + Playwright | switch code viewer between long-line scroll and wrapped reading mode | passed | ✓ |
+| generator param validation alignment | `npm run build` | generator page validates naming format and trims payload before preview/download/write | passed | ✓ |
+| generator write conflict confirm | `npm run build` | write action detects conflict and asks confirm before overwrite retry | passed | ✓ |
+| generator write conflict list preview | `npm run build` | write action queries conflict files first and shows file list before overwrite confirm | passed | ✓ |
+| generator conflict panel enhancement | `npm run build` | overwrite confirm dialog shows scrollable conflict list and supports copy | passed | ✓ |
+| generator conflict group and search | `npm run build` | conflict dialog groups by directory, supports keyword filter and filtered copy | passed | ✓ |
+| generator conflict quick filters | `npm run build` | conflict dialog supports quick filters (java/frontend/sql) and group collapse/expand | passed | ✓ |
+| generator conflict diff view | `npm run build` | conflict dialog supports path/name display mode and directory summary chips | passed | ✓ |
+| generator conflict risk sort and bulk toggle | `npm run build` | conflict groups sorted by risk and support expand/collapse all actions | passed | ✓ |
+| generator conflict txt export | `npm run build` | conflict dialog exports filtered list to txt aligned with current display mode | passed | ✓ |
+| generator conflict markdown export | `npm run build` | conflict dialog exports markdown with filters, summary and details | passed | ✓ |
+| generator markdown risk tags | `npm run build` | markdown export includes HIGH/MEDIUM/LOW tags and risk distribution summary | passed | ✓ |
+| generator markdown suggestion order | `npm run build` | markdown export includes risk-based review order section | passed | ✓ |
+| generator markdown preview | `npm run build` | conflict dialog supports markdown preview and copy before export | passed | ✓ |
+| generator marker quick delete | `npm run build` | write success stores marker and quick-delete removes files by marker | passed | ✓ |
+| generator write records backend source | `npm run build` | quick-delete list prefers backend write records and falls back to local cache | passed | ✓ |
+| generator write records dialog | `npm run build` | write-record dialog supports table/time filters and row-level delete-by-marker | passed | ✓ |
 
 ### Phase 8: CRUD 代码生成器前端最小闭环
 - **Status:** complete
@@ -144,11 +182,230 @@
   - 已通过 Playwright mock 完成生成器页 smoke：mock 登录与生成器相关接口后，验证了选表、字段展示、代码预览与 ZIP 下载触发。
   - 已补做真实浏览器 smoke：真实登录后在生成器页完成选表、查询预览与 ZIP 下载，下载文件名为 `sys_depts-generator-preview.zip`。
   - 已确认代码生成器产物继续增强为“前后端+SQL”输出，前端侧将收到 API 模板、业务列表页模板与路由片段，避免生成结果只剩后端文件。
+  - 已补齐生成器页预览说明区：展示当前表、预览文件总数/分类及“先预览再下载/写入”的三步说明，降低首次使用理解成本。
+  - 已补齐字段/模板注意事项提示：可按当前表字段结构给出主键、状态、软删、时间字段、长文本字段等自检建议，帮助生成前快速发现缺项。
+  - 已补做说明增强后的真实浏览器回归：`jq_sys_config` 选表、预览与 ZIP 下载链路正常，控制台无 warning；过程中发现产物分类统计规则过窄，已修正为按真实输出路径识别后端 8 / 前端 3 / SQL 1。
+  - 已按最新交互反馈重排生成器布局：字段区移除常驻注意事项块，改为工具栏告警按钮 + 右侧抽屉查看；字段区改为“摘要卡片 + 大表格”结构，真实浏览器下 `jq_sys_config` 字段表恢复 11 行可读视图且控制台无 warning。
+  - 已继续收口生成器排版：工具栏改为“上方配置网格 + 下方动作行”结构，生成/下载与提醒/重置/更多动作分组更稳定；代码区改为暗色等宽字体滚动视图，真实浏览器验证纵向滚动正常、接口请求保持 200、控制台无 warning。
+  - 已继续优化顶部视觉层次：将顶部控件重构为“生成配置 / 快捷操作”双卡片，配置项全部补齐 label，并用当前表 badge 强化上下文，避免页面一打开就是一排无层次输入框。
+  - 再次回看后已收回过重的“双卡片”设计，改成统一工具栏方案：顶部仅保留简短说明、当前表 badge、带 label 的输入网格与右侧动作区，浏览器验证布局正常且控制台无 warning。
+  - 已继续按最新反馈精简顶部：移除右上角表名 badge，让标题说明与按钮区共处同一水平线，按钮保持垂直居中；浏览器验证 badge 数量为 0，顶部布局仍稳定且控制台无 warning。
+  - 已按最新反馈将“注意事项”按钮移入“字段元数据”标题行右侧；Playwright 验证顶部主工具栏中的提醒按钮数量为 0，字段标题行按钮文案为“注意事项”，控制台无 warning。
+  - 已继续收口提醒入口：将字段标题行右侧的“注意事项”文字按钮改为圆角 34px 的三角叹号图标按钮，并保留 tooltip 与 `aria-label`；Playwright 验证图标按钮数量为 1、尺寸为 34×34，控制台无 warning。
+  - 已继续增强“注意事项”的动态性：`GeneratorView.vue` 现在会根据真实字段结构输出主键、自增主键、缺失注释、状态字段、软删字段、时间字段、非空业务字段、长文本字段等提示；浏览器实测 `jq_sys_config` 已出现“存在未注释字段”“存在非空业务字段”等针对性提醒，控制台无 warning。
+  - 已补齐提示分级：无主键类阻断问题使用 danger，缺注释/非空业务字段等建议补齐项使用 warning，状态/软删/时间字段缺失等增强建议使用 advice，其余正常信息为 info；Playwright 实测 `jq_sys_config` 当前为 warning 3、advice 2、info 2、danger 0。
+  - 已将字段标题行右侧的提醒入口改为真正的三角告警触发器：使用三角底形 + 内嵌叹号图标，不再显示为普通圆角按钮；Playwright 验证 `button[aria-label="查看注意事项"]` 数量为 1，三角触发器尺寸为 34×30，点击后抽屉正常打开。
+  - 已继续清理三角告警内部图形：将嵌套 warning icon 改为简单的 `!` 标记，避免视觉重复；Playwright 验证当前标记文本为 `!`，点击后抽屉仍可正常打开。
+  - 已根据最新反馈将提醒入口恢复为圆形提示按钮；同时增强历史记录可用性：下拉项现展示“表名 → 实体名”、模块/业务名、权限前缀和保存时间，点击历史项会恢复整套配置并弹出成功提示。浏览器验证圆形按钮数量为 1，历史项已显示 `sys/sys_configs · sys:sys:config` 这类详细元数据。
+  - 已修复历史记录为空的问题：`GeneratorView.vue` 新增 `saveHistoryIfReady(form.value)`，在成功生成预览、下载 ZIP、写入项目后自动写入历史。Playwright 从清空 `jq_generator_history` 的干净状态开始验证，执行“生成预览 → 下载 ZIP”后，`localStorage` 中已写入 1 条记录，历史下拉项数量为 1，首条标题为 `jq_sys_config → SysConfig`。
+  - 已继续增强代码预览解释力：为每个预览文件增加动态“用途说明 + 重点检查项”，当前可识别后端控制器、服务、Mapper、DTO、前端页面、前端脚本、SQL 补丁等类型。Playwright 实测首个标签显示“前端脚本 / 生成 API 调用或路由片段…”，切换 `.vue` 标签后显示“前端页面 / 生成业务列表页骨架…”。
+  - 已修复生成器模块整体被挤出可视区的问题：移除 `.generator-layout` 的 `min-height: calc(100vh - 250px)`，改为 `flex: 1 1 auto + min-height: 0 + overflow: hidden`，并为 `.generator-panel` 补齐 `overflow: hidden`，保证只有字段表格与代码区内部滚动。Playwright 实测 `cardBottomWithinMain=true`、`layoutBottomWithinCard=true`，控制台无 warning。
+  - 已补齐代码预览 tabs 左右滚动按钮的高对比样式：为 `.el-tabs__nav-prev/.el-tabs__nav-next` 增加 32px 深色底、浅色文字、边框与 hover 态，避免深色主题下按钮“隐身”。Playwright 实测按钮样式为 `color=rgb(248, 250, 252)`、`background=rgba(15, 23, 42, 0.82)`、尺寸 `32×32`。另确认当前 Playwright 抓到的 20 条 warning 来自 `MenusView -> StatusTag` 的既有问题，与本次 generator 改动无关。
+  - 已清理 `MenusView` 既有 warning：新增 `normalizeMenuTree()`，在 `loadData()` 后为菜单节点递归补齐 `status/visible` 默认值。Playwright 复测 `/system/menus` 页面后控制台 warning = 0，`StatusTag` 不再收到 undefined。
+  - 已为代码预览区补齐复制动作：每个预览文件顶部新增“复制路径 / 复制内容”按钮，成功后走统一成功提示；内部实现优先使用 Clipboard API，失败时回退到隐藏 textarea。Playwright 通过 monkeypatch `navigator.clipboard.writeText` 验证：首个文件路径 `jianqing-admin-web/src/api/sysSysConfigs.js` 被正确复制，文件内容复制长度为 410。
+  - 已为代码预览区补齐阅读模式切换：在文件操作区增加 `el-switch`，可在“自动换行 / 保留长行”之间切换；样式上通过 `white-space: pre` 与 `pre-wrap` 切换实现。Playwright 实测生成 12 个预览标签后，代码块 `white-space` 从 `pre` 正常切换为 `pre-wrap`。
 - Files created/modified:
   - `src/api/generator.js` (created)
-  - `src/views/system/GeneratorView.vue` (created)
+  - `src/views/system/GeneratorView.vue` (created/updated)
   - `src/router/index.js` (updated)
   - `src/layouts/MainLayout.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 9: 代码生成器参数校验收口
+- **Status:** complete
+- Actions taken:
+  - 已在生成器页新增与后端同构的参数格式校验，覆盖表名、模块名、业务名、实体名、权限前缀。
+  - 已统一预览/下载/写入/保存配置前的参数 `trim` 规范化，减少输入空白导致的后端校验失败。
+  - 已清理无用图标导入并完成构建验证。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 10: 代码生成写入安全交互
+- **Status:** complete
+- Actions taken:
+  - 已在生成器写入链路增加冲突识别：当后端返回“已存在文件/overwrite=true”语义时，进入覆盖确认流程。
+  - 已新增覆盖确认弹窗，确认后带 `overwrite=true` 重试写入；取消则静默返回，不再继续覆盖。
+  - 已同步更新 `src/api/generator.js` 的写入参数结构，支持 `overwrite` 透传。
+- Files created/modified:
+  - `src/api/generator.js` (updated)
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 11: 冲突文件清单可视化确认
+- **Status:** complete
+- Actions taken:
+  - 已在写入前新增冲突清单查询调用，不再依赖“先写失败再判断冲突”。
+  - 已在覆盖确认弹窗中展示冲突文件列表（含数量与超长截断提示），提升风险可读性。
+  - 已完成冲突清单查询 + 覆盖写入链路构建验证。
+- Files created/modified:
+  - `src/api/generator.js` (updated)
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 12: 冲突清单面板增强
+- **Status:** complete
+- Actions taken:
+  - 已将覆盖确认从文本提示升级为可滚动冲突清单面板，支持查看全部冲突路径。
+  - 已新增“复制清单”动作，可一键复制冲突文件路径，便于离线评估与沟通。
+  - 已补齐关闭/取消/确认分支处理，避免确认流程悬挂。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 13: 冲突清单分组与检索
+- **Status:** complete
+- Actions taken:
+  - 已在冲突确认面板增加关键字筛选输入与筛选计数，支持按路径快速定位冲突文件。
+  - 已将冲突清单按目录分组展示，减少大批量冲突时的视觉噪音。
+  - 已将“复制清单”动作调整为按当前筛选结果导出，便于精确沟通与评审。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 14: 冲突高风险目录快捷过滤与折叠浏览
+- **Status:** complete
+- Actions taken:
+  - 已增加冲突快捷过滤：全部 / 高风险 Java（`src/main/java`）/ 前端 / SQL。
+  - 已增加目录分组折叠/展开交互，支持长清单按目录分段阅读。
+  - 已保持复制清单按当前筛选结果导出，便于针对性沟通。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 15: 冲突差异视图与目录摘要
+- **Status:** complete
+- Actions taken:
+  - 已新增冲突显示模式切换：完整路径 / 仅文件名（忽略路径）。
+  - 已新增目录统计摘要条，快速展示当前筛选范围下的目录冲突分布。
+  - 已将复制清单动作对齐当前显示模式：路径视图复制路径，文件名视图复制去重文件名。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 16: 冲突风险排序与批量折叠控制
+- **Status:** complete
+- Actions taken:
+  - 已为冲突分组增加风险排序：Java 主源码 > SQL > 前端 > 其他。
+  - 已新增“一键展开全部 / 一键折叠全部”操作，提高长清单浏览效率。
+  - 已保持组内文件按风险优先排序，关键路径冲突优先暴露。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 17: 冲突清单导出能力
+- **Status:** complete
+- Actions taken:
+  - 已在冲突确认面板新增“导出 TXT”按钮。
+  - 导出内容与当前显示模式（路径/文件名）及筛选结果保持一致。
+  - 导出文件名增加模式标识与时间戳，便于留档。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 18: 冲突清单 Markdown 导出
+- **Status:** complete
+- Actions taken:
+  - 已在冲突确认面板新增“导出 MD”按钮。
+  - 已支持导出包含过滤条件、目录统计、冲突分组明细的 Markdown 内容。
+  - 已对齐路径/文件名两种显示模式的导出行为。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 19: Markdown 导出风险标签增强
+- **Status:** complete
+- Actions taken:
+  - 已在 Markdown 导出头部新增风险分布统计（HIGH/MEDIUM/LOW）。
+  - 已在分组标题与明细项新增风险标签，提升离线评审时的优先级识别效率。
+  - 已保持风险标签与现有风险排序规则一致。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 20: Markdown 覆盖建议顺序
+- **Status:** complete
+- Actions taken:
+  - 已在 Markdown 导出新增“覆盖建议顺序”章节。
+  - 路径模式下按风险和目录分组顺序输出建议复核优先级；文件名模式下输出风险分层建议。
+  - 已保持建议顺序与当前风险判定规则一致。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 21: Markdown 导出前预览
+- **Status:** complete
+- Actions taken:
+  - 已在冲突确认面板新增“预览 MD”动作。
+  - 已新增 Markdown 预览弹窗，支持滚动查看与一键复制。
+  - 已保持预览内容与导出内容一致，避免“所见非所得”。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 22: 生成标记展示与快速删除入口
+- **Status:** complete
+- Actions taken:
+  - 已在写入成功提示中展示 `markerId`，并记录最近标记历史。
+  - 已新增“更多 -> 快速删除”入口，支持按历史或手输 `markerId` 删除对应生成文件。
+  - 已补齐旧后端兼容逻辑：`write/conflicts` 404 时自动降级旧流程。
+- Files created/modified:
+  - `src/api/generator.js` (updated)
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 23: 写入记录后端化
+- **Status:** complete
+- Actions taken:
+  - 快速删除列表优先接入后端写入记录接口（`/dev/gen/write/records`），仅展示真实写入记录。
+  - 保留本地缓存作为后端接口不可用时的回退路径。
+  - 保持未写入配置历史仍在本地缓存，符合“草稿不落库”约束。
+- Files created/modified:
+  - `src/api/generator.js` (updated)
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 24: 写入记录列表页（筛选 + 一键删除）
+- **Status:** complete
+- Actions taken:
+  - 生成器页新增“写入记录”弹窗入口，支持查看写入记录列表。
+  - 支持按表名和时间范围筛选写入记录。
+  - 记录行支持一键按 marker 删除并联动刷新列表。
+- Files created/modified:
+  - `src/api/generator.js` (updated)
+  - `src/views/system/GeneratorView.vue` (updated)
   - `task_plan.md` (updated)
   - `findings.md` (updated)
   - `progress.md` (updated)

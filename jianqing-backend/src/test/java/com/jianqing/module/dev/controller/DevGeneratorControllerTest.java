@@ -2,9 +2,12 @@ package com.jianqing.module.dev.controller;
 
 import com.jianqing.common.exception.GlobalExceptionHandler;
 import com.jianqing.module.dev.dto.GenColumnMeta;
+import com.jianqing.module.dev.dto.GenDeleteResult;
 import com.jianqing.module.dev.dto.GenPreviewFile;
 import com.jianqing.module.dev.dto.GenPreviewRequest;
 import com.jianqing.module.dev.dto.GenTableSummary;
+import com.jianqing.module.dev.dto.GenWriteRecordItem;
+import com.jianqing.module.dev.dto.GenWriteResult;
 import com.jianqing.module.dev.service.GeneratorMetadataService;
 import com.jianqing.module.dev.service.GeneratorPreviewService;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +26,9 @@ import java.util.List;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -110,6 +116,105 @@ class DevGeneratorControllerTest {
                 .andExpect(header().string("Content-Disposition", "attachment; filename=\"customers-generator-preview.zip\""));
 
         verify(generatorPreviewService).downloadZip(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void shouldTrimDownloadFileName() throws Exception {
+        when(generatorPreviewService.downloadZip(org.mockito.ArgumentMatchers.any())).thenReturn(new byte[]{1, 2, 3});
+
+        GenPreviewRequest request = buildPreviewRequest();
+        request.setBusinessName("  customers  ");
+        mockMvc.perform(post("/api/dev/gen/download")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"customers-generator-preview.zip\""));
+    }
+
+    @Test
+    void shouldWriteToProjectWithoutOverwriteByDefault() throws Exception {
+        GenWriteResult writeResult = new GenWriteResult();
+        writeResult.setMarkerId("gen-20260312123000-aaaaaa");
+        writeResult.setFiles(List.of(new GenPreviewFile("a.txt", "content")));
+        when(generatorPreviewService.generateToProject(org.mockito.ArgumentMatchers.any(), anyString(), anyBoolean()))
+                .thenReturn(writeResult);
+
+        mockMvc.perform(post("/api/dev/gen/write")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildPreviewRequest())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.markerId").value("gen-20260312123000-aaaaaa"));
+
+        verify(generatorPreviewService).generateToProject(org.mockito.ArgumentMatchers.any(), anyString(), eq(false));
+    }
+
+    @Test
+    void shouldWriteToProjectWithOverwriteTrue() throws Exception {
+        GenWriteResult writeResult = new GenWriteResult();
+        writeResult.setMarkerId("gen-20260312123000-bbbbbb");
+        writeResult.setFiles(List.of(new GenPreviewFile("a.txt", "content")));
+        when(generatorPreviewService.generateToProject(org.mockito.ArgumentMatchers.any(), anyString(), anyBoolean()))
+                .thenReturn(writeResult);
+
+        mockMvc.perform(post("/api/dev/gen/write")
+                        .param("overwrite", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildPreviewRequest())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.markerId").value("gen-20260312123000-bbbbbb"));
+
+        verify(generatorPreviewService).generateToProject(org.mockito.ArgumentMatchers.any(), anyString(), eq(true));
+    }
+
+    @Test
+    void shouldReturnWriteConflictFiles() throws Exception {
+        when(generatorPreviewService.listConflictFiles(org.mockito.ArgumentMatchers.any(), anyString()))
+                .thenReturn(List.of("src/main/java/com/jianqing/module/demo/entity/Customer.java"));
+
+        mockMvc.perform(post("/api/dev/gen/write/conflicts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(buildPreviewRequest())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data[0]").value("src/main/java/com/jianqing/module/demo/entity/Customer.java"));
+
+        verify(generatorPreviewService).listConflictFiles(org.mockito.ArgumentMatchers.any(), anyString());
+    }
+
+    @Test
+    void shouldDeleteGeneratedFilesByMarker() throws Exception {
+        GenDeleteResult deleteResult = new GenDeleteResult();
+        deleteResult.setMarkerId("gen-20260312123000-aaaaaa");
+        deleteResult.setDeletedCount(2);
+        deleteResult.setMissingCount(0);
+        deleteResult.setDeletedFiles(List.of("a.txt", "b.txt"));
+        when(generatorPreviewService.deleteByMarker(eq("gen-20260312123000-aaaaaa"), anyString()))
+                .thenReturn(deleteResult);
+
+        mockMvc.perform(post("/api/dev/gen/write/delete-by-marker")
+                        .param("markerId", "gen-20260312123000-aaaaaa"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.markerId").value("gen-20260312123000-aaaaaa"))
+                .andExpect(jsonPath("$.data.deletedCount").value(2));
+
+        verify(generatorPreviewService).deleteByMarker(eq("gen-20260312123000-aaaaaa"), anyString());
+    }
+
+    @Test
+    void shouldReturnWriteRecords() throws Exception {
+        GenWriteRecordItem record = new GenWriteRecordItem();
+        record.setMarkerId("gen-20260312123000-aaaaaa");
+        record.setTableName("jq_demo_customer");
+        when(generatorPreviewService.listWriteRecords(eq(20), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.isNull()))
+                .thenReturn(List.of(record));
+
+        mockMvc.perform(get("/api/dev/gen/write/records"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data[0].markerId").value("gen-20260312123000-aaaaaa"));
     }
 
     private GenPreviewRequest buildPreviewRequest() {
