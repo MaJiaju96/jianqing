@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 @Service
 public class MenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements MenuService {
 
+    private static final int ENABLED = 1;
+
     @Override
     public List<MenuTreeNode> listAllMenuTree() {
         return buildMenuTree(baseMapper.selectAllEnabledMenus());
@@ -167,6 +169,8 @@ public class MenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impleme
         node.setPerms(menu.getPerms());
         node.setIcon(menu.getIcon());
         node.setSortNo(menu.getSortNo());
+        node.setVisible(menu.getVisible() == null ? ENABLED : menu.getVisible());
+        node.setStatus(menu.getStatus() == null ? ENABLED : menu.getStatus());
         return node;
     }
 

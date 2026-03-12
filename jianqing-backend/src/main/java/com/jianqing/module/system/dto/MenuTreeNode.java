@@ -14,6 +14,8 @@ public class MenuTreeNode {
     private String perms;
     private String icon;
     private Integer sortNo;
+    private Integer visible;
+    private Integer status;
     private final List<MenuTreeNode> children = new ArrayList<>();
 
     public Long getId() {
@@ -86,6 +88,22 @@ public class MenuTreeNode {
 
     public void setSortNo(Integer sortNo) {
         this.sortNo = sortNo;
+    }
+
+    public Integer getVisible() {
+        return visible;
+    }
+
+    public void setVisible(Integer visible) {
+        this.visible = visible;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 
     public List<MenuTreeNode> getChildren() {
