@@ -169,6 +169,30 @@
 | generator marker quick delete | `npm run build` | write success stores marker and quick-delete removes files by marker | passed | ✓ |
 | generator write records backend source | `npm run build` | quick-delete list prefers backend write records and falls back to local cache | passed | ✓ |
 | generator write records dialog | `npm run build` | write-record dialog supports table/time filters and row-level delete-by-marker | passed | ✓ |
+| frontend dict module baseline | `npm run build` | dict management route/page/api integration builds successfully | passed | ✓ |
+| frontend dict consumption baseline | `npm run build` | users/roles/menus/depts consume dict options without hardcoded status labels | passed | ✓ |
+| frontend audit dict consumption baseline | `npm run build` | login/oper logs consume dict options for status and login type | passed | ✓ |
+| frontend config module baseline | `npm run build` | config route/page/api integration builds successfully | passed | ✓ |
+| frontend config grouping baseline | `npm run build` | config page supports group column, filter and edit/create grouping | passed | ✓ |
+| frontend config history baseline | `npm run build` | config page supports history dialog backed by history API | passed | ✓ |
+| frontend config rollback baseline | `npm run build` | config history dialog supports rollback and refreshes list/history | passed | ✓ |
+| frontend config diff baseline | `npm run build` | config history dialog supports current-vs-history diff view | passed | ✓ |
+| frontend config deleted-restore baseline | `npm run build` | config page supports deleted-history dialog and restore action | passed | ✓ |
+| frontend config multi-history diff baseline | `npm run build` | config history dialog supports baseline selection and history-vs-history diff | passed | ✓ |
+| frontend config restore preview baseline | `npm run build` | config deleted-history dialog supports preview before confirm restore | passed | ✓ |
+| frontend config restore preview diff baseline | `npm run build` | restore preview dialog shows key occupancy and diff table before restore | passed | ✓ |
+| frontend config value-type dict baseline | `npm run build` | config page consumes dict options for value type filter/form/display with fallback | passed | ✓ |
+| frontend dict color-type dict baseline | `npm run build` | dict page consumes dict options for color select/display with fallback | passed | ✓ |
+| frontend config source dict baseline | `npm run build` | config page consumes dict options for source filter/form/display with fallback | passed | ✓ |
+| frontend dict status dict baseline | `npm run build` | dict page consumes sys_common_status for filters/forms/tags with fallback | passed | ✓ |
+| frontend roles page fix baseline | `npm run build` | roles page renders again after restoring computed import | passed | ✓ |
+| frontend dict subtitle readability baseline | `npm run build` | dict page subtitle readability improved for dark themes | passed | ✓ |
+| frontend dict title readability baseline | `npm run build` | dict page title readability improved for dark themes | passed | ✓ |
+| frontend dict title contrast baseline | `npm run build` | dict page title/subtitle contrast improved without changing layout | passed | ✓ |
+| frontend dict hard-contrast baseline | `npm run build` | dict page title/subtitle switched to stronger fixed text contrast | passed | ✓ |
+| frontend dict max-contrast baseline | `npm run build` | dict page title/subtitle forced to stronger readable contrast | passed | ✓ |
+| frontend dict dark-theme contrast baseline | `npm run build` | dict page title/subtitle now brighten only in dark themes | passed | ✓ |
+| frontend dict dark-theme surface baseline | `npm run build` | dict page dark-theme card surface opacity increased for readability | passed | ✓ |
 
 ### Phase 8: CRUD 代码生成器前端最小闭环
 - **Status:** complete
@@ -410,11 +434,259 @@
   - `findings.md` (updated)
   - `progress.md` (updated)
 
+### Phase 25: 字典管理前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 已新增 `src/views/system/DictsView.vue`，采用“字典类型 + 字典数据”双区块布局，支持类型筛选、数据联动与基础操作。
+  - 已在 `src/api/system.js` 补齐字典类型/字典数据 CRUD 接口封装。
+  - 已在 `router/index.js` 与 `MainLayout.vue` 新增字典管理路由与侧边栏入口，权限标识使用 `system:dict:list`。
+  - 已新增字典类型前端格式校验，并完成前端构建回归。
+- Files created/modified:
+  - `src/views/system/DictsView.vue` (created)
+  - `src/api/system.js` (updated)
+  - `src/router/index.js` (updated)
+  - `src/layouts/MainLayout.vue` (updated)
+  - `src/utils/validators.js` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 26: 字典业务下拉首批接入
+- **Status:** complete
+- Actions taken:
+  - 已新增 `src/composables/useDictOptions.js`，统一加载字典 options、标签文案与颜色类型。
+  - 已将用户页、角色页、菜单页、部门页的状态相关下拉和表格展示改为消费后端字典项。
+  - 菜单页已额外接入 `sys_menu_visible`；部门页已接入 `sys_dept_status`，保持“停用”独立文案。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/composables/useDictOptions.js` (created)
+  - `src/api/system.js` (updated)
+  - `src/views/system/UsersView.vue` (updated)
+  - `src/views/system/RolesView.vue` (updated)
+  - `src/views/system/MenusView.vue` (updated)
+  - `src/views/system/DeptsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 27: 审计页字典消费接入
+- **Status:** complete
+- Actions taken:
+  - 登录日志页已接入 `audit_exec_status` 与 `audit_login_type`，状态与登录方式筛选及展示改为读取字典项。
+  - 操作日志页已接入 `audit_exec_status`，状态筛选及展示改为读取字典项。
+  - 已继续复用 `useDictOptions`，避免审计页重复维护筛选文案和 tag 颜色映射。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/views/audit/LoginLogsView.vue` (updated)
+  - `src/views/audit/OperLogsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 28: 参数设置前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 已新增 `src/views/system/ConfigsView.vue`，支持参数列表、筛选与新增/编辑/删除弹窗。
+  - 已在 `src/api/system.js` 补齐参数列表、新增、编辑、删除接口封装。
+  - 已在 `router/index.js` 与 `MainLayout.vue` 新增参数设置路由与侧边栏入口，权限标识使用 `system:config:list`。
+  - 已补齐参数键前端校验，并完成前端构建回归。
+- Files created/modified:
+  - `src/views/system/ConfigsView.vue` (created)
+  - `src/api/system.js` (updated)
+  - `src/router/index.js` (updated)
+  - `src/layouts/MainLayout.vue` (updated)
+  - `src/utils/validators.js` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 29: 参数分组前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 参数页已新增分组列与分组筛选，支持按 `config_group` 过滤参数列表。
+  - 参数新增/编辑弹窗已支持维护分组字段，并允许选择已有分组或直接创建新分组。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 30: 参数变更历史前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 参数页已新增历史查看入口与历史弹窗，支持查看单个参数的变更记录。
+  - 已接入后端 `GET /api/system/configs/{id}/history` 接口。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/api/system.js` (updated)
+  - `src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 31: 参数版本回滚前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 历史弹窗已新增“回滚”操作，支持按指定历史快照回滚参数。
+  - 删除态历史在前端禁用回滚按钮，和后端约束保持一致。
+  - 回滚后会刷新参数列表与历史列表。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/api/system.js` (updated)
+  - `src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 32: 参数 diff 对比前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 历史弹窗已新增“对比”入口，支持查看当前参数与指定历史快照差异。
+  - diff 视图已支持展示字段名、当前值、历史值与是否变化。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/api/system.js` (updated)
+  - `src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 33: 参数删除恢复前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 参数页已新增“恢复已删”入口与已删历史弹窗。
+  - 已接入后端删除历史列表与恢复接口，并支持逐条恢复。
+  - 恢复成功后会同时刷新参数主列表与已删记录列表。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/api/system.js` (updated)
+  - `src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 35: 参数删除恢复前预览前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 已删记录列表已新增“预览”入口。
+  - 恢复前预览弹窗已展示待恢复参数关键字段，并支持直接确认恢复。
+  - 恢复成功后会关闭预览弹窗并刷新参数主列表与已删记录列表。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/api/system.js` (updated)
+  - `src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 36: 参数恢复前差异对比前端最小闭环
+- **Status:** complete
+- Actions taken:
+  - 恢复预览弹窗已新增同键占用状态提示。
+  - 若当前已有同键参数，会展示“当前同键值 vs 待恢复值”的字段级差异表格。
+  - 同键已存在时会禁用确认恢复按钮，避免无效恢复尝试。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 37: 参数值类型字典消费扩面
+- **Status:** complete
+- Actions taken:
+  - 参数页值类型筛选与新增/编辑弹窗已改为优先消费 `sys_config_value_type` 字典 options。
+  - 值类型展示文案已走字典 label，并保留本地兜底映射。
+  - 页面初始化时会先拉取字典 options，再加载参数列表。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 38: 字典颜色类型字典消费扩面
+- **Status:** complete
+- Actions taken:
+  - 字典管理页颜色下拉已改为优先消费 `sys_dict_color_type` 字典 options。
+  - 字典数据列表颜色展示已改为字典文案 + 标签类型，不再直接回显原始值。
+  - 已保留前端兜底颜色选项，兼容旧环境未补 seed 的情况。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/views/system/DictsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 39: 参数来源字典消费扩面
+- **Status:** complete
+- Actions taken:
+  - 参数页来源筛选已改为优先消费 `sys_config_source` 字典 options。
+  - 参数新增/编辑弹窗来源选项已改为优先消费字典 options，并保持数值值类型。
+  - 列表标签与恢复预览来源文案已统一改为字典驱动。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 40: 字典管理页状态字典消费扩面
+- **Status:** complete
+- Actions taken:
+  - 字典管理页状态筛选已改为优先消费 `sys_common_status` 字典 options。
+  - 字典类型/字典数据表单状态选项已改为优先消费字典 options。
+
+### Phase 41: 字典与参数页真实回归收口
+- **Status:** complete
+- Actions taken:
+  - 已完成字典管理真实浏览器回归：新增字典类型、新增字典数据、删除字典数据、删除字典类型链路均已通过。
+  - 已修复 `DictsView` 默认颜色标签向 `ElTag` 传空字符串类型导致的控制台 warning。
+  - 已完成参数设置真实浏览器回归：新增参数、编辑、历史、删除、恢复预览、恢复确认链路均已覆盖。
+  - 回归期间发现已删参数列表受后端 collation 冲突影响；后端修复并重启后，前端复测 `deleted/history`、`preview`、`restore` 已全部通过。
+- Files created/modified:
+  - `src/views/system/DictsView.vue` (updated)
+  - `src/composables/useDictOptions.js` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 42: 参数多历史与生成器写入回滚真实回归
+- **Status:** complete
+- Actions taken:
+  - 已完成参数页双历史 diff / 回滚真实浏览器回归：新增参数后连续编辑两次，验证“设为基准 + 对比”与回滚链路均正常。
+  - 已完成生成器写入记录 / marker 删除真实浏览器回归：预览 12 份文件后写入项目，再在“写入记录”弹窗中按 marker 删除。
+  - 已确认页面控制台 warning = 0，且删除后工作区无本次生成文件残留。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 43: 生成器冲突确认与系统筛选边界真实回归
+- **Status:** complete
+- Actions taken:
+  - 已完成生成器冲突确认真实浏览器回归：重复写入触发冲突清单，目录统计与“前端”快捷过滤均正常，取消覆盖链路可正常退出。
+  - 已修复 `GeneratorView` 冲突快捷过滤中 `el-radio-button` 的弃用用法，改为 `value` 后控制台 warning 清零。
+  - 已完成字典页与参数页筛选边界真实回归：分别创建临时数据验证查询、重置、每页条数切换，再完成删除清理。
+- Files created/modified:
+  - `src/views/system/GeneratorView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+  - `StatusTag` 的文案与颜色已改为从字典映射读取，并保留前端兜底。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/views/system/DictsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 8（前端代码生成器最小闭环已完成） |
-| Where am I going? | 补浏览器 smoke 回归，或继续提升生成器页面交互与模板说明能力 |
+| Where am I? | Phase 40（字典管理页状态字典消费扩面） |
+| Where am I going? | 继续扩展更多业务表单字典消费，或增强参数 diff 视觉表达 |
 | What's the goal? | 构建可联调且有质感的简擎前端管理台 |
-| What have I learned? | 工具型页面同样适合复用现有管理台骨架；下载类接口则要与统一 JSON 拦截器分开处理 |
-| What have I done? | 已完成代码生成器页的 API、路由、菜单与页面骨架接入，并通过前端构建验证 |
+| What have I learned? | 复用已有通用状态字典时，只要把筛选、表单和标签展示一起替换，能快速消除大部分硬编码状态文案 |
+| What have I done? | 已继续针对深色主题提升字典管理页卡片底色明度与文字可读性，并通过前端构建回归 |

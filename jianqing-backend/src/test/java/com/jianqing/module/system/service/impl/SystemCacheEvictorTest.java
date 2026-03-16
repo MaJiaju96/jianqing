@@ -56,6 +56,25 @@ class SystemCacheEvictorTest {
         verify(cacheConsistencyService).deleteWithDelay("user:menu-tree", 9L);
     }
 
+    @Test
+    void shouldEvictDictDataAndOptionsTogether() {
+        SystemCacheEvictor evictor = new SystemCacheEvictor(cacheConsistencyService);
+
+        evictor.evictSystemDictData("sys_common_status");
+
+        verify(cacheConsistencyService).deleteWithDelay("system:dict-data", "sys_common_status");
+        verify(cacheConsistencyService).deleteWithDelay("system:dict-options", "sys_common_status");
+    }
+
+    @Test
+    void shouldEvictConfigListCache() {
+        SystemCacheEvictor evictor = new SystemCacheEvictor(cacheConsistencyService);
+
+        evictor.evictSystemConfigs();
+
+        verify(cacheConsistencyService).deleteWithDelay("system:configs", "all");
+    }
+
     private void beginTransactionSynchronization() {
         TransactionSynchronizationManager.initSynchronization();
         TransactionSynchronizationManager.setActualTransactionActive(true);

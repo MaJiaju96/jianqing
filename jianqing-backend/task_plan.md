@@ -4,7 +4,7 @@
 在保留后台管理系统高效率开发体验的前提下，完成 `简擎` 的可开源后端内核：以 `MySQL` 为首发数据源，预留 `Elasticsearch`、`Nacos`、`RocketMQ` 的可插拔集成能力。
 
 ## Current Phase
-Phase 16
+Phase 47
 
 ## Phases
 
@@ -122,6 +122,218 @@ Phase 16
 - [x] 写入记录接口增加表名与时间范围过滤参数
 - [x] 保持写入记录查询限制与排序一致（limit + 倒序）
 - [x] 完成接口过滤回归验证
+- **Status:** complete
+
+### Phase 17: 字典功能最小闭环
+- [x] 补齐字典类型/字典数据后端实体、Mapper、Service 与 Controller 接口
+- [x] 支持字典类型 CRUD、字典数据 CRUD 与按类型查询启用项
+- [x] 补齐字典菜单权限初始化与旧库 patch
+- [x] 完成控制器/服务测试、Checkstyle 与结构守卫回归
+- **Status:** complete
+
+### Phase 18: 字典业务下拉首批接入
+- [x] 补齐通用状态/菜单可见性/部门状态默认字典 seed 与旧库 patch
+- [x] 以字典项驱动前端用户/角色/菜单/部门页状态下拉与状态文案展示
+- [x] 保持后端消费接口不变，仅通过字典 options 接口完成首批业务接入
+- [x] 完成前后端构建与测试回归
+- **Status:** complete
+
+### Phase 19: 审计页字典消费接入
+- [x] 补齐审计执行状态与登录方式默认字典 seed
+- [x] 新增旧库 patch，确保历史环境可补齐审计字典项
+- [x] 登录日志与操作日志页改为消费字典项展示与筛选
+- [x] 完成前后端构建与测试回归
+- **Status:** complete
+
+### Phase 20: 字典缓存与失效收口
+- [x] 复用现有系统缓存模式为字典类型、字典数据、字典 options 增加缓存
+- [x] 在字典类型/字典数据写操作后补齐提交后失效逻辑
+- [x] 覆盖类型改名、数据跨类型修改等缓存边界场景
+- [x] 完成测试、Checkstyle 与结构守卫回归
+- **Status:** complete
+
+### Phase 21: 参数设置最小闭环
+- [x] 补齐系统参数实体、Mapper、Service 与 Controller 接口
+- [x] 支持参数列表、新增、编辑、删除，并同步发布到 DynamicConfigGateway
+- [x] 补齐参数菜单按钮权限与默认参数 seed/旧库 patch
+- [x] 完成测试、Checkstyle 与结构守卫回归
+- **Status:** complete
+
+### Phase 22: 参数分组最小闭环
+- [x] 为参数表补齐 `config_group` 字段并同步 seed/patch
+- [x] 参数发布改为按参数分组推送到 DynamicConfigGateway
+- [x] 前后端参数 CRUD 适配分组字段
+- [x] 完成测试、Checkstyle 与结构守卫回归
+- **Status:** complete
+
+### Phase 23: 参数变更历史最小闭环
+- [x] 新增参数变更历史表与后端查询接口
+- [x] 参数新增/修改/删除自动落历史记录
+- [x] 前端参数页补历史查看入口
+- [x] 完成测试、Checkstyle 与结构守卫回归
+- **Status:** complete
+
+### Phase 24: 参数版本回滚最小闭环
+- [x] 新增按历史记录回滚参数接口
+- [x] 回滚后自动重新发布动态配置并记录一条回滚历史
+- [x] 前端历史弹窗补“回滚”操作
+- [x] 完成测试、Checkstyle 与结构守卫回归
+- **Status:** complete
+
+### Phase 25: 参数 diff 对比最小闭环
+- [x] 新增当前参数与指定历史快照的 diff 接口
+- [x] 输出参数名称/分组/参数值/值类型/内置状态字段级差异
+- [x] 前端历史弹窗补“对比”查看
+- [x] 完成测试、Checkstyle 与结构守卫回归
+- **Status:** complete
+
+### Phase 26: 参数删除恢复最小闭环
+- [x] 新增已删除参数历史查询接口，仅返回当前仍未恢复的删除记录
+- [x] 新增按删除历史恢复参数接口，恢复后自动重新发布动态配置并记录恢复历史
+- [x] 前端参数页补“恢复已删”入口与恢复操作
+- [x] 完成测试、Checkstyle 与前端构建回归
+- **Status:** complete
+
+### Phase 27: 参数多版本 diff 最小闭环
+- [x] 扩展参数 diff 接口，支持“当前 vs 历史”与“历史 vs 历史”两种模式
+- [x] 输出对比目标元数据，便于前端识别当前对比模式与版本信息
+- [x] 前端历史弹窗补“设为基准”并支持双历史记录对比
+- [x] 完成测试、Checkstyle 与前端构建回归
+- **Status:** complete
+
+### Phase 28: 参数删除恢复前预览最小闭环
+- [x] 新增删除历史恢复预览接口，返回待恢复快照详情
+- [x] 前端已删记录列表补“预览”入口与恢复前预览弹窗
+- [x] 预览弹窗展示关键字段并支持确认恢复
+- [x] 完成测试、Checkstyle 与前端构建回归
+- **Status:** complete
+
+### Phase 29: 参数恢复前差异对比最小闭环
+- [x] 恢复预览接口补充“当前是否已有同键参数”与字段级差异信息
+- [x] 前端恢复预览弹窗展示同键占用状态与差异表格
+- [x] 同键已存在时禁用直接恢复，避免误操作
+- [x] 完成测试、Checkstyle 与前端构建回归
+- **Status:** complete
+
+### Phase 30: 参数值类型字典消费扩面
+- [x] 为参数值类型补齐默认字典 seed 与旧库 patch
+- [x] 前端参数页值类型筛选/表单改为优先消费字典 options
+- [x] 保留前端兜底选项，避免字典未初始化时页面不可用
+- [x] 完成测试、Checkstyle 与前端构建回归
+- **Status:** complete
+
+### Phase 31: 字典颜色类型字典消费扩面
+- [x] 为字典颜色类型补齐默认字典 seed 与旧库 patch
+- [x] 字典管理页颜色下拉改为优先消费字典 options
+- [x] 字典数据列表颜色展示改为字典文案 + 标签类型
+- [x] 完成测试、Checkstyle 与前端构建回归
+- **Status:** complete
+
+### Phase 32: 参数来源字典消费扩面
+- [x] 为参数来源补齐默认字典 seed 与旧库 patch
+- [x] 参数页来源筛选/表单改为优先消费字典 options
+- [x] 来源展示文案与标签类型改为消费字典配置
+- [x] 完成测试、Checkstyle 与前端构建回归
+- **Status:** complete
+
+### Phase 33: 字典管理页状态字典消费扩面
+- [x] 字典管理页状态筛选改为优先消费 `sys_common_status`
+- [x] 字典类型/字典数据表单状态选项改为优先消费字典 options
+- [x] 状态标签文案与颜色改为字典驱动，并保留前端兜底
+- [x] 完成测试、Checkstyle 与前端构建回归
+- **Status:** complete
+
+### Phase 34: 参数表旧库缺列兼容
+- [x] 启动时自动探测 `jq_sys_config` 缺失的参数扩展字段
+- [x] 自动补齐 `config_group` / `value_type` / `is_builtin` 与历史表结构
+- [x] 为旧库缺少 `jq_sys_config_history` 场景补齐建表能力
+- [x] 完成测试与 Checkstyle 回归
+- **Status:** complete
+
+### Phase 35: 代码生成器旧库缺表兼容
+- [x] 启动时自动探测 `jq_dev_gen_write_record` 是否缺失
+- [x] 缺表时自动补齐代码生成写入记录表
+- [x] 补充“需要创建 / 已存在无需创建”两类测试
+- [x] 完成测试与 Checkstyle 回归
+- **Status:** complete
+
+### Phase 36: 生成器菜单旧库兼容
+- [x] 启动时自动探测生成器菜单是否缺失
+- [x] 自动补齐 `system:generator:list/query` 菜单与管理员角色绑定
+- [x] 补充“需要创建 / 已存在无需创建”两类测试
+- [x] 完成测试与 Checkstyle 回归
+- **Status:** complete
+
+### Phase 37: 菜单表核心字段旧库兼容
+- [x] 启动时自动探测 `jq_sys_menu` 核心字段是否缺失
+- [x] 自动补齐菜单核心字段与 `jq_sys_role_menu` 关联表
+- [x] 补充“需要修复 / 已完整无需修复”两类测试
+- [x] 完成测试与 Checkstyle 回归
+- **Status:** complete
+
+### Phase 38: 字典表核心结构旧库兼容
+- [x] 启动时自动探测 `jq_sys_dict_type/jq_sys_dict_data` 是否缺失
+- [x] 自动补齐字典核心字段与默认结构
+- [x] 补充“需要修复 / 已完整无需修复”两类测试
+- [x] 完成测试与 Checkstyle 回归
+- **Status:** complete
+
+### Phase 39: 部门表核心结构旧库兼容
+- [x] 启动时自动探测 `jq_sys_dept` 是否缺失
+- [x] 自动补齐部门核心字段与默认结构
+- [x] 补充“需要修复 / 已完整无需修复”两类测试
+- [x] 完成测试与 Checkstyle 回归
+- **Status:** complete
+
+### Phase 40: 审计表核心结构兼容
+- [x] 启动时自动探测 `jq_sys_oper_log/jq_sys_login_log` 是否缺失
+- [x] 自动补齐审计核心字段，并将操作日志请求/响应体改为兼容性更高的 LONGTEXT
+- [x] 补充“需要修复 / 已完整无需修复”两类测试
+- [x] 完成测试与 Checkstyle 回归
+- **Status:** complete
+
+### Phase 41: 用户角色核心结构旧库兼容
+- [x] 启动时自动探测 `jq_sys_user/jq_sys_role/jq_sys_user_role` 是否缺失
+- [x] 自动补齐用户、角色与用户角色关联核心字段
+- [x] 补充“需要修复 / 已完整无需修复”两类测试
+- [x] 完成测试与 Checkstyle 回归
+- **Status:** complete
+
+### Phase 42: 旧库兼容说明文档收口
+- [x] 汇总当前已覆盖的旧库兼容范围与对应启动修复器
+- [x] 补充旧库接入方式、推荐操作顺序与排障建议
+- [x] README 增加旧库兼容说明入口
+- [x] 同步规划与进度记录
+- **Status:** complete
+
+### Phase 43: init SQL 方言风险收口
+- [x] 移除初始化脚本中的 MySQL 8 专属 collation
+- [x] README 与旧库兼容文档补充说明
+- [x] 同步规划与进度记录
+- **Status:** complete
+
+### Phase 44: init SQL 时间字段兼容收口
+- [x] 将初始化脚本中的自动时间戳字段优先切换为 TIMESTAMP 方案
+- [x] README 与旧库兼容文档补充时间字段兼容说明
+- [x] 完成测试、Checkstyle 与规划同步
+- **Status:** complete
+
+### Phase 45: 参数恢复链路 collation 兼容修复
+- [x] 完成参数设置真实浏览器回归，覆盖新增/编辑/历史/删除/恢复链路
+- [x] 修复已删参数列表查询中的 `config_key` collation 冲突
+- [x] 完成前端构建、后端测试与真实浏览器复测
+- **Status:** complete
+
+### Phase 46: 参数多历史与生成器回滚链路真实回归
+- [x] 完成参数页双历史 diff 与历史回滚真实浏览器回归
+- [x] 完成生成器写入记录删除链路真实浏览器回归
+- [x] 验证生成文件已按 marker 删除且无残留
+- **Status:** complete
+
+### Phase 47: 生成器冲突确认与系统筛选边界真实回归
+- [x] 完成生成器冲突清单 / 快捷过滤 / 取消覆盖真实浏览器回归
+- [x] 完成字典页与参数页筛选 / 重置 / 每页条数边界真实浏览器回归
+- [x] 同步修复生成器冲突弹窗 `el-radio` 兼容 warning 并验证控制台归零
 - **Status:** complete
 
 ## Key Questions

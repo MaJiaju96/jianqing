@@ -92,6 +92,71 @@
 - 已新增写入记录落库：仅当用户点击“写入项目”时记录 marker 与生成参数快照，未写入场景不入库。
 - 已新增写入记录查询接口：`GET /api/dev/gen/write/records`，供前端快速删除列表优先展示服务端记录。
 - 写入记录查询已支持过滤：可按 `tableName` 与 `startAt/endAt` 筛选，便于在高频生成场景快速定位目标 marker。
+- 已补齐字典功能最小闭环：新增 `jq_sys_dict_type` / `jq_sys_dict_data` 对应实体、Mapper、Service、Controller 与前端联调接口。
+- 字典类型当前支持列表、新增、编辑、删除；若该类型下仍存在字典数据则禁止删除，避免脏引用。
+- 字典数据当前支持按类型列表、新增、编辑、删除，并新增 `GET /api/system/dict-options/{dictType}` 供后续业务侧按类型读取启用项。
+- 字典类型编码服务端已收口校验：仅允许小写字母、数字、下划线，且需以字母开头。
+- 字典类型编码变更时，后端会在同一事务内同步更新对应字典数据表中的 `dict_type`，保持类型与数据一致。
+- 已新增字典权限 seed/patch：补齐 `system:dict:list/query/add/edit/remove` 与 `system:dict-data:add/edit/remove`。
+- 已补齐首批业务消费字典 seed：`sys_common_status`、`sys_menu_visible`、`sys_dept_status`，用于驱动系统页真实下拉与展示文案。
+- 已新增旧库 patch `sql/patch/20260313_dict_seed_data.sql`，避免旧环境缺少默认字典项导致前端下拉为空。
+- 已继续补齐审计页字典 seed：`audit_exec_status`（成功/失败）与 `audit_login_type`（登录方式）。
+- 已新增旧库 patch `sql/patch/20260313_audit_dict_seed_data.sql`，用于为历史环境补齐审计字典项。
+- 已为字典查询增加缓存：字典类型列表、按类型字典数据、按类型启用字典项均已进入缓存层。
+- 字典写操作已接入提交后缓存失效：新增/编辑/删除字典类型、字典数据后，会精确清理对应缓存 key。
+- 字典类型改名与字典数据跨类型修改时，会同时清理旧类型与新类型缓存，避免前端读到旧值。
+- 已补齐参数设置最小闭环：新增 `jq_sys_config` 对应实体、Mapper、Service、Controller 与前端联调接口。
+- 参数模块当前支持列表、新增、编辑、删除；删除时禁止删除内置参数，编辑时内置参数禁止修改参数键。
+- 参数写操作当前会同步调用 `DynamicConfigGateway.publish`，使本地动态配置网关可立即感知变更。
+- 已为参数列表增加缓存，并在参数写操作后接入提交后失效。
+- 已新增默认参数 seed：`sys.theme.default`、`sys.login.captcha.enabled`。
+- 已新增旧库 patch `sql/patch/20260313_config_menu_and_seed.sql`，补齐参数 seed 与按钮权限。
+- 参数模块已补齐 `config_group` 字段，当前使用如 `UI`、`AUTH`、`DEFAULT_GROUP` 这类大写分组标识。
+- 参数发布已改为按 `config_group` 推送到 `DynamicConfigGateway.publish(dataId, group, value)`，不再固定使用 `DEFAULT_GROUP`。
+- 前端参数页已支持按分组筛选，并在编辑/新增时维护参数分组。
+- 已补齐参数变更历史：新增 `jq_sys_config_history`，参数新增/修改/删除都会自动留痕。
+- 已新增参数历史查询接口：`GET /api/system/configs/{id}/history`，前端可查看单个参数的最近变更轨迹。
+- 已新增参数回滚接口：`POST /api/system/configs/{id}/history/{historyId}/rollback`。
+- 当前回滚能力仅支持回滚到非删除态历史快照；删除记录暂不支持直接恢复已删参数。
+- 参数回滚成功后会重新发布到 `DynamicConfigGateway`，并额外记录一条 `ROLLBACK` 类型历史。
+- 已新增参数 diff 接口：`GET /api/system/configs/{id}/history/{historyId}/diff`。
+- 当前 diff 首版聚焦字段级对比：参数名称、参数分组、参数值、值类型、内置状态。
+- 已新增已删除参数历史查询接口：`GET /api/system/configs/deleted/history`，仅返回当前仍未恢复的删除记录，避免恢复后重复展示。
+- 已新增删除历史恢复接口：`POST /api/system/configs/history/{historyId}/restore`，会按删除快照重建参数、重新发布动态配置并记录一条 `RESTORE` 历史。
+- 参数恢复当前按 `config_key` 做冲突保护：若同键参数已存在，则恢复会被拒绝，避免覆盖现有配置。
+- 已扩展参数 diff 接口：`GET /api/system/configs/{id}/history/{historyId}/diff?compareHistoryId=7`，当前同时支持“当前 vs 指定历史”和“历史 vs 历史”。
+- 参数 diff 响应已补齐对比目标元数据：包含 `compareHistoryId`、`compareChangeType`、`compareCreatedAt` 与 `compareWithCurrent`，前端可据此切换展示文案。
+- 已新增删除历史恢复预览接口：`GET /api/system/configs/deleted/history/{historyId}/preview`，用于在真正恢复前查看删除快照详情。
+- 恢复预览接口现已补充同键占用信息：若当前存在同 `config_key` 参数，会返回占用标记、当前参数信息及字段级差异列表。
+- 已补齐参数值类型默认字典：`sys_config_value_type`，当前包含 `string/number/boolean/json` 四类选项，可直接供参数页消费。
+- 已补齐字典颜色类型默认字典：`sys_dict_color_type`，当前包含默认/主色/成功/信息/警告/危险六类选项，可直接供字典管理页消费。
+- 已补齐参数来源默认字典：`sys_config_source`，当前包含 `0=自定义`、`1=内置` 两类选项，可直接供参数页消费。
+- `sys_common_status` 已继续扩展到字典管理页，当前字典类型/字典数据的状态筛选、表单和状态标签均可直接复用该字典。
+- 旧库仍可能停留在参数模块上线前版本，`jq_sys_config` 缺少 `config_group/value_type/is_builtin` 时会直接导致参数页列表查询失败。
+- 已新增启动期 schema 自修复：服务启动时会自动补齐 `jq_sys_config`、`jq_sys_config_history` 的参数扩展字段，并在缺失历史表时自动建表。
+- 旧库若未执行 `20260312_generator_write_record.sql`，代码生成器写入记录查询/回滚链路会因缺少 `jq_dev_gen_write_record` 表而失败。
+- 已新增生成器启动期 schema 自修复：服务启动时会自动补齐 `jq_dev_gen_write_record`，避免代码生成页因旧库缺表直接报错。
+- 旧库若未执行 `20260311_generator_menu.sql`，前端即使已有生成器页面，也会因为缺少菜单与角色绑定而看不到入口。
+- 已新增生成器菜单启动期自修复：服务启动时会自动补齐 `system:generator:list/query` 菜单，并为管理员补齐角色菜单关联。
+- 旧库若 `jq_sys_menu` 缺少 `route_path/component/perms/is_deleted` 等核心字段，菜单查询、补种子和权限绑定都会同时失效。
+- 已新增菜单 schema 启动期自修复：服务启动时会自动补齐 `jq_sys_menu` 核心字段，并在缺失时补齐 `jq_sys_role_menu` 表。
+- 旧库若缺少 `jq_sys_dict_type/jq_sys_dict_data` 或其核心字段，字典管理、系统状态文案和前端 dict-options 消费都会失效。
+- 已新增字典 schema 启动期自修复：服务启动时会自动补齐字典类型表、字典数据表及其核心字段。
+- 旧库若缺少 `jq_sys_dept` 或 `leader_user_id/sort_no/status/is_deleted` 等核心字段，部门树查询和用户部门选择链路都会失效。
+- 已新增部门 schema 启动期自修复：服务启动时会自动补齐部门表及其核心字段。
+- `jq_sys_oper_log` 原始建表使用 JSON 字段，在更老的 MySQL/MariaDB 环境中兼容性较差，容易导致审计表初始化失败。
+- 已新增审计 schema 启动期自修复：服务启动时会自动补齐操作日志/登录日志表及其核心字段，并将请求/响应体按 LONGTEXT 兼容方案创建。
+- 旧库若缺少 `jq_sys_user/jq_sys_role/jq_sys_user_role` 或其核心字段，登录鉴权、用户管理、角色分配和 RBAC 联动都会直接失效。
+- 已新增用户角色 schema 启动期自修复：服务启动时会自动补齐用户表、角色表、用户角色关联表及其核心字段。
+- 已新增旧库兼容说明文档：`docs/LEGACY_SCHEMA_COMPATIBILITY.md`，集中说明当前已覆盖范围、使用方式、排障顺序与已知边界。
+- 初始化脚本库级 collation 已从 `utf8mb4_0900_ai_ci` 调整为 `utf8mb4_unicode_ci`，减少因 MySQL 8 专属方言导致的旧环境初始化失败风险。
+- 初始化脚本中的自动时间戳字段已优先从 `DATETIME DEFAULT CURRENT_TIMESTAMP` 调整为 `TIMESTAMP DEFAULT CURRENT_TIMESTAMP`，降低旧 MySQL 环境初始化兼容风险。
+- 参数设置真实浏览器回归中发现：`GET /api/system/configs/deleted/history` 在旧 collation 混用环境下会因 `jq_sys_config` 与 `jq_sys_config_history.config_key` 比较报 `Illegal mix of collations`。
+- 已在 `SysConfigHistoryMapper.xml` 中将删除历史查询里的 `config_key` 比较显式收口为 `utf8mb4_unicode_ci`，避免新旧表/旧库 patch 混用时恢复链路直接报错。
+- 参数页真实回归已确认“双历史 diff + 历史回滚”链路可用：历史 vs 历史对比接口与回滚接口均返回 200，回滚后列表值与历史记录同步刷新。
+- 生成器真实回归已确认“写入项目 → 写入记录 → 按 marker 删除”链路可用；删除后对应写入记录消失，工作区也未残留本次生成文件。
+- 生成器冲突确认真实回归已确认：重复写入时会先拉取冲突清单，再展示目录统计、快捷过滤与覆盖确认，不会直接静默覆盖。
+- 本轮前端真实回归还确认了字典页与参数页的筛选、重置、每页条数切换在空列表/单条数据场景下均可正常工作。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -137,6 +202,27 @@
 | 生成标记与模板内容解耦 | 避免向模板注入额外注释导致代码风格漂移，同时支持可追溯删除 |
 | 仅对“写入项目”行为落库 | 区分草稿态与落盘态历史，避免无效数据污染数据库 |
 | 写入记录查询提供轻量过滤能力 | 降低历史记录检索成本，提升按 marker 回滚效率 |
+| 字典功能首版先做管理侧最小闭环 | 先补齐类型/数据维护与基础消费接口，再决定是否扩展缓存、批量导入导出 |
+| 参数删除恢复先走“删除历史列表 + 按历史恢复” | 已删除参数不在当前列表中，先补单独入口可形成最小闭环，避免改造现有历史弹窗语义 |
+| 参数多版本 diff 先复用现有 diff 接口加可选基准历史参数 | 避免新增第二套对比接口，保持“当前 vs 历史”和“历史 vs 历史”走同一返回结构 |
+| 参数恢复预览先直接返回删除历史快照 | 现阶段恢复目标就是按删除快照重建参数，直接复用删除历史详情即可满足预览需求 |
+| 参数恢复前差异对比先聚焦同键冲突场景 | 真正的恢复风险主要来自同键已被重新占用，先把占用状态和字段差异展示清楚即可 |
+| 字典消费扩面优先挑高频且改动最小的参数值类型 | 可复用现有 dict-options 接口快速替换硬编码枚举，同时风险低、收益直接 |
+| 字典颜色类型继续沿用“字典 options + 前端兜底” | 既能逐步去硬编码，也能兼容历史环境尚未补齐 seed 的情况 |
+| 参数来源字典化要同步覆盖标签类型 | 避免仍在页面里手写 warning/info 分支，保持展示与配置来源一致 |
+| 通用状态字典扩面优先复用现有 `sys_common_status` | 避免为同一组启禁用语义重复造新字典，保持系统内文案和颜色一致 |
+| 旧库兼容优先用启动期自修复收口 | 比要求人工先跑 patch 更稳妥，能直接消除“代码已升级但库未升级”导致的页面不可用 |
+| 生成器旧库兼容优先补核心写入记录表 | 这是生成器写入、记录查询、按 marker 回滚的共同依赖点，缺表时整条链路都会失效 |
+| 生成器入口兼容要同时补菜单和角色绑定 | 只补菜单不补 `jq_sys_role_menu`，管理员依然看不到入口，等于没有真正修复 |
+| 菜单旧库兼容优先补“所有菜单都会依赖”的核心字段 | 比只修单个功能菜单更值，因为它同时影响菜单加载、权限、补种子和新增功能接入 |
+| 字典旧库兼容优先补核心表结构 | 字典已成为多个前端页面的基础依赖，缺表或缺核心字段会让多处页面同时退化或不可用 |
+| 部门旧库兼容优先补树结构与状态核心字段 | 这些字段直接决定部门树能否查询、排序和过滤，缺失时影响整条组织架构链路 |
+| 审计旧库兼容优先去掉高版本方言依赖 | 像 JSON 这种类型一旦不兼容，会直接让整张日志表不可建，收益高于只补普通缺列 |
+| 用户角色旧库兼容优先补认证与授权基础表 | 这是系统能否登录、分配角色、计算权限的底座，缺表影响面最大 |
+| 旧库兼容能力积累到一定规模后要及时文档化 | 否则团队只知道“启动能自修复”，却不知道覆盖范围、边界和排障路径 |
+| init SQL 方言风险要优先清理库级定义 | 一旦 `CREATE DATABASE` 就失败，后续所有表级兼容逻辑都没有机会执行 |
+| init SQL 时间字段兼容要优先处理自动时间戳列 | 这类列分布广、复用高，一旦方言不兼容会让多张基础表一起初始化失败 |
+| 参数恢复链路优先在查询层显式统一 collation | 相比要求用户先全库改 collation，先保证“已删参数列表/恢复”链路可直接工作，风险更低 |
 
 ## Issues Encountered
 | Issue | Resolution |
@@ -204,6 +290,37 @@
 - `src/main/java/com/jianqing/module/system/controller/SystemController.java`
 - `src/main/java/com/jianqing/framework/web/OperationLogInterceptor.java`
 - `src/main/java/com/jianqing/framework/security/JwtAuthenticationFilter.java`
+- `src/main/java/com/jianqing/module/system/entity/SysDictType.java`
+- `src/main/java/com/jianqing/module/system/entity/SysDictData.java`
+- `src/main/java/com/jianqing/module/system/service/DictTypeService.java`
+- `src/main/java/com/jianqing/module/system/service/DictDataService.java`
+- `src/main/java/com/jianqing/module/system/service/impl/DictTypeServiceImpl.java`
+- `src/main/java/com/jianqing/module/system/service/impl/DictDataServiceImpl.java`
+- `src/main/java/com/jianqing/module/system/mapper/SysDictTypeMapper.java`
+- `src/main/java/com/jianqing/module/system/mapper/SysDictTypeMapper.xml`
+- `src/main/java/com/jianqing/module/system/mapper/SysDictDataMapper.java`
+- `src/main/java/com/jianqing/module/system/mapper/SysDictDataMapper.xml`
+- `src/test/java/com/jianqing/module/system/controller/SystemControllerTest.java`
+- `src/test/java/com/jianqing/module/system/service/impl/DictTypeServiceImplTest.java`
+- `src/test/java/com/jianqing/module/system/service/impl/DictDataServiceImplTest.java`
+- `sql/patch/20260313_dict_permissions.sql`
+- `sql/patch/20260313_dict_seed_data.sql`
+- `sql/patch/20260313_audit_dict_seed_data.sql`
+- `src/main/java/com/jianqing/module/system/service/impl/SystemCacheEvictor.java`
+- `src/test/java/com/jianqing/module/system/service/impl/SystemCacheEvictorTest.java`
+- `src/main/java/com/jianqing/module/system/entity/SysConfig.java`
+- `src/main/java/com/jianqing/module/system/service/ConfigService.java`
+- `src/main/java/com/jianqing/module/system/service/impl/ConfigServiceImpl.java`
+- `src/main/java/com/jianqing/module/system/mapper/SysConfigMapper.java`
+- `src/main/java/com/jianqing/module/system/mapper/SysConfigMapper.xml`
+- `src/main/java/com/jianqing/module/system/entity/SysConfigHistory.java`
+- `src/main/java/com/jianqing/module/system/dto/ConfigHistorySummary.java`
+- `src/main/java/com/jianqing/module/system/mapper/SysConfigHistoryMapper.java`
+- `src/main/java/com/jianqing/module/system/mapper/SysConfigHistoryMapper.xml`
+- `src/test/java/com/jianqing/module/system/service/impl/ConfigServiceImplTest.java`
+- `sql/patch/20260313_config_menu_and_seed.sql`
+- `src/main/java/com/jianqing/module/system/dto/ConfigDiffItem.java`
+- `src/main/java/com/jianqing/module/system/dto/ConfigDiffSummary.java`
 
 ## Additional Findings
 - 已完成后端首轮热点扫描：`SystemServiceImpl`（391 行）是当前主要复杂度集中点，后续应按“用户域操作/缓存失效/数据范围判定”继续拆分职责。

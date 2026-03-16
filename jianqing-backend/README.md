@@ -33,6 +33,12 @@ mysql -uroot -p < sql/jianqing-init-v0.1.sql
 
 脚本会创建 `jianqing` 库及基础系统表（如 `jq_sys_user`、`jq_sys_role`、`jq_sys_menu`）。
 
+说明：
+
+- 初始化脚本已避免使用 `utf8mb4_0900_ai_ci` 这类 MySQL 8 专属 collation，降低旧环境初始化失败概率。
+- 初始化脚本中的自动时间戳字段已优先改为 `TIMESTAMP DEFAULT CURRENT_TIMESTAMP` 方案，降低部分旧 MySQL 环境对 `DATETIME DEFAULT CURRENT_TIMESTAMP` 的兼容风险。
+- 如果使用更老数据库版本，仍建议结合 `docs/LEGACY_SCHEMA_COMPATIBILITY.md` 评估兼容边界。
+
 ### 3) 配置默认管理员密码
 
 初始化 SQL 中默认管理员密码占位符为 `REPLACE_WITH_BCRYPT_HASH`，需要替换成真实 BCrypt 值。
@@ -106,6 +112,7 @@ mvn spring-boot:run
 - 版本范围说明：`docs/SCOPE_v0.1_v0.2.md`。
 - 首版发布说明：`docs/RELEASE_NOTES_v0.1.md`。
 - 发布执行 SOP：`docs/RELEASE_SOP.md`。
+- 旧库兼容说明：`docs/LEGACY_SCHEMA_COMPATIBILITY.md`。
 
 ### 核心接口
 

@@ -6,8 +6,7 @@
           <el-input v-model="keywordInput" clearable placeholder="搜索角色名称/编码" class="jq-toolbar-field" @keyup.enter="handleSearch" />
           <el-select v-model="filterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
-            <el-option label="启用" :value="STATUS_ENABLED" />
-            <el-option label="禁用" :value="STATUS_DISABLED" />
+            <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="Number(item.value)" />
           </el-select>
         </template>
         <template #actions>
@@ -27,7 +26,9 @@
         </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="scope">
-            <StatusTag :status="scope.row.status" :enabled-value="STATUS_ENABLED" enabled-text="启用" disabled-text="禁用" />
+            <el-tag :type="getTagType(COMMON_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? 'success' : 'danger')">
+              {{ getLabel(COMMON_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? '启用' : '禁用') }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
@@ -69,8 +70,7 @@
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="form.status" style="width: 100%;">
-            <el-option :value="STATUS_ENABLED" label="启用" />
-            <el-option :value="STATUS_DISABLED" label="禁用" />
+          <el-option v-for="item in statusOptions" :key="item.value" :value="Number(item.value)" :label="item.label" />
         </el-select>
       </el-form-item>
     </el-form>
@@ -117,7 +117,7 @@
 </template>
 
 <script setup>
-import { nextTick, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import ListPageHeader from '../../components/ListPageHeader.vue';
@@ -131,7 +131,6 @@ import {
   DATA_SCOPE_OPTIONS,
   DATA_SCOPE_SELF,
   PAGE_SIZE_OPTIONS,
-  STATUS_DISABLED,
   STATUS_ENABLED,
   STATUS_FILTER_ALL
 } from '../../constants/app';
@@ -149,6 +148,7 @@ import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
 import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
 import { usePageInitializer } from '../../composables/usePageInitializer';
+import { useDictOptions } from '../../composables/useDictOptions';
 import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
 import { useSystemListPage } from '../../composables/useSystemListPage';
 import { showSuccessMessage } from '../../utils/feedback';
@@ -156,6 +156,7 @@ import { isValidRoleCode } from '../../utils/validators';
 import { getMenuTypeTag as menuTypeTag, getMenuTypeText as menuTypeText } from './menuMeta';
 
 const rows = ref([]);
+const COMMON_STATUS_DICT = 'sys_common_status';
 const menuDialogVisible = ref(false);
 const currentRole = ref(null);
 const menuTree = ref([]);
@@ -203,6 +204,8 @@ const menuAction = useActionLoading();
 const pageLoading = tableFeedback.loading;
 const menuSaving = menuAction.loading;
 const tableEmptyText = tableFeedback.emptyText;
+const { loadDictOptions, getOptions, getLabel, getTagType } = useDictOptions();
+const statusOptions = computed(() => getOptions(COMMON_STATUS_DICT));
 
 const { dialogVisible, isEdit, editingId, form, openCreate, openEdit, closeDialog } = useEntityDialogForm({
   createForm: () => ({
@@ -315,6 +318,7 @@ async function handleSaveMenus() {
 }
 
 usePageInitializer(async () => {
+  await loadDictOptions([COMMON_STATUS_DICT]);
   await loadData();
   handleSearch();
 });

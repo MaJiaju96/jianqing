@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jianqing.module.system.mapper.SysConfigHistoryMapper">
+
+    <select id="selectByConfigId" resultType="com.jianqing.module.system.entity.SysConfigHistory">
+        SELECT id, config_id, config_key, config_name, config_group, config_value, value_type, is_builtin,
+               change_type, change_note, created_by, updated_by, created_at, updated_at
+        FROM jq_sys_config_history
+        WHERE config_id = #{configId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="selectByIdAndConfigId" resultType="com.jianqing.module.system.entity.SysConfigHistory">
+        SELECT id, config_id, config_key, config_name, config_group, config_value, value_type, is_builtin,
+               change_type, change_note, created_by, updated_by, created_at, updated_at
+        FROM jq_sys_config_history
+        WHERE id = #{id}
+          AND config_id = #{configId}
+        LIMIT 1
+    </select>
+
+    <select id="selectLatestDeletedHistories" resultType="com.jianqing.module.system.entity.SysConfigHistory">
+        SELECT h.id, h.config_id, h.config_key, h.config_name, h.config_group, h.config_value, h.value_type, h.is_builtin,
+               h.change_type, h.change_note, h.created_by, h.updated_by, h.created_at, h.updated_at
+        FROM jq_sys_config_history h
+        WHERE h.change_type = 'DELETE'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM jq_sys_config c
+              WHERE CONVERT(c.config_key USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(h.config_key USING utf8mb4) COLLATE utf8mb4_unicode_ci
+          )
+          AND h.id = (
+              SELECT MAX(latest.id)
+              FROM jq_sys_config_history latest
+              WHERE CONVERT(latest.config_key USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                    = CONVERT(h.config_key USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                AND latest.change_type = 'DELETE'
+          )
+        ORDER BY h.id DESC
+        LIMIT 100
+    </select>
+
+    <select id="selectDeleteHistoryById" resultType="com.jianqing.module.system.entity.SysConfigHistory">
+        SELECT id, config_id, config_key, config_name, config_group, config_value, value_type, is_builtin,
+               change_type, change_note, created_by, updated_by, created_at, updated_at
+        FROM jq_sys_config_history
+        WHERE id = #{id}
+          AND change_type = 'DELETE'
+        LIMIT 1
+    </select>
+
+</mapper>

@@ -5,6 +5,16 @@ import com.jianqing.module.system.dto.MenuSaveRequest;
 import com.jianqing.module.system.dto.MenuTreeNode;
 import com.jianqing.module.system.dto.DeptSaveRequest;
 import com.jianqing.module.system.dto.DeptTreeNode;
+import com.jianqing.module.system.dto.ConfigSaveRequest;
+import com.jianqing.module.system.dto.ConfigHistorySummary;
+import com.jianqing.module.system.dto.ConfigDiffSummary;
+import com.jianqing.module.system.dto.ConfigRestorePreviewSummary;
+import com.jianqing.module.system.dto.ConfigSummary;
+import com.jianqing.module.system.dto.DictDataSaveRequest;
+import com.jianqing.module.system.dto.DictDataSummary;
+import com.jianqing.module.system.dto.DictOptionItem;
+import com.jianqing.module.system.dto.DictTypeSaveRequest;
+import com.jianqing.module.system.dto.DictTypeSummary;
 import com.jianqing.module.system.dto.RoleSaveRequest;
 import com.jianqing.module.system.dto.RoleSummary;
 import com.jianqing.module.system.dto.UserSaveRequest;
@@ -85,6 +95,44 @@ public interface SystemService extends IService<SysUser> {
     DeptTreeNode updateDept(Long id, DeptSaveRequest request);
 
     void deleteDept(Long id);
+
+    List<DictTypeSummary> listDictTypes();
+
+    DictTypeSummary createDictType(DictTypeSaveRequest request);
+
+    DictTypeSummary updateDictType(Long id, DictTypeSaveRequest request);
+
+    void deleteDictType(Long id);
+
+    List<DictDataSummary> listDictData(String dictType);
+
+    DictDataSummary createDictData(DictDataSaveRequest request);
+
+    DictDataSummary updateDictData(Long id, DictDataSaveRequest request);
+
+    void deleteDictData(Long id);
+
+    List<DictOptionItem> listDictOptions(String dictType);
+
+    List<ConfigSummary> listConfigs();
+
+    ConfigSummary createConfig(ConfigSaveRequest request);
+
+    ConfigSummary updateConfig(Long id, ConfigSaveRequest request);
+
+    void deleteConfig(Long id);
+
+    List<ConfigHistorySummary> listConfigHistory(Long configId);
+
+    List<ConfigHistorySummary> listDeletedConfigHistory();
+
+    ConfigRestorePreviewSummary previewDeletedConfigRestore(Long historyId);
+
+    ConfigSummary rollbackConfig(Long configId, Long historyId);
+
+    ConfigSummary restoreDeletedConfig(Long historyId);
+
+    ConfigDiffSummary diffConfig(Long configId, Long historyId, Long compareHistoryId);
 
     /**
      * 查询全量菜单树。

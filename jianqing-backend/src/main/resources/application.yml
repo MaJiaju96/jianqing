@@ -5,12 +5,14 @@ spring:
   application:
     name: jianqing-backend
   datasource:
+    # url: jdbc:mysql://127.0.0.1:3306/jianqing?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     url: jdbc:mysql://10.66.66.2:3306/jianqing?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: jianqing
     password: jianqing123!@#
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
+      # host: 127.0.0.1
       host: 10.66.66.2
       port: 6379
       password: MaRedis123!

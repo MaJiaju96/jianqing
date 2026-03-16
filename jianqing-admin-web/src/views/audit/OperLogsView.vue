@@ -6,8 +6,7 @@
           <el-input v-model="keywordInput" clearable placeholder="搜索操作人/模块/地址" class="jq-toolbar-field" @keyup.enter="handleSearch" />
           <el-select v-model="statusFilterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="" />
-            <el-option label="成功" :value="1" />
-            <el-option label="失败" :value="0" />
+            <el-option v-for="item in auditStatusOptions" :key="item.value" :label="item.label" :value="Number(item.value)" />
           </el-select>
         </template>
       </ListPageHeader>
@@ -23,7 +22,9 @@
         <el-table-column prop="costMs" label="耗时(ms)" width="100" />
         <el-table-column label="状态" width="90">
           <template #default="scope">
-            <StatusTag :status="scope.row.status" :enabled-value="STATUS_ENABLED" enabled-text="成功" disabled-text="失败" />
+            <el-tag :type="getTagType(AUDIT_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? 'success' : 'danger')">
+              {{ getLabel(AUDIT_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? '成功' : '失败') }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="时间" min-width="180" />
@@ -46,7 +47,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
   EMPTY_FILTER_VALUE,
   STATUS_ENABLED
@@ -54,12 +55,17 @@ import {
 import { fetchOperLogs } from '../../api/audit';
 import ListPageHeader from '../../components/ListPageHeader.vue';
 import { useAuditListPage } from '../../composables/useAuditListPage';
+import { useDictOptions } from '../../composables/useDictOptions';
 import { usePageInitializer } from '../../composables/usePageInitializer';
+
+const AUDIT_STATUS_DICT = 'audit_exec_status';
 
 const keywordInput = ref('');
 const statusFilterInput = ref(EMPTY_FILTER_VALUE);
 const keyword = ref('');
 const statusFilter = ref(EMPTY_FILTER_VALUE);
+const { loadDictOptions, getOptions, getLabel, getTagType } = useDictOptions();
+const auditStatusOptions = computed(() => getOptions(AUDIT_STATUS_DICT));
 const {
   rows,
   total,
@@ -90,6 +96,7 @@ const {
 });
 
 usePageInitializer(async () => {
+  await loadDictOptions([AUDIT_STATUS_DICT]);
   handleSearch();
 });
 </script>

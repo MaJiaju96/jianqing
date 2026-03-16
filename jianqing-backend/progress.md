@@ -282,6 +282,63 @@
   - `findings.md` (updated)
   - `progress.md` (updated)
 
+### Phase 17: 字典功能最小闭环
+- **Status:** complete
+- Actions taken:
+  - 已新增字典类型/字典数据实体、DTO、Mapper、Service 与 Controller 接口，系统管理补齐字典功能后端主链路。
+  - 已支持字典类型 CRUD、字典数据 CRUD，以及按 `dictType` 查询启用字典项 `GET /api/system/dict-options/{dictType}`。
+  - 已增加字典类型编码格式校验，并在修改字典类型编码时同步更新字典数据表中的 `dict_type`。
+  - 已补齐字典菜单权限初始化：新增 init SQL 按钮权限与旧库 patch `20260313_dict_permissions.sql`。
+  - 已新增 `SystemControllerTest`、`DictTypeServiceImplTest`、`DictDataServiceImplTest`，并完成测试/Checkstyle/结构守卫回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/entity/SysDictType.java` (created)
+  - `src/main/java/com/jianqing/module/system/entity/SysDictData.java` (created)
+  - `src/main/java/com/jianqing/module/system/dto/DictTypeSaveRequest.java` (created)
+  - `src/main/java/com/jianqing/module/system/dto/DictTypeSummary.java` (created)
+  - `src/main/java/com/jianqing/module/system/dto/DictDataSaveRequest.java` (created)
+  - `src/main/java/com/jianqing/module/system/dto/DictDataSummary.java` (created)
+  - `src/main/java/com/jianqing/module/system/dto/DictOptionItem.java` (created)
+  - `src/main/java/com/jianqing/module/system/mapper/SysDictTypeMapper.java` (created)
+  - `src/main/java/com/jianqing/module/system/mapper/SysDictTypeMapper.xml` (created)
+  - `src/main/java/com/jianqing/module/system/mapper/SysDictDataMapper.java` (created)
+  - `src/main/java/com/jianqing/module/system/mapper/SysDictDataMapper.xml` (created)
+  - `src/main/java/com/jianqing/module/system/service/DictTypeService.java` (created)
+  - `src/main/java/com/jianqing/module/system/service/DictDataService.java` (created)
+  - `src/main/java/com/jianqing/module/system/service/impl/DictTypeServiceImpl.java` (created)
+  - `src/main/java/com/jianqing/module/system/service/impl/DictDataServiceImpl.java` (created)
+  - `src/main/java/com/jianqing/module/system/service/SystemService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/SystemServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/system/controller/SystemController.java` (updated)
+  - `src/test/java/com/jianqing/module/system/controller/SystemControllerTest.java` (created)
+  - `src/test/java/com/jianqing/module/system/service/impl/DictTypeServiceImplTest.java` (created)
+  - `src/test/java/com/jianqing/module/system/service/impl/DictDataServiceImplTest.java` (created)
+  - `sql/jianqing-init-v0.1.sql` (updated)
+  - `sql/patch/20260313_dict_permissions.sql` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 26: 参数删除恢复最小闭环
+- **Status:** complete
+- Actions taken:
+  - 已新增已删除参数历史查询接口，仅返回当前仍未恢复的删除记录。
+  - 已新增按删除历史恢复参数接口，恢复后自动重新发布动态配置并记录 `RESTORE` 历史。
+  - 已在前端参数页补齐“恢复已删”弹窗与恢复操作，恢复后联动刷新主列表与已删记录。
+  - 已完成后端测试、Checkstyle 与前端构建回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/service/ConfigService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/SystemService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/SystemServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/system/controller/SystemController.java` (updated)
+  - `src/main/java/com/jianqing/module/system/mapper/SysConfigHistoryMapper.java` (updated)
+  - `src/main/java/com/jianqing/module/system/mapper/SysConfigHistoryMapper.xml` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/ConfigServiceImpl.java` (updated)
+  - `src/test/java/com/jianqing/module/system/service/impl/ConfigServiceImplTest.java` (updated)
+  - `src/test/java/com/jianqing/module/system/controller/SystemControllerTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|
@@ -343,8 +400,79 @@
 | generator marker write and delete | `mvn test` + `mvn checkstyle:check` | write returns markerId and delete-by-marker removes generated files safely | passed（62 passed, 0 failed；checkstyle 0 violations） | ✓ |
 | generator write records persist | `mvn test` + `mvn checkstyle:check` | write actions persist marker records and expose /write/records query endpoint | passed（62 passed, 0 failed；checkstyle 0 violations） | ✓ |
 | generator write records filter | `mvn test` + `mvn checkstyle:check` | /write/records supports table/time filters while preserving limit ordering | passed（63 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| dict module backend baseline | `mvn test` + `mvn checkstyle:check` + guards | dict type/data APIs compile, tests pass, style与分层守卫均通过 | passed（77 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| dict seed consumption baseline | `mvn test` | default dict seeds added without breaking backend tests | passed（77 passed, 0 failed） | ✓ |
+| audit dict seed baseline | `mvn test` | audit dict seeds added without breaking backend tests | passed（77 passed, 0 failed） | ✓ |
+| dict cache baseline | `mvn test` + `mvn checkstyle:check` + guards | dict type/data/options cache and eviction logic works with rename/update edges | passed（81 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| config module baseline | `mvn test` + `mvn checkstyle:check` + guards | config CRUD, gateway publish, cache eviction and menu seed changes all verified | passed（88 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| config grouping baseline | `mvn test` + `mvn checkstyle:check` + guards | config group field, grouped publish and CRUD adaptation verified | passed（88 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| config history baseline | `mvn test` + `mvn checkstyle:check` + guards | config history persistence and query API verified | passed（89 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| config rollback baseline | `mvn test` + `mvn checkstyle:check` + guards | config rollback API, publish refresh and rollback history verified | passed（91 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| config diff baseline | `mvn test` + `mvn checkstyle:check` + guards | current-vs-history config diff API verified | passed（93 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| config deleted-restore baseline | `mvn test` + `mvn checkstyle:check` + `npm run build` | deleted config history list and restore flow verified | passed（98 passed, 0 failed；checkstyle 0 violations；frontend build passed） | ✓ |
+| config multi-history diff baseline | `mvn test` + `mvn checkstyle:check` + `npm run build` | current-vs-history and history-vs-history diff flows verified | passed（100 passed, 0 failed；checkstyle 0 violations；frontend build passed） | ✓ |
+| config restore preview baseline | `mvn test` + `mvn checkstyle:check` + `npm run build` | deleted config restore preview and confirm flow verified | passed（102 passed, 0 failed；checkstyle 0 violations；frontend build passed） | ✓ |
+| config restore preview diff baseline | `mvn test` + `mvn checkstyle:check` + `npm run build` | restore preview shows key occupancy and field diffs before restore | passed（103 passed, 0 failed；checkstyle 0 violations；frontend build passed） | ✓ |
+| config value-type dict baseline | `mvn test` + `mvn checkstyle:check` + `npm run build` | config value type dict seed and frontend dict consumption verified | passed（103 passed, 0 failed；checkstyle 0 violations；frontend build passed） | ✓ |
+| dict color-type dict baseline | `mvn test` + `mvn checkstyle:check` + `npm run build` | dict color type seed and frontend dict consumption verified | passed（103 passed, 0 failed；checkstyle 0 violations；frontend build passed） | ✓ |
+| config source dict baseline | `mvn test` + `mvn checkstyle:check` + `npm run build` | config source dict seed and frontend dict consumption verified | passed（103 passed, 0 failed；checkstyle 0 violations；frontend build passed） | ✓ |
+| dict status dict baseline | `mvn test` + `mvn checkstyle:check` + `npm run build` | dict page consumes sys_common_status for filters/forms/tags | passed（103 passed, 0 failed；checkstyle 0 violations；frontend build passed） | ✓ |
+| config legacy schema compatibility baseline | `mvn test` + `mvn checkstyle:check` | startup repair covers missing config columns/history table on legacy schema | passed（105 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| generator legacy schema compatibility baseline | `mvn test` + `mvn checkstyle:check` | startup repair covers missing jq_dev_gen_write_record on legacy schema | passed（107 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| generator menu legacy compatibility baseline | `mvn test` + `mvn checkstyle:check` | startup repair covers missing generator menus and admin role bindings | passed（109 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| menu legacy schema compatibility baseline | `mvn test` + `mvn checkstyle:check` | startup repair covers missing jq_sys_menu core columns and jq_sys_role_menu | passed（111 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| dict legacy schema compatibility baseline | `mvn test` + `mvn checkstyle:check` | startup repair covers missing jq_sys_dict_type/jq_sys_dict_data and core columns | passed（113 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| dept legacy schema compatibility baseline | `mvn test` + `mvn checkstyle:check` | startup repair covers missing jq_sys_dept and core columns | passed（115 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| audit legacy schema compatibility baseline | `mvn test` + `mvn checkstyle:check` | startup repair covers missing audit tables/core columns and JSON-compatible payload storage | passed（117 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| user-role legacy schema compatibility baseline | `mvn test` + `mvn checkstyle:check` | startup repair covers missing jq_sys_user/jq_sys_role/jq_sys_user_role and core columns | passed（119 passed, 0 failed；checkstyle 0 violations） | ✓ |
+| legacy schema docs baseline | docs update | legacy compatibility scope and troubleshooting guide documented | passed | ✓ |
+| init sql dialect baseline | docs/sql update | init sql no longer uses mysql8-only collation | passed | ✓ |
+| init sql timestamp baseline | `mvn test` + `mvn checkstyle:check` | init sql timestamp columns switched to more compatible TIMESTAMP defaults | passed（119 passed, 0 failed；checkstyle 0 violations） | ✓ |
 
 ## Latest Updates
+- 已完成字典管理与参数设置真实浏览器回归：字典页覆盖新增类型/新增数据/删除，参数页覆盖新增/编辑/历史/删除/恢复预览/恢复。
+- 已修复字典页真实回归 warning：`DictsView` 的颜色标签在“默认”场景不再向 `ElTag` 传空字符串类型，控制台 warning 已清零。
+- 已修复参数恢复链路真实回归故障：`/api/system/configs/deleted/history` 查询中的 `config_key` 比较已显式统一为 `utf8mb4_unicode_ci`，解决旧环境 `Illegal mix of collations` 报错。
+- 已完成前端构建、后端 119 个测试回归，并重启后端完成参数恢复链路真实复测。
+- 已完成参数页双历史 diff / 回滚真实浏览器回归：`diff?compareHistoryId=` 与 `history/{id}/rollback` 均已走通，历史列表新增 `ROLLBACK` 记录且主列表值已回到目标历史版本。
+- 已完成生成器写入记录 / marker 删除真实浏览器回归：`write`、`write/records`、`delete-by-marker` 全链路返回 200，按 marker 删除后工作区未发现本次生成残留文件。
+- 已完成生成器冲突确认真实浏览器回归：重复写入会展示 12 个冲突文件的分组清单，快捷过滤“前端”后统计正确收敛到 3 / 12。
+- 已完成字典页与参数页筛选/分页边界真实回归：查询、重置、单条结果分页与每页条数切换均通过。
+
+### Phase 45: 参数恢复链路 collation 兼容修复
+- **Status:** complete
+- Actions taken:
+  - 已执行参数设置真实浏览器回归，覆盖新增、编辑、历史、删除、恢复预览与恢复。
+  - 已定位 `jq_sys_config` 与 `jq_sys_config_history` 的 `config_key` collation 混用导致删除历史查询报错。
+  - 已在 `SysConfigHistoryMapper.xml` 中为相关比较显式补齐 `CONVERT(... USING utf8mb4) COLLATE utf8mb4_unicode_ci`。
+  - 已完成 `mvn test` 回归并重启后端，浏览器复测 `/api/system/configs/deleted/history`、`/preview`、`/restore` 全部返回 200。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/mapper/SysConfigHistoryMapper.xml` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 46: 参数多历史与生成器回滚链路真实回归
+- **Status:** complete
+- Actions taken:
+  - 已执行参数页真实浏览器回归：新增参数、两次编辑形成多历史，验证“历史 vs 历史”diff 与回滚链路。
+  - 已执行生成器真实浏览器回归：基于 `jq_dev_gen_write_record` 生成预览并写入项目，再通过写入记录按 marker 删除。
+  - 已验证 `delete-by-marker` 返回“已删除 12 个文件”，并确认工作区无 `*833901*` 残留文件。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 47: 生成器冲突确认与系统筛选边界真实回归
+- **Status:** complete
+- Actions taken:
+  - 已执行生成器冲突确认真实浏览器回归：重复写入已触发冲突清单、目录统计与快捷过滤，并以取消覆盖结束验证。
+  - 已执行字典页与参数页真实回归：分别创建临时数据验证查询、重置、每页条数切换，再完成清理。
+  - 已确认本轮生成器冲突弹窗与系统页回归后控制台 warning = 0。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
 - 已完成后端热点扫描，识别 `SystemServiceImpl` 为当前优先重构目标（职责集中、行数最高）。
 - 已修复 `JwtAuthenticationFilter` 异常吞掉问题：保留鉴权失败清上下文逻辑，同时输出 `warn` 级日志提升排障可观测性。
 - 已完成 `SystemServiceImpl` 第二批重构：新增 `UserDataScopeResolver`，将数据范围解析/查询构造/访问校验从主类中抽离。
@@ -378,6 +506,287 @@
 - 已完成生成器写盘安全增强：`write` 默认冲突阻断，需显式 `overwrite=true` 才允许覆盖，避免误覆盖已有源码。
 - 已完成冲突清单查询能力：`write/conflicts` 可在写入前返回将被覆盖的文件列表，为前端风险可视化提供稳定数据源。
 - 已完成生成标记与按标记删除闭环：写入成功返回 `markerId`，并可通过 `delete-by-marker` 快速回滚该次生成文件，模板内容保持不变。
+- 已完成字典功能最小闭环：系统管理现支持字典类型/字典数据维护，且提供按类型读取启用字典项接口，便于后续业务消费接入。
+- 已补齐字典默认 seed/patch：`sys_common_status`、`sys_menu_visible`、`sys_dept_status` 已可直接供前端系统页消费。
+- 已补齐审计页默认字典 seed/patch：`audit_exec_status`、`audit_login_type` 已可直接供审计页消费。
+- 已完成字典缓存收口：字典类型列表、字典数据列表、启用字典项查询均已支持缓存，并在写操作后提交后失效。
+- 已完成参数设置最小闭环：系统管理现支持参数列表/新增/编辑/删除，并在写入后同步发布到 DynamicConfigGateway。
+- 已完成参数分组最小闭环：参数现支持分组维护，并按分组发布到 DynamicConfigGateway。
+- 已完成参数变更历史最小闭环：参数每次新增/修改/删除都会自动记录历史，并可在参数页查看。
+- 已完成参数版本回滚最小闭环：参数可按历史快照回滚，回滚后自动重新发布并记录回滚历史。
+- 已完成参数 diff 对比最小闭环：可查看当前参数与指定历史快照的字段级差异。
+- 已完成参数删除恢复最小闭环：后端新增已删除历史列表与按删除历史恢复接口，前端参数页新增“恢复已删”弹窗与恢复操作。
+- 已完成参数多版本 diff 最小闭环：参数现支持“当前 vs 历史”与“历史 vs 历史”两种字段级差异对比模式。
+- 已完成参数删除恢复前预览最小闭环：恢复前可先查看删除快照详情，再决定是否恢复。
+- 已完成参数恢复前差异对比最小闭环：同键冲突场景会显示字段级差异并阻止直接恢复。
+- 已完成字典消费扩面首个高频页面：参数页值类型已改为优先消费 `sys_config_value_type` 字典。
+- 已完成字典消费扩面第二个高频页面：字典管理页颜色类型已改为优先消费 `sys_dict_color_type` 字典。
+- 已完成字典消费扩面第三个高频页面：参数页来源已改为优先消费 `sys_config_source` 字典。
+- 已完成字典消费扩面第四个高频页面：字典管理页状态已改为优先消费 `sys_common_status` 字典。
+- 已完成参数表旧库缺列兼容：启动时会自动补齐参数扩展字段与历史表，避免旧库直接把参数页打挂。
+- 已完成代码生成器旧库缺表兼容：启动时会自动补齐 `jq_dev_gen_write_record`，避免生成器链路因缺表直接失败。
+- 已完成生成器菜单旧库兼容：启动时会自动补齐生成器菜单与管理员角色绑定，避免旧库看不到入口。
+- 已完成菜单表核心字段旧库兼容：启动时会自动补齐 `jq_sys_menu` 核心字段与 `jq_sys_role_menu` 表，避免菜单系统级失效。
+- 已完成字典表核心结构旧库兼容：启动时会自动补齐 `jq_sys_dict_type/jq_sys_dict_data` 与其核心字段，避免字典系统级失效。
+- 已完成部门表核心结构旧库兼容：启动时会自动补齐 `jq_sys_dept` 与其核心字段，避免部门树链路失效。
+- 已完成审计表核心结构兼容：启动时会自动补齐审计表及其核心字段，并用 LONGTEXT 兼容请求/响应体存储。
+- 已完成用户角色核心结构旧库兼容：启动时会自动补齐用户、角色和用户角色关联表及其核心字段，避免登录与授权链路失效。
+- 已完成旧库兼容文档收口：README 和独立文档已说明当前覆盖范围、接入方式、排障顺序与边界。
+- 已完成 init SQL 方言风险首轮收口：初始化脚本已不再使用 MySQL 8 专属 collation。
+- 已完成 init SQL 时间字段兼容收口：初始化脚本中的自动时间戳字段已优先切换为 TIMESTAMP 方案。
+
+### Phase 44: init SQL 时间字段兼容收口
+- **Status:** complete
+- Actions taken:
+  - 已将 `sql/jianqing-init-v0.1.sql` 中的自动时间戳字段优先改为 `TIMESTAMP DEFAULT CURRENT_TIMESTAMP` 方案。
+  - 已在 README 与旧库兼容文档补充时间字段兼容说明。
+  - 已完成后端测试、Checkstyle 与规划同步。
+- Files created/modified:
+  - `sql/jianqing-init-v0.1.sql` (updated)
+  - `README.md` (updated)
+  - `docs/LEGACY_SCHEMA_COMPATIBILITY.md` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 43: init SQL 方言风险收口
+- **Status:** complete
+- Actions taken:
+  - 已将 `sql/jianqing-init-v0.1.sql` 的库级 collation 从 `utf8mb4_0900_ai_ci` 调整为 `utf8mb4_unicode_ci`。
+  - 已在 README 与旧库兼容文档补充说明，明确该调整的目的与边界。
+  - 已完成规划与进度同步。
+- Files created/modified:
+  - `sql/jianqing-init-v0.1.sql` (updated)
+  - `README.md` (updated)
+  - `docs/LEGACY_SCHEMA_COMPATIBILITY.md` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 42: 旧库兼容说明文档收口
+- **Status:** complete
+- Actions taken:
+  - 已新增 `docs/LEGACY_SCHEMA_COMPATIBILITY.md`，汇总当前所有启动期 schema 自修复覆盖范围。
+  - 已补充旧库接入方式、推荐操作顺序、排障建议与已知边界。
+  - README 已新增旧库兼容说明入口，便于快速定位。
+  - 已完成规划与进度同步。
+- Files created/modified:
+  - `docs/LEGACY_SCHEMA_COMPATIBILITY.md` (created)
+  - `README.md` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 41: 用户角色核心结构旧库兼容
+- **Status:** complete
+- Actions taken:
+  - 已新增 `UserRoleSchemaInitializer`，启动时自动检查并补齐 `jq_sys_user/jq_sys_role/jq_sys_user_role` 及其核心字段。
+  - 已补齐旧库缺少用户表、角色表、用户角色关联表的场景，确保登录、角色分配和权限计算依赖可用。
+  - 已补充 `UserRoleSchemaInitializerTest`，覆盖“需要修复”和“已完整无需修复”两类场景。
+  - 已完成后端测试与 Checkstyle 回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/startup/UserRoleSchemaInitializer.java` (created)
+  - `src/test/java/com/jianqing/module/system/startup/UserRoleSchemaInitializerTest.java` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 40: 审计表核心结构兼容
+- **Status:** complete
+- Actions taken:
+  - 已新增 `AuditSchemaInitializer`，启动时自动检查并补齐 `jq_sys_oper_log/jq_sys_login_log` 及其核心字段。
+  - 已将 `jq_sys_oper_log.request_param/response_data` 的初始化类型调整为 LONGTEXT，降低旧库方言兼容风险。
+  - 已补充 `AuditSchemaInitializerTest`，覆盖“需要修复”和“已完整无需修复”两类场景。
+  - 已完成后端测试与 Checkstyle 回归。
+- Files created/modified:
+  - `sql/jianqing-init-v0.1.sql` (updated)
+  - `src/main/java/com/jianqing/module/audit/startup/AuditSchemaInitializer.java` (created)
+  - `src/test/java/com/jianqing/module/audit/startup/AuditSchemaInitializerTest.java` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 39: 部门表核心结构旧库兼容
+- **Status:** complete
+- Actions taken:
+  - 已新增 `DeptSchemaInitializer`，启动时自动检查并补齐 `jq_sys_dept` 及其核心字段。
+  - 已补齐旧库缺少部门表的场景，确保部门树、部门筛选和组织架构依赖可用。
+  - 已补充 `DeptSchemaInitializerTest`，覆盖“需要修复”和“已完整无需修复”两类场景。
+  - 已完成后端测试与 Checkstyle 回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/startup/DeptSchemaInitializer.java` (created)
+  - `src/test/java/com/jianqing/module/system/startup/DeptSchemaInitializerTest.java` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 38: 字典表核心结构旧库兼容
+- **Status:** complete
+- Actions taken:
+  - 已新增 `DictSchemaInitializer`，启动时自动检查并补齐 `jq_sys_dict_type/jq_sys_dict_data` 及其核心字段。
+  - 已补齐旧库缺少字典类型表、字典数据表的场景，确保字典管理与前端 dict-options 依赖可用。
+  - 已补充 `DictSchemaInitializerTest`，覆盖“需要修复”和“已完整无需修复”两类场景。
+  - 已完成后端测试与 Checkstyle 回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/startup/DictSchemaInitializer.java` (created)
+  - `src/test/java/com/jianqing/module/system/startup/DictSchemaInitializerTest.java` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 37: 菜单表核心字段旧库兼容
+- **Status:** complete
+- Actions taken:
+  - 已新增 `MenuSchemaInitializer`，启动时自动检查并补齐 `jq_sys_menu` 的核心字段。
+  - 已补齐 `jq_sys_role_menu` 缺表场景，确保菜单权限关系可用。
+  - 已补充 `MenuSchemaInitializerTest`，覆盖“需要修复”和“已完整无需修复”两类场景。
+  - 已完成后端测试与 Checkstyle 回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/startup/MenuSchemaInitializer.java` (created)
+  - `src/test/java/com/jianqing/module/system/startup/MenuSchemaInitializerTest.java` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 36: 生成器菜单旧库兼容
+- **Status:** complete
+- Actions taken:
+  - 已新增 `GeneratorMenuInitializer`，启动时自动检查并补齐 `system:generator:list/query` 菜单。
+  - 已自动为管理员补齐生成器菜单角色绑定，避免有菜单无权限。
+  - 已补充 `GeneratorMenuInitializerTest`，覆盖“需要创建”和“已存在无需创建”两类场景。
+  - 已完成后端测试与 Checkstyle 回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/dev/startup/GeneratorMenuInitializer.java` (created)
+  - `src/test/java/com/jianqing/module/dev/startup/GeneratorMenuInitializerTest.java` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 35: 代码生成器旧库缺表兼容
+- **Status:** complete
+- Actions taken:
+  - 已新增 `GeneratorSchemaInitializer`，启动时自动检查并补齐 `jq_dev_gen_write_record`。
+  - 已补充 `GeneratorSchemaInitializerTest`，覆盖“缺表需创建”和“已存在无需创建”两类场景。
+  - 已完成后端测试与 Checkstyle 回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/dev/startup/GeneratorSchemaInitializer.java` (created)
+  - `src/test/java/com/jianqing/module/dev/startup/GeneratorSchemaInitializerTest.java` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 34: 参数表旧库缺列兼容
+- **Status:** complete
+- Actions taken:
+  - 已新增 `ConfigSchemaInitializer`，启动时自动检查并补齐 `jq_sys_config` 缺失的 `config_group/value_type/is_builtin` 字段。
+  - 已新增对 `jq_sys_config_history` 的建表与缺列补齐逻辑，兼容尚未执行参数模块 patch 的老库。
+  - 已补充 `ConfigSchemaInitializerTest`，覆盖“需要修复”和“已完整无需修复”两类场景。
+  - 已完成后端测试与 Checkstyle 回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/startup/ConfigSchemaInitializer.java` (created)
+  - `src/test/java/com/jianqing/module/system/startup/ConfigSchemaInitializerTest.java` (created)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 33: 字典管理页状态字典消费扩面
+- **Status:** complete
+- Actions taken:
+  - 字典管理页状态筛选已改为优先读取 `sys_common_status` 字典 options。
+  - 字典类型/字典数据表单状态选项已改为优先消费字典 options。
+  - 状态标签文案与颜色已改为字典驱动，并保留前端兜底值。
+  - 已完成后端测试、Checkstyle 与前端构建回归。
+- Files created/modified:
+  - `../jianqing-admin-web/src/views/system/DictsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 32: 参数来源字典消费扩面
+- **Status:** complete
+- Actions taken:
+  - 已补齐 `sys_config_source` 默认字典 seed 与旧库 patch。
+  - 参数页来源筛选、表单、列表标签与恢复预览文案已改为优先读取字典 options。
+  - 已同步改为字典驱动的标签类型展示，并保留前端兜底映射。
+  - 已完成后端测试、Checkstyle 与前端构建回归。
+- Files created/modified:
+  - `sql/jianqing-init-v0.1.sql` (updated)
+  - `sql/patch/20260316_config_source_dict.sql` (created)
+  - `../jianqing-admin-web/src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 31: 字典颜色类型字典消费扩面
+- **Status:** complete
+- Actions taken:
+  - 已补齐 `sys_dict_color_type` 默认字典 seed 与旧库 patch。
+  - 字典管理页颜色下拉已改为优先读取字典 options。
+  - 字典数据列表颜色展示已改为字典文案 + 标签类型，并保留前端兜底选项。
+  - 已完成后端测试、Checkstyle 与前端构建回归。
+- Files created/modified:
+  - `sql/jianqing-init-v0.1.sql` (updated)
+  - `sql/patch/20260316_dict_color_type_dict.sql` (created)
+  - `../jianqing-admin-web/src/views/system/DictsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 30: 参数值类型字典消费扩面
+- **Status:** complete
+- Actions taken:
+  - 已补齐 `sys_config_value_type` 默认字典 seed 与旧库 patch。
+  - 参数页值类型筛选、表单和文案展示已改为优先读取字典 options。
+  - 前端保留本地兜底选项，确保旧环境缺字典时仍可用。
+  - 已完成后端测试、Checkstyle 与前端构建回归。
+- Files created/modified:
+  - `sql/jianqing-init-v0.1.sql` (updated)
+  - `sql/patch/20260313_config_value_type_dict.sql` (created)
+  - `../jianqing-admin-web/src/views/system/ConfigsView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 28: 参数删除恢复前预览最小闭环
+- **Status:** complete
+- Actions taken:
+  - 已新增删除历史恢复预览接口，返回待恢复删除快照详情。
+  - 前端已删记录列表已补齐“预览”入口与恢复前详情弹窗。
+  - 预览弹窗支持直接确认恢复，恢复后联动刷新主列表与已删记录列表。
+  - 已完成后端测试、Checkstyle 与前端构建回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/service/ConfigService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/SystemService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/SystemServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/system/controller/SystemController.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/ConfigServiceImpl.java` (updated)
+  - `src/test/java/com/jianqing/module/system/service/impl/ConfigServiceImplTest.java` (updated)
+  - `src/test/java/com/jianqing/module/system/controller/SystemControllerTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 29: 参数恢复前差异对比最小闭环
+- **Status:** complete
+- Actions taken:
+  - 恢复预览接口已补充同键占用状态、当前同键参数信息与字段级差异列表。
+  - 前端恢复预览弹窗已展示同键占用提示与差异表格。
+  - 同键已存在时会禁用确认恢复，避免无效恢复尝试。
+  - 已完成后端测试、Checkstyle 与前端构建回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/dto/ConfigRestorePreviewSummary.java` (created)
+  - `src/main/java/com/jianqing/module/system/mapper/SysConfigMapper.java` (updated)
+  - `src/main/java/com/jianqing/module/system/mapper/SysConfigMapper.xml` (updated)
+  - `src/main/java/com/jianqing/module/system/service/ConfigService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/SystemService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/SystemServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/system/controller/SystemController.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/ConfigServiceImpl.java` (updated)
+  - `src/test/java/com/jianqing/module/system/service/impl/ConfigServiceImplTest.java` (updated)
+  - `src/test/java/com/jianqing/module/system/controller/SystemControllerTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
@@ -391,11 +800,11 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 10（CRUD 代码生成器 MVP） |
-| Where am I going? | 继续补前端生成器页，或扩展 preview 模板质量与可配置项 |
+| Where am I? | Phase 44（init SQL 时间字段兼容收口） |
+| Where am I going? | 继续清理 init SQL 其他数据库方言风险，或回到前端继续字典消费扩面 |
 | What's the goal? | 构建可开源的简擎后端内核，并预留 ES/Nacos/RocketMQ 扩展 |
-| What have I learned? | 代码生成器首版应先固定约束与模板质量，先做预览/下载，再做更重的写盘与前端编辑能力 |
-| What have I done? | 已完成 dev/gen 元数据接口、preview/download 接口与首批后端模板渲染，并通过 52 条后端测试 |
+| What have I learned? | 初始化脚本里的时间字段兼容问题虽然不如 collation 显眼，但影响面更广，因为几乎所有基础表都会复用自动时间戳列 |
+| What have I done? | 已完成 init SQL 时间字段兼容收口，并通过 119 条后端测试与 Checkstyle 校验 |
 
 ---
 *Update after completing each phase or encountering errors*

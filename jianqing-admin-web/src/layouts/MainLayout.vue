@@ -8,6 +8,8 @@
           <template #title>系统管理</template>
           <el-menu-item v-if="canViewUsers" index="/system/users">用户管理</el-menu-item>
           <el-menu-item v-if="canViewDepts" index="/system/depts">部门管理</el-menu-item>
+          <el-menu-item v-if="canViewConfigs" index="/system/config">参数设置</el-menu-item>
+          <el-menu-item v-if="canViewDicts" index="/system/dicts">字典管理</el-menu-item>
           <el-menu-item v-if="canViewGenerator" index="/system/generator">代码生成</el-menu-item>
           <el-menu-item v-if="canViewRoles" index="/system/roles">角色管理</el-menu-item>
           <el-menu-item v-if="canViewMenus" index="/system/menus">菜单权限</el-menu-item>
@@ -72,24 +74,28 @@ const currentThemeLabel = computed(() => {
   const current = themes.find((theme) => theme.key === currentTheme.value);
   return current ? current.label : '午夜蓝';
 });
-const {
-  canViewUsers,
-  canViewDepts,
-  canViewGenerator,
-  canViewRoles,
+  const {
+    canViewUsers,
+    canViewDepts,
+    canViewConfigs,
+    canViewDicts,
+   canViewGenerator,
+   canViewRoles,
   canViewMenus,
   canViewOperLogs,
   canViewLoginLogs
 } = usePermissionGroup({
   canViewUsers: 'system:user:list',
   canViewDepts: 'system:dept:list',
+  canViewConfigs: 'system:config:list',
+  canViewDicts: 'system:dict:list',
   canViewGenerator: 'system:generator:list',
   canViewRoles: 'system:role:list',
   canViewMenus: 'system:menu:list',
   canViewOperLogs: 'audit:oper-log:list',
   canViewLoginLogs: 'audit:login-log:list'
 });
-const showSystemMenu = computed(() => canViewUsers.value || canViewDepts.value || canViewGenerator.value || canViewRoles.value || canViewMenus.value);
+const showSystemMenu = computed(() => canViewUsers.value || canViewDepts.value || canViewConfigs.value || canViewDicts.value || canViewGenerator.value || canViewRoles.value || canViewMenus.value);
 const showAuditMenu = computed(() => canViewOperLogs.value || canViewLoginLogs.value);
 
 function handleThemeChange(themeKey) {

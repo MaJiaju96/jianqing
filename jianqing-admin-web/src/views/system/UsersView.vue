@@ -6,8 +6,7 @@
           <el-input v-model="keywordInput" clearable placeholder="搜索用户名/昵称" class="jq-toolbar-field" @keyup.enter="handleSearch" />
           <el-select v-model="filterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
-            <el-option label="启用" :value="STATUS_ENABLED" />
-            <el-option label="禁用" :value="STATUS_DISABLED" />
+            <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="Number(item.value)" />
           </el-select>
         </template>
         <template #actions>
@@ -30,7 +29,9 @@
         <el-table-column prop="email" label="邮箱" min-width="180" />
         <el-table-column label="状态" width="100">
           <template #default="scope">
-            <StatusTag :status="scope.row.status" :enabled-value="STATUS_ENABLED" enabled-text="启用" disabled-text="禁用" />
+            <el-tag :type="getTagType(COMMON_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? 'success' : 'danger')">
+              {{ getLabel(COMMON_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? '启用' : '禁用') }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
@@ -84,8 +85,7 @@
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="form.status" style="width: 100%;">
-            <el-option :value="STATUS_ENABLED" label="启用" />
-            <el-option :value="STATUS_DISABLED" label="禁用" />
+          <el-option v-for="item in statusOptions" :key="item.value" :value="Number(item.value)" :label="item.label" />
         </el-select>
       </el-form-item>
     </el-form>
@@ -114,11 +114,9 @@ import { computed, ref } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import ListPageHeader from '../../components/ListPageHeader.vue';
-import StatusTag from '../../components/StatusTag.vue';
 import {
   DEFAULT_LIST_PAGE_SIZE,
   PAGE_SIZE_OPTIONS,
-  STATUS_DISABLED,
   STATUS_ENABLED,
   STATUS_FILTER_ALL
 } from '../../constants/app';
@@ -137,6 +135,7 @@ import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
 import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
 import { usePermissionGroup } from '../../composables/usePermissions';
 import { usePageInitializer } from '../../composables/usePageInitializer';
+import { useDictOptions } from '../../composables/useDictOptions';
 import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
 import { useSystemListPage } from '../../composables/useSystemListPage';
 import { showSuccessMessage } from '../../utils/feedback';
@@ -144,6 +143,7 @@ import { isValidEmail, isValidMobile } from '../../utils/validators';
 import { buildDeptNameMap, flattenDeptOptions } from './deptTreeUtils';
 
 const rows = ref([]);
+const COMMON_STATUS_DICT = 'sys_common_status';
 const roleDialogVisible = ref(false);
 const currentUser = ref(null);
 const allRoles = ref([]);
@@ -191,6 +191,8 @@ const roleAction = useActionLoading();
 const pageLoading = tableFeedback.loading;
 const roleSaving = roleAction.loading;
 const tableEmptyText = tableFeedback.emptyText;
+const { loadDictOptions, getOptions, getLabel, getTagType } = useDictOptions();
+const statusOptions = computed(() => getOptions(COMMON_STATUS_DICT));
 const deptOptions = computed(() => flattenDeptOptions(deptRows.value));
 const deptNameMap = computed(() => buildDeptNameMap(deptRows.value));
 
@@ -293,6 +295,7 @@ function resolveDefaultDeptId() {
 }
 
 usePageInitializer(async () => {
+  await loadDictOptions([COMMON_STATUS_DICT]);
   await loadData();
   handleSearch();
 });

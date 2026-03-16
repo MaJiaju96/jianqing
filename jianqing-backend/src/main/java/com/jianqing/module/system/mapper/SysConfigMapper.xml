@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jianqing.module.system.mapper.SysConfigMapper">
+
+    <select id="selectAllConfigs" resultType="com.jianqing.module.system.entity.SysConfig">
+        SELECT id, config_key, config_value, config_name, config_group, value_type, is_builtin, remark,
+               created_by, updated_by, created_at, updated_at
+        FROM jq_sys_config
+        ORDER BY id ASC
+    </select>
+
+    <select id="countByConfigKey" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM jq_sys_config
+        WHERE config_key = #{configKey}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <select id="selectByConfigKey" resultType="com.jianqing.module.system.entity.SysConfig">
+        SELECT id, config_key, config_value, config_name, config_group, value_type, is_builtin, remark,
+               created_by, updated_by, created_at, updated_at
+        FROM jq_sys_config
+        WHERE config_key = #{configKey}
+        LIMIT 1
+    </select>
+
+</mapper>

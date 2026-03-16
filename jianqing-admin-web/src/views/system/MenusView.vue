@@ -44,12 +44,16 @@
         <el-table-column prop="component" label="组件" min-width="160" show-overflow-tooltip />
         <el-table-column label="状态" width="90" align="center">
           <template #default="scope">
-            <StatusTag :status="scope.row.status" :enabled-value="STATUS_ENABLED" enabled-text="启用" disabled-text="禁用" />
+            <el-tag :type="getTagType(COMMON_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? 'success' : 'danger')">
+              {{ getLabel(COMMON_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? '启用' : '禁用') }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="可见" width="90" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.visible === STATUS_ENABLED ? 'info' : 'warning'">{{ scope.row.visible === STATUS_ENABLED ? '显示' : '隐藏' }}</el-tag>
+            <el-tag :type="getTagType(MENU_VISIBLE_DICT, scope.row.visible, scope.row.visible === STATUS_ENABLED ? 'info' : 'warning')">
+              {{ getLabel(MENU_VISIBLE_DICT, scope.row.visible, scope.row.visible === STATUS_ENABLED ? '显示' : '隐藏') }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="210" fixed="right">
@@ -106,14 +110,12 @@
       </el-form-item>
       <el-form-item label="可见">
         <el-select v-model="form.visible" style="width: 100%;">
-            <el-option :value="STATUS_ENABLED" label="显示" />
-            <el-option :value="STATUS_DISABLED" label="隐藏" />
+          <el-option v-for="item in visibleOptions" :key="item.value" :value="Number(item.value)" :label="item.label" />
         </el-select>
       </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="form.status" style="width: 100%;">
-            <el-option :value="STATUS_ENABLED" label="启用" />
-            <el-option :value="STATUS_DISABLED" label="禁用" />
+          <el-option v-for="item in statusOptions" :key="item.value" :value="Number(item.value)" :label="item.label" />
         </el-select>
       </el-form-item>
     </el-form>
@@ -135,13 +137,13 @@ import {
   MENU_TYPE_DIRECTORY,
   MENU_TYPE_PAGE,
   PAGE_SIZE_OPTIONS,
-  STATUS_DISABLED,
   STATUS_ENABLED
 } from '../../constants/app';
 import { createMenu, deleteMenu, fetchMenus, updateMenu } from '../../api/system';
 import { useTableFeedback } from '../../composables/useAsyncState';
 import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
 import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
+import { useDictOptions } from '../../composables/useDictOptions';
 import { usePermissionGroup } from '../../composables/usePermissions';
 import { usePageInitializer } from '../../composables/usePageInitializer';
 import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
@@ -150,6 +152,8 @@ import { isValidPermissionCode } from '../../utils/validators';
 import { getMenuTypeTag as menuTypeTag, getMenuTypeText as menuTypeText, matchMenuType as matchType } from './menuMeta';
 
 const rows = ref([]);
+const COMMON_STATUS_DICT = 'sys_common_status';
+const MENU_VISIBLE_DICT = 'sys_menu_visible';
 
 const { canAdd, canEdit, canDelete } = usePermissionGroup({
   canAdd: 'system:menu:add',
@@ -180,6 +184,9 @@ const {
 const tableFeedback = useTableFeedback();
 const pageLoading = tableFeedback.loading;
 const tableEmptyText = tableFeedback.emptyText;
+const { loadDictOptions, getOptions, getLabel, getTagType } = useDictOptions();
+const statusOptions = ref([]);
+const visibleOptions = ref([]);
 
 const { dialogVisible, isEdit, editingId, form, openCreate, openEdit, closeDialog } = useEntityDialogForm({
   createForm: () => ({
@@ -279,6 +286,9 @@ async function handleSubmit() {
 }
 
 usePageInitializer(async () => {
+  await loadDictOptions([COMMON_STATUS_DICT, MENU_VISIBLE_DICT]);
+  statusOptions.value = getOptions(COMMON_STATUS_DICT);
+  visibleOptions.value = getOptions(MENU_VISIBLE_DICT);
   await loadData();
   handleSearch();
 });

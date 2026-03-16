@@ -28,6 +28,86 @@ export function fetchRoles() {
   return http.get('/system/roles');
 }
 
+export function fetchDictTypes() {
+  return http.get('/system/dict-types');
+}
+
+export function createDictType(payload) {
+  return http.post('/system/dict-types', payload);
+}
+
+export function updateDictType(id, payload) {
+  return http.post(`/system/dict-types/${id}/update`, payload);
+}
+
+export function deleteDictType(id) {
+  return http.post(`/system/dict-types/${id}/delete`);
+}
+
+export function fetchDictData(dictType) {
+  return http.get('/system/dict-data', {
+    params: { dictType }
+  });
+}
+
+export function fetchDictOptions(dictType) {
+  return http.get(`/system/dict-options/${dictType}`);
+}
+
+export function fetchConfigs() {
+  return http.get('/system/configs');
+}
+
+export function createConfig(payload) {
+  return http.post('/system/configs', payload);
+}
+
+export function updateConfig(id, payload) {
+  return http.post(`/system/configs/${id}/update`, payload);
+}
+
+export function deleteConfig(id) {
+  return http.post(`/system/configs/${id}/delete`);
+}
+
+export function fetchConfigHistory(id) {
+  return http.get(`/system/configs/${id}/history`);
+}
+
+export function fetchDeletedConfigHistory() {
+  return http.get('/system/configs/deleted/history');
+}
+
+export function fetchDeletedConfigRestorePreview(historyId) {
+  return http.get(`/system/configs/deleted/history/${historyId}/preview`);
+}
+
+export function rollbackConfig(id, historyId) {
+  return http.post(`/system/configs/${id}/history/${historyId}/rollback`);
+}
+
+export function restoreDeletedConfig(historyId) {
+  return http.post(`/system/configs/history/${historyId}/restore`);
+}
+
+export function fetchConfigDiff(id, historyId, compareHistoryId) {
+  return http.get(`/system/configs/${id}/history/${historyId}/diff`, {
+    params: compareHistoryId ? { compareHistoryId } : undefined
+  });
+}
+
+export function createDictData(payload) {
+  return http.post('/system/dict-data', payload);
+}
+
+export function updateDictData(id, payload) {
+  return http.post(`/system/dict-data/${id}/update`, payload);
+}
+
+export function deleteDictData(id) {
+  return http.post(`/system/dict-data/${id}/delete`);
+}
+
 export function fetchDepts() {
   return http.get('/system/depts');
 }

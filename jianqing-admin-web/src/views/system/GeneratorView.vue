@@ -216,10 +216,10 @@
             clearable
           />
           <el-radio-group v-model="conflictQuickFilter" size="small" class="generator-conflict-dialog__filters">
-            <el-radio-button label="all">全部</el-radio-button>
-            <el-radio-button label="java-main">高风险 Java</el-radio-button>
-            <el-radio-button label="frontend">前端</el-radio-button>
-            <el-radio-button label="sql">SQL</el-radio-button>
+            <el-radio-button value="all">全部</el-radio-button>
+            <el-radio-button value="java-main">高风险 Java</el-radio-button>
+            <el-radio-button value="frontend">前端</el-radio-button>
+            <el-radio-button value="sql">SQL</el-radio-button>
           </el-radio-group>
           <el-switch
             v-model="conflictDisplayMode"

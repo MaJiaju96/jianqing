@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jianqing.module.system.mapper.SysDictDataMapper">
+
+    <select id="selectByDictType" resultType="com.jianqing.module.system.entity.SysDictData">
+        SELECT id, dict_type, label, value, color_type, css_class, sort_no, status, remark,
+               created_by, updated_by, created_at, updated_at
+        FROM jq_sys_dict_data
+        WHERE dict_type = #{dictType}
+        ORDER BY sort_no ASC, id ASC
+    </select>
+
+    <select id="selectEnabledByDictType" resultType="com.jianqing.module.system.entity.SysDictData">
+        SELECT id, dict_type, label, value, color_type, css_class, sort_no, status, remark,
+               created_by, updated_by, created_at, updated_at
+        FROM jq_sys_dict_data
+        WHERE dict_type = #{dictType}
+          AND status = 1
+        ORDER BY sort_no ASC, id ASC
+    </select>
+
+    <select id="countByDictType" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM jq_sys_dict_data
+        WHERE dict_type = #{dictType}
+    </select>
+
+    <select id="countByDictTypeAndValue" resultType="java.lang.Long">
+        SELECT COUNT(1)
+        FROM jq_sys_dict_data
+        WHERE dict_type = #{dictType}
+          AND value = #{value}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <update id="updateDictType">
+        UPDATE jq_sys_dict_data
+        SET dict_type = #{newDictType}
+        WHERE dict_type = #{oldDictType}
+    </update>
+
+</mapper>

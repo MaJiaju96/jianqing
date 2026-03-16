@@ -13,6 +13,10 @@ public class SystemCacheEvictor {
     private static final String CACHE_SYSTEM_USERS = "system:users";
     private static final String CACHE_SYSTEM_ROLES = "system:roles";
     private static final String CACHE_SYSTEM_MENUS = "system:menus";
+    private static final String CACHE_SYSTEM_DICT_TYPES = "system:dict-types";
+    private static final String CACHE_SYSTEM_DICT_DATA = "system:dict-data";
+    private static final String CACHE_SYSTEM_DICT_OPTIONS = "system:dict-options";
+    private static final String CACHE_SYSTEM_CONFIGS = "system:configs";
     private static final String CACHE_USER_MENU_TREE = "user:menu-tree";
     private static final String CACHE_USER_ROLE_CODES = "user:role-codes";
     private static final String CACHE_USER_PERMS = "user:perms";
@@ -34,6 +38,24 @@ public class SystemCacheEvictor {
 
     public void evictSystemMenus() {
         afterCommit(() -> evict(CACHE_SYSTEM_MENUS, ALL_CACHE_KEY));
+    }
+
+    public void evictSystemDictTypes() {
+        afterCommit(() -> evict(CACHE_SYSTEM_DICT_TYPES, ALL_CACHE_KEY));
+    }
+
+    public void evictSystemDictData(String dictType) {
+        if (dictType == null || dictType.isBlank()) {
+            return;
+        }
+        afterCommit(() -> {
+            evict(CACHE_SYSTEM_DICT_DATA, dictType.trim());
+            evict(CACHE_SYSTEM_DICT_OPTIONS, dictType.trim());
+        });
+    }
+
+    public void evictSystemConfigs() {
+        afterCommit(() -> evict(CACHE_SYSTEM_CONFIGS, ALL_CACHE_KEY));
     }
 
     public void evictUserAuth(Long userId) {

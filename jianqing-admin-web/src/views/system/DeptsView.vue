@@ -6,8 +6,7 @@
           <el-input v-model="keywordInput" clearable placeholder="搜索部门名称" class="jq-toolbar-field" @keyup.enter="handleSearch" />
           <el-select v-model="filterInput" class="jq-toolbar-select--sm">
             <el-option label="全部状态" value="all" />
-            <el-option label="启用" :value="1" />
-            <el-option label="停用" :value="0" />
+            <el-option v-for="item in deptStatusOptions" :key="item.value" :label="item.label" :value="Number(item.value)" />
           </el-select>
         </template>
         <template #actions>
@@ -40,7 +39,9 @@
         <el-table-column prop="sortNo" label="排序" width="90" />
         <el-table-column label="状态" width="100">
           <template #default="scope">
-            <StatusTag :status="scope.row.status" :enabled-value="STATUS_ENABLED" enabled-text="启用" disabled-text="停用" disabled-type="info" />
+            <el-tag :type="getTagType(DEPT_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? 'success' : 'info')">
+              {{ getLabel(DEPT_STATUS_DICT, scope.row.status, scope.row.status === STATUS_ENABLED ? '启用' : '停用') }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="260">
@@ -94,8 +95,7 @@
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" style="width: 100%;">
-            <el-option label="启用" :value="STATUS_ENABLED" />
-            <el-option label="停用" :value="STATUS_DISABLED" />
+            <el-option v-for="item in deptStatusOptions" :key="item.value" :label="item.label" :value="Number(item.value)" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -111,11 +111,12 @@
 import { computed, ref } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import ListPageHeader from '../../components/ListPageHeader.vue';
-import { DEFAULT_LIST_PAGE_SIZE, PAGE_SIZE_OPTIONS, ROOT_PARENT_ID, STATUS_DISABLED, STATUS_ENABLED } from '../../constants/app';
+import { DEFAULT_LIST_PAGE_SIZE, PAGE_SIZE_OPTIONS, ROOT_PARENT_ID, STATUS_ENABLED } from '../../constants/app';
 import { createDept, deleteDept, fetchDepts, fetchUsers, updateDept } from '../../api/system';
 import { useTableFeedback } from '../../composables/useAsyncState';
 import { useEntityDeleteAction } from '../../composables/useEntityDeleteAction';
 import { useEntityDialogForm } from '../../composables/useEntityDialogForm';
+import { useDictOptions } from '../../composables/useDictOptions';
 import { usePermissionGroup } from '../../composables/usePermissions';
 import { usePageInitializer } from '../../composables/usePageInitializer';
 import { useEntitySubmitAction } from '../../composables/useEntitySubmitAction';
@@ -123,11 +124,14 @@ import { useSystemListPage } from '../../composables/useSystemListPage';
 import { filterDeptTree, flattenDeptOptions, flattenDeptRows } from './deptTreeUtils';
 
 const rows = ref([]);
+const DEPT_STATUS_DICT = 'sys_dept_status';
 const userRows = ref([]);
 
 const tableFeedback = useTableFeedback();
 const pageLoading = tableFeedback.loading;
 const tableEmptyText = tableFeedback.emptyText;
+const { loadDictOptions, getOptions, getLabel, getTagType } = useDictOptions();
+const deptStatusOptions = computed(() => getOptions(DEPT_STATUS_DICT));
 
 const { canAdd, canEdit, canDelete } = usePermissionGroup({
   canAdd: 'system:dept:add',
@@ -228,6 +232,7 @@ async function handleSubmit() {
 }
 
 usePageInitializer(async () => {
+  await loadDictOptions([DEPT_STATUS_DICT]);
   await loadData();
   handleSearch();
 });
