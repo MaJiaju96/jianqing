@@ -438,6 +438,9 @@
 - 已完成生成器写入记录 / marker 删除真实浏览器回归：`write`、`write/records`、`delete-by-marker` 全链路返回 200，按 marker 删除后工作区未发现本次生成残留文件。
 - 已完成生成器冲突确认真实浏览器回归：重复写入会展示 12 个冲突文件的分组清单，快捷过滤“前端”后统计正确收敛到 3 / 12。
 - 已完成字典页与参数页筛选/分页边界真实回归：查询、重置、单条结果分页与每页条数切换均通过。
+- 已完成数据权限扩面：角色数据范围现支持“本部门及以下”，后端用户列表/访问/写操作校验已同步扩展到部门子树。
+- 已为部门服务补齐“本部门及以下部门 ID”递归收集能力，并在数据权限解析阶段复用。
+- 已完成后端 `mvn test` 与前端 `npm run build` 回归，当前后端 121 个测试全部通过。
 
 ### Phase 45: 参数恢复链路 collation 兼容修复
 - **Status:** complete
@@ -470,6 +473,86 @@
   - 已执行字典页与参数页真实回归：分别创建临时数据验证查询、重置、每页条数切换，再完成清理。
   - 已确认本轮生成器冲突弹窗与系统页回归后控制台 warning = 0。
 - Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 48: 数据权限扩展到本部门及以下
+- **Status:** complete
+- Actions taken:
+  - 已放开角色数据范围校验，新增支持 `DataScopeConstants.DEPT_AND_CHILD`。
+  - 已在 `DeptService` / `DeptServiceImpl` 新增 `listSelfAndDescendantDeptIds`，按启用部门父子关系递归收集部门子树。
+  - 已将 `UserDataScopeResolver` 改为携带可访问部门 ID 列表，并同步更新用户列表过滤、用户访问判断、用户新增/修改部门校验。
+  - 已补齐 `UserDataScopeResolverTest`，覆盖“本部门及以下”解析与访问子部门用户场景。
+  - 已完成 `mvn test` 与 `npm run build` 回归。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/service/DeptService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/DeptServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/UserDataScopeResolver.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/RoleServiceImpl.java` (updated)
+  - `src/test/java/com/jianqing/module/system/service/impl/UserDataScopeResolverTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 49: 本部门及以下角色配置真实回归
+- **Status:** complete
+- Actions taken:
+  - 已启动本地前后端服务，并在真实浏览器中登录管理员账号进入角色页。
+  - 已验证“本部门数据角色”编辑弹窗存在“本部门及以下数据”选项，并成功保存后在列表中展示“本部门及以下”。
+  - 已在验证后将该角色恢复为原始“本部门数据”，避免影响现有联调账号口径。
+  - 已确认本轮角色页真实回归后控制台 warning/error = 0。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 50: 本部门及以下真实数据范围联调
+- **Status:** complete
+- Actions taken:
+  - 已确认当前真实部门树为“简擎总部 -> 外部协作部”，其中 `dept_user` 挂载角色 4（`dept_scope_role`），`outside_user` 位于子部门 3。
+  - 已通过真实后端 API 临时创建树外根部门与树外用户，并将 `dept_scope_role` 暂时切换为 `DEPT_AND_CHILD`。
+  - 已验证 `dept_user/test123` 登录后可见 `outside_user`，同时不可见临时树外用户，证明“子部门可见、树外不可见”链路成立。
+  - 已在验证后恢复 `dept_scope_role.dataScope = DEPT`，并删除临时部门与临时用户；复核当前用户/部门列表已恢复基线状态。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 51: 数据权限树形边界单测补强
+- **Status:** complete
+- Actions taken:
+  - 已新增 `DeptServiceImplTest`，覆盖“仅收集当前子树部门 ID”与“树外部门返回空列表”两类边界。
+  - 已扩展 `UserDataScopeResolverTest`，补齐 `ALL` 优先于 `DEPT_AND_CHILD`、树外用户访问拒绝、树外部门迁移拒绝等场景。
+  - 已修复 `ServiceImpl.baseMapper` 在单测中的注入问题，并完成 focused 测试与全量 `mvn test` 回归。
+- Files created/modified:
+  - `src/test/java/com/jianqing/module/system/service/impl/DeptServiceImplTest.java` (new)
+  - `src/test/java/com/jianqing/module/system/service/impl/UserDataScopeResolverTest.java` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 52: dept_user 用户页真实回归
+- **Status:** complete
+- Actions taken:
+  - 已通过真实后端 API 临时将 `dept_scope_role` 切换到 `DEPT_AND_CHILD`。
+  - 已以 `dept_user/test123` 登录真实前端用户页，确认表格展示 6 条用户数据，包含子部门用户 `outside_user`。
+  - 已确认本轮用户页真实回归控制台 warning/error = 0。
+  - 已在验证后将 `dept_scope_role.dataScope` 恢复为 `DEPT`。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 53: 上下文恢复降 token 优化
+- **Status:** complete
+- Actions taken:
+  - 已新增 `jianqing-backend/current_state.md`，用于承载当前阶段、最近完成、下一步任务与关键约束。
+  - 已调整工作区 `AGENTS.md` 中的“续开发协议”，默认先读前后端 `current_state.md`，仅在需要历史细节时再展开 `task_plan.md / findings.md / progress.md`。
+  - 已补充“按侧优先读取”“progress 以存档价值为主”的约束，降低后续继续开发时的默认 token 消耗。
+- Files created/modified:
+  - `current_state.md` (new)
+  - `/Users/majiaju/Person/code/jianqing/AGENTS.md` (updated)
   - `task_plan.md` (updated)
   - `findings.md` (updated)
   - `progress.md` (updated)

@@ -5,6 +5,7 @@ import com.jianqing.module.system.dto.UserSaveRequest;
 import com.jianqing.module.system.entity.SysRole;
 import com.jianqing.module.system.entity.SysUser;
 import com.jianqing.module.system.mapper.SysUserMapper;
+import com.jianqing.module.system.service.DeptService;
 import com.jianqing.module.system.service.RoleService;
 import com.jianqing.module.system.service.impl.UserDataScopeResolver.CurrentDataScope;
 import org.junit.jupiter.api.AfterEach;
@@ -19,6 +20,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,6 +33,9 @@ class UserDataScopeResolverTest {
     @Mock
     private RoleService roleService;
 
+    @Mock
+    private DeptService deptService;
+
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
@@ -37,7 +43,7 @@ class UserDataScopeResolverTest {
 
     @Test
     void shouldResolveAllScopeForSuperAdmin() {
-        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService);
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
         mockCurrentUser("admin", 1L, 100L);
         when(roleService.listEnabledRolesByUserId(1L)).thenReturn(List.of(buildRole("super_admin", null)));
 
@@ -50,7 +56,7 @@ class UserDataScopeResolverTest {
 
     @Test
     void shouldResolveDeptScopeForDeptRole() {
-        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService);
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
         mockCurrentUser("dept_user", 2L, 200L);
         when(roleService.listEnabledRolesByUserId(2L))
                 .thenReturn(List.of(buildRole("dept_role", DataScopeConstants.DEPT)));
@@ -60,11 +66,44 @@ class UserDataScopeResolverTest {
         Assertions.assertFalse(currentDataScope.all());
         Assertions.assertFalse(currentDataScope.selfOnly());
         Assertions.assertEquals(200L, currentDataScope.deptId());
+        Assertions.assertEquals(List.of(200L), currentDataScope.deptIds());
+    }
+
+    @Test
+    void shouldResolveDeptAndChildScopeForDeptTreeRole() {
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
+        mockCurrentUser("dept_tree_user", 5L, 200L);
+        when(roleService.listEnabledRolesByUserId(5L))
+                .thenReturn(List.of(buildRole("dept_tree_role", DataScopeConstants.DEPT_AND_CHILD)));
+        when(deptService.listSelfAndDescendantDeptIds(200L)).thenReturn(List.of(200L, 201L, 202L));
+
+        CurrentDataScope currentDataScope = resolver.resolveCurrentDataScope();
+
+        Assertions.assertFalse(currentDataScope.all());
+        Assertions.assertFalse(currentDataScope.selfOnly());
+        Assertions.assertEquals(List.of(200L, 201L, 202L), currentDataScope.deptIds());
+        verify(deptService).listSelfAndDescendantDeptIds(200L);
+    }
+
+    @Test
+    void shouldPreferAllScopeOverDeptAndChildScope() {
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
+        mockCurrentUser("mixed_scope_user", 6L, 200L);
+        when(roleService.listEnabledRolesByUserId(6L)).thenReturn(List.of(
+                buildRole("dept_tree_role", DataScopeConstants.DEPT_AND_CHILD),
+                buildRole("all_role", DataScopeConstants.ALL)
+        ));
+
+        CurrentDataScope currentDataScope = resolver.resolveCurrentDataScope();
+
+        Assertions.assertTrue(currentDataScope.all());
+        Assertions.assertTrue(currentDataScope.deptIds().isEmpty());
+        verify(deptService, never()).listSelfAndDescendantDeptIds(any());
     }
 
     @Test
     void shouldResolveSelfScopeByDefault() {
-        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService);
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
         mockCurrentUser("self_user", 3L, 300L);
         when(roleService.listEnabledRolesByUserId(3L))
                 .thenReturn(List.of(buildRole("self_role", DataScopeConstants.SELF)));
@@ -78,10 +117,10 @@ class UserDataScopeResolverTest {
 
     @Test
     void shouldRejectCreateOutsideCurrentDept() {
-        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService);
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
         UserSaveRequest request = new UserSaveRequest();
         request.setDeptId(300L);
-        CurrentDataScope currentDataScope = new CurrentDataScope(3L, 200L, false, false);
+        CurrentDataScope currentDataScope = new CurrentDataScope(3L, 200L, List.of(200L), false, false);
 
         IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class,
                 () -> resolver.validateUserCreatePermission(request, currentDataScope));
@@ -91,13 +130,53 @@ class UserDataScopeResolverTest {
 
     @Test
     void shouldRejectAccessToOtherUserWhenSelfScopeOnly() {
-        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService);
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
         SysUser targetUser = new SysUser();
         targetUser.setId(8L);
 
-        boolean canAccess = resolver.canAccessUser(targetUser, new CurrentDataScope(3L, 200L, false, true));
+        boolean canAccess = resolver.canAccessUser(targetUser,
+                new CurrentDataScope(3L, 200L, List.of(), false, true));
 
         Assertions.assertFalse(canAccess);
+    }
+
+    @Test
+    void shouldAllowAccessToChildDeptUserWhenDeptAndChildScope() {
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
+        SysUser targetUser = new SysUser();
+        targetUser.setId(9L);
+        targetUser.setDeptId(201L);
+
+        boolean canAccess = resolver.canAccessUser(targetUser,
+                new CurrentDataScope(3L, 200L, List.of(200L, 201L, 202L), false, false));
+
+        Assertions.assertTrue(canAccess);
+    }
+
+    @Test
+    void shouldRejectAccessToOutsideTreeUserWhenDeptAndChildScope() {
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
+        SysUser targetUser = new SysUser();
+        targetUser.setId(10L);
+        targetUser.setDeptId(999L);
+
+        boolean canAccess = resolver.canAccessUser(targetUser,
+                new CurrentDataScope(3L, 200L, List.of(200L, 201L, 202L), false, false));
+
+        Assertions.assertFalse(canAccess);
+    }
+
+    @Test
+    void shouldRejectUpdateWhenDeptMovesOutsideCurrentTree() {
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
+        UserSaveRequest request = new UserSaveRequest();
+        request.setDeptId(999L);
+        CurrentDataScope currentDataScope = new CurrentDataScope(3L, 200L, List.of(200L, 201L, 202L), false, false);
+
+        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> resolver.validateUserUpdatePermission(request, currentDataScope));
+
+        Assertions.assertEquals("当前数据范围仅允许保留在本部门内", exception.getMessage());
     }
 
     private void mockCurrentUser(String username, Long userId, Long deptId) {
