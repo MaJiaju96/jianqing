@@ -6,7 +6,7 @@
 - 参考对象：`RuoYi`、`Yudao`
 - 约束：数据库先使用 `MySQL`
 - 后续集成目标：`Elasticsearch`、`Nacos`、`RocketMQ`
-- 过程要求：使用 `planning-with-files` 的 plan 模式，减少重复对话和需求讨论
+- 过程要求：使用“轻量摘要优先 + planning / memory 分层按需展开”模式，减少重复对话和上下文噪音
 - 核心前提：项目定位为“极简、友好、可演进”的 Java 管理系统
 - 编码前提：后端严格按阿里巴巴 Java 开发规范执行
 - 实现前提：优先简单易读逻辑，避免炫技式复杂实现
@@ -157,6 +157,20 @@
 - 生成器真实回归已确认“写入项目 → 写入记录 → 按 marker 删除”链路可用；删除后对应写入记录消失，工作区也未残留本次生成文件。
 - 生成器冲突确认真实回归已确认：重复写入时会先拉取冲突清单，再展示目录统计、快捷过滤与覆盖确认，不会直接静默覆盖。
 - 本轮前端真实回归还确认了字典页与参数页的筛选、重置、每页条数切换在空列表/单条数据场景下均可正常工作。
+- 数据权限现已从 `全部/本部门/本人` 扩展到 `全部/本部门及以下/本部门/本人`，角色保存与前端展示均已对齐新范围。
+- 后端部门服务已补齐 `listSelfAndDescendantDeptIds`，当前通过拉取启用部门列表并按父子关系递归收集子树 ID，供数据权限直接复用。
+- `UserDataScopeResolver` 当前已改为基于可访问部门 ID 列表做用户列表过滤、访问判断与用户写操作校验；`DEPT` 走单部门列表，`DEPT_AND_CHILD` 走部门子树列表。
+- 真实浏览器回归已确认：角色编辑弹窗中可见“本部门及以下数据”选项，保存后角色列表会正确展示“本部门及以下”，且控制台 warning/error 为 0。
+- 本轮真实回归使用既有 `dept_scope_role` 做最小验证，保存后已恢复为原始“本部门数据”，避免污染联调基线。
+- 当前真实部门树为：`简擎总部(1) -> 外部协作部(3)`；其中 `outside_user` 位于子部门 3，可作为“子部门可见”样本。
+- 本轮额外通过真实后端临时创建了树外根部门与树外用户，并验证 `dept_scope_role` 切到 `DEPT_AND_CHILD` 后，`dept_user` 可见 `outside_user`，但不可见该树外用户。
+- 真实联调结束后已确认：临时树外部门/用户已删除，`dept_scope_role.dataScope` 已恢复为 `DEPT`，当前用户与部门基线未被污染。
+- `DeptServiceImpl.listSelfAndDescendantDeptIds` 现已补单测，确认只会收集当前子树内部门，不会混入并列分支或树外根节点。
+- `UserDataScopeResolver` 现已补树形边界单测：`ALL` 会优先覆盖 `DEPT_AND_CHILD`，`DEPT_AND_CHILD` 会拒绝访问树外用户，也会拒绝把用户迁移到树外部门。
+- 真实前端回归已确认：当 `dept_scope_role` 临时切到 `DEPT_AND_CHILD` 时，`dept_user` 登录用户页可见 6 条用户数据，其中包含子部门用户 `outside_user`。
+- 本轮用户页真实回归后控制台 warning/error = 0，且 `dept_scope_role` 已恢复为原始 `DEPT` 配置。
+- 当前 token 消耗偏高的核心原因不是业务代码本身，而是“续开发协议”默认读取双端 6 个 planning 文件；随着 phase 和回归记录增长，该流程会持续放大上下文成本。
+- 本轮已为前后端新增 `current_state.md`，并将工作区续开发协议改为“优先读轻量摘要、按侧展开、必要时才读完整 planning”，在不影响代码质量的前提下降低默认上下文体积。
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -223,6 +237,7 @@
 | init SQL 方言风险要优先清理库级定义 | 一旦 `CREATE DATABASE` 就失败，后续所有表级兼容逻辑都没有机会执行 |
 | init SQL 时间字段兼容要优先处理自动时间戳列 | 这类列分布广、复用高，一旦方言不兼容会让多张基础表一起初始化失败 |
 | 参数恢复链路优先在查询层显式统一 collation | 相比要求用户先全库改 collation，先保证“已删参数列表/恢复”链路可直接工作，风险更低 |
+| 数据权限子部门扩展优先复用现有部门树关系 | 当前 `jq_sys_dept` 已具备父子结构，先在服务层递归收集子树 ID，比引入新字段或更重 SQL 方言更稳妥 |
 
 ## Issues Encountered
 | Issue | Resolution |

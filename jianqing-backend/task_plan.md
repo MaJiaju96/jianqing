@@ -4,7 +4,7 @@
 在保留后台管理系统高效率开发体验的前提下，完成 `简擎` 的可开源后端内核：以 `MySQL` 为首发数据源，预留 `Elasticsearch`、`Nacos`、`RocketMQ` 的可插拔集成能力。
 
 ## Current Phase
-Phase 47
+Phase 53
 
 ## Phases
 
@@ -336,67 +336,50 @@ Phase 47
 - [x] 同步修复生成器冲突弹窗 `el-radio` 兼容 warning 并验证控制台归零
 - **Status:** complete
 
-## Key Questions
-1. v0.1 是否只交付后端内核（不绑定前端）？
-2. 鉴权方案选 `Spring Security + JWT` 还是 `Sa-Token`？
-3. 插件机制优先用 Spring SPI 还是独立模块装配器？
-4. ES/Nacos/RocketMQ 在 v0.1 做“可接入”还是“默认接入”？
+### Phase 48: 数据权限扩展到本部门及以下
+- [x] 放开角色数据范围校验，支持 `DEPT_AND_CHILD`
+- [x] 为部门服务补齐“本部门及以下部门 ID”查询能力
+- [x] 将用户列表/访问/写操作权限校验扩展到部门子树
+- [x] 补齐后端单测并完成回归
+- **Status:** complete
 
-## Decisions Made
-| Decision | Rationale |
-|----------|-----------|
-| 项目命名为 `简擎` | 保持品牌统一，便于开源传播 |
-| 数据库首发使用 MySQL | 与目标用户习惯一致，上手成本低 |
-| 先做管理内核再扩展集成 | 保证核心能力先稳定，降低早期复杂度 |
-| 预留 ES/Nacos/RocketMQ 适配层 | 避免后续重构核心域模型 |
-| 使用 planning-with-files 管理执行上下文 | 减少重复沟通与需求漂移 |
-| 新增 ARCHITECTURE.md 作为实现蓝图 | 降低实现期分歧，明确包结构与扩展边界 |
-| 后端编码遵循阿里巴巴 Java 开发规范 | 统一编码风格和工程可维护性 |
-| Mapper 尽量使用 XML 承载 SQL | 降低注解 SQL 复杂度并提升可维护性 |
-| Mapper.xml 与 Mapper 接口同目录放置 | 保持映射文件就近维护，便于定位与审查 |
-| 前端与后端保持平级目录 | 便于独立构建、部署与仓库边界管理 |
-| 前后端统一收拢到 `code/jianqing` 工作区 | 便于跨前后端联动且不影响其它项目 |
-| 前端默认使用纯 JavaScript | 降低入门门槛，减少 TS 维护成本 |
-| 关键/复杂逻辑必须写注释 | 提升可读性与后续维护效率，降低理解成本 |
-| 项目坚持“极简可读”实现原则 | 优先简单直接逻辑，避免炫技式复杂实现 |
-| 面向 AI 协作友好 | 代码结构清晰、语义直白，便于 AI 接续开发 |
-| 预留多技术分支演进路线 | 支持前后端多框架分支与企业级扩展规划 |
-| 后端接口方法仅允许 `GET` / `POST` | 统一接口约束与协作规范，避免 `PUT` / `DELETE` 漂移 |
-| 引入 Redis 承载 token 会话与热点缓存 | 支撑可配置 token TTL 与高频查询缓存能力 |
-| DB 与缓存一致性采用延迟双删 | 降低并发读写下的缓存脏读窗口 |
-| 服务层统一采用“接口 + impl”结构 | 明确契约边界，提升可测试性与后续演进稳定性 |
-| 热点服务优先按职责分层拆分（解析/编排/失效） | 降低单类复杂度，避免在历史代码上持续叠补丁 |
-| `SystemServiceImpl` 定位为聚合入口 | 仅保留访问控制、事务边界与跨域编排，避免再次膨胀 |
-| 跨表写先保证事务与提交后缓存失效 | 正确性优先于抽象与性能，减少数据与缓存不一致风险 |
-| 代码生成器 MVP 先走“预览/下载，不直接落盘” | 先验证模板与约束一致性，避免首版写盘带来的破坏性风险 |
+### Phase 49: 本部门及以下角色配置真实回归
+- [x] 在真实浏览器中验证角色页出现“本部门及以下数据”选项
+- [x] 验证编辑角色后列表文案更新为“本部门及以下”
+- [x] 完成回归后恢复测试角色原始数据范围
+- **Status:** complete
 
-## Errors Encountered
-| Error | Attempt | Resolution |
-|-------|---------|------------|
-| 工具调用出现乱码/参数异常 | 1 | 重新发起调用并补齐必填参数后继续 |
+### Phase 50: 本部门及以下真实数据范围联调
+- [x] 基于真实后端临时创建树外根部门与树外用户
+- [x] 临时将 `dept_scope_role` 切到 `DEPT_AND_CHILD` 并验证 `dept_user` 可见子部门用户
+- [x] 验证 `dept_user` 不可见树外用户
+- [x] 完成后恢复角色配置并清理临时部门/用户
+- **Status:** complete
 
-## Notes
-- 开发联调测试账号：`admin/admin123`；`dept_user/test123`；`self_user/test123`；`other_user/test123`；`outside_user/test123`。
-- 每完成一个 Phase 都同步更新状态。
-- 每次关键技术决策先回看本计划文件。
-- 错误先记录再修复，避免重复踩坑。
-- SQL 编写规范：优先 `Mapper.xml`，并与对应 `Mapper` 接口同目录。
-- 前端工程规范：`jianqing-admin-web` 与 `jianqing-backend` 保持平级目录。
-- 前端语法规范：默认使用纯 `JavaScript`，不引入 `TypeScript`。
-- 注释规范：不要求每行注释，但关键分支、复杂流程、边界处理必须写清楚注释。
-- 核心编码原则：在满足业务需求前提下，优先最简单、最直接、最易读的实现。
-- 技术规范原则：后端严格遵循阿里巴巴 Java 开发规范，保持统一风格。
-- 演进规划原则：代码需为后续 `TS`/`Vue2`、`SpringBoot2`/`SpringCloud`/`JDK8` 等分支保留可迁移性。
-- 接口约束原则：后端对外接口仅允许 `GET` 与 `POST`，不新增 `PUT` / `DELETE`。
-- 方法约束守卫：通过脚本与 CI/pre-commit 自动扫描，禁止引入 `PUT` / `DELETE`。
-- 缓存一致性原则：写操作统一执行“先删缓存 + 延迟再删”策略，避免 DB 与缓存短暂不一致。
-- 服务层规范：模块内服务必须定义 `service` 接口，并在 `service.impl` 提供 `*ServiceImpl` 实现；控制器与调用方仅依赖接口。
-- framework 层同名 `*Service` 亦遵循“接口 + impl”模式，避免出现分层规范例外。
-- 推荐安装本地 pre-commit hook，提交前自动执行结构守卫与基础质量门禁。
-- 分层约束原则：`Mapper` 仅允许在 `service.impl` 与 `mapper` 自身定义中出现，其他层禁止直接引用。
-- MyBatis-Plus 约束：核心业务 `service` 接口统一继承 `IService<T>`，实现类统一继承 `ServiceImpl<M, T>`。
-- 跨实体协作约束：在 `service.impl` 中优先通过对应 `service` 协作，避免跨模块直接拼装持久层调用。
-- 认证审计协作约束：登录日志写入由审计服务统一承担，认证服务不得直接依赖登录日志 mapper。
-- 重构执行约束：先做行为不变的小步拆分（职责抽离），再做接口级重排，避免一次性大改带来回归风险。
-- 聚合服务约束：`SystemServiceImpl` 只保留访问控制、事务边界与编排入口，新增复杂写流程优先下沉到 `*WriteOperationHandler` / `*AssignmentHandler`。
-- 一致性约束：缓存失效优先在事务提交后触发，不允许新增“事务未完成先删缓存”的写路径。
+### Phase 51: 数据权限树形边界单测补强
+- [x] 为部门子树收集逻辑补齐单测
+- [x] 为 `UserDataScopeResolver` 补齐“ALL 优先级 / 树外访问拒绝 / 树外迁移拒绝”单测
+- [x] 完成 focused + 全量后端测试回归
+- **Status:** complete
+
+### Phase 52: dept_user 用户页真实回归
+- [x] 临时将 `dept_scope_role` 切到 `DEPT_AND_CHILD`
+- [x] 使用 `dept_user` 登录真实前端用户页并验证子部门用户可见
+- [x] 确认控制台 warning/error 为 0
+- [x] 恢复角色基线为 `DEPT`
+- **Status:** complete
+
+### Phase 53: 上下文恢复降 token 优化
+- [x] 新增后端 `current_state.md` 轻量摘要文件
+- [x] 调整工作区续开发协议，优先读取轻量摘要而非默认全量 planning
+- [x] 保持历史 planning 文件不丢失，仅调整默认读取策略
+- **Status:** complete
+
+## Planning Notes
+
+- 本文件只保留后端目标与 phase 主线骨架，不再承载大段执行细节与历史决策列表。
+- 当前任务状态优先查看：`backlog.md`
+- 当前轻量摘要优先查看：`current_state.md`
+- 关键决策与 why 优先查看：`decisions.md`
+- 长期发现与 gotcha 优先查看：`findings.md`
+- 阶段归档与里程碑优先查看：`progress.md`
