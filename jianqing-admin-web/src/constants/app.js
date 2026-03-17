@@ -8,6 +8,16 @@ export const STATUS_FILTER_ALL = 'all';
 export const STATUS_ENABLED = 1;
 export const STATUS_DISABLED = 0;
 
+export const COMMON_STATUS_OPTIONS = [
+  { label: '启用', value: '1', colorType: 'success' },
+  { label: '禁用', value: '0', colorType: 'danger' }
+];
+
+export const DEPT_STATUS_OPTIONS = [
+  { label: '启用', value: '1', colorType: 'success' },
+  { label: '禁用', value: '0', colorType: 'info' }
+];
+
 export const EMPTY_FILTER_VALUE = '';
 
 export const MENU_TYPE_DIRECTORY = 1;

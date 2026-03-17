@@ -24,6 +24,16 @@ public class DictSchemaInitializer implements ApplicationRunner {
         ensureDictDataTable(schemaName);
         ensureDictTypeColumns(schemaName);
         ensureDictDataColumns(schemaName);
+        ensureBuiltInDicts();
+    }
+
+    private void ensureBuiltInDicts() {
+        ensureDictTypeSeed("通用状态", "sys_common_status", "用户/角色/菜单通用启禁用状态");
+        ensureDictTypeSeed("部门状态", "sys_dept_status", "部门启用/禁用状态");
+        ensureDictDataSeed("sys_common_status", "启用", "1", "success", 1, "启用");
+        ensureDictDataSeed("sys_common_status", "禁用", "0", "danger", 2, "禁用");
+        ensureDictDataSeed("sys_dept_status", "启用", "1", "success", 1, "部门启用");
+        ensureDictDataSeed("sys_dept_status", "禁用", "0", "info", 2, "部门禁用");
     }
 
     private void ensureDictTypeTable(String schemaName) {
@@ -118,5 +128,27 @@ public class DictSchemaInitializer implements ApplicationRunner {
             return;
         }
         jdbcTemplate.execute(alterSql);
+    }
+
+    private void ensureDictTypeSeed(String dictName, String dictType, String remark) {
+        Integer exists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM jq_sys_dict_type WHERE dict_type = ?",
+                Integer.class, dictType);
+        if (exists != null && exists > 0) {
+            return;
+        }
+        jdbcTemplate.update("INSERT INTO jq_sys_dict_type (dict_name, dict_type, status, remark, created_by, updated_by) VALUES (?, ?, 1, ?, 1, 1)",
+                dictName, dictType, remark);
+    }
+
+    private void ensureDictDataSeed(String dictType, String label, String value, String colorType, int sortNo, String remark) {
+        Integer exists = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM jq_sys_dict_data WHERE dict_type = ? AND value = ?",
+                Integer.class, dictType, value);
+        if (exists != null && exists > 0) {
+            return;
+        }
+        jdbcTemplate.update("INSERT INTO jq_sys_dict_data (dict_type, label, value, color_type, css_class, sort_no, status, remark, created_by, updated_by) VALUES (?, ?, ?, ?, '', ?, 1, ?, 1, 1)",
+                dictType, label, value, colorType, sortNo, remark);
     }
 }
