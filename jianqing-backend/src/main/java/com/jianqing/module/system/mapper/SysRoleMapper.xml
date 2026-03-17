@@ -38,11 +38,31 @@
         ORDER BY menu_id
     </select>
 
+    <delete id="deleteRoleDeptByRoleId">
+        DELETE FROM jq_sys_role_dept
+        WHERE role_id = #{roleId}
+    </delete>
+
+    <select id="selectDeptIdsByRoleId" resultType="java.lang.Long">
+        SELECT dept_id
+        FROM jq_sys_role_dept
+        WHERE role_id = #{roleId}
+        ORDER BY dept_id
+    </select>
+
     <insert id="batchInsertRoleMenu">
         INSERT INTO jq_sys_role_menu (role_id, menu_id)
         VALUES
         <foreach collection="menuIds" item="menuId" separator=",">
             (#{roleId}, #{menuId})
+        </foreach>
+    </insert>
+
+    <insert id="batchInsertRoleDept">
+        INSERT INTO jq_sys_role_dept (role_id, dept_id)
+        VALUES
+        <foreach collection="deptIds" item="deptId" separator=",">
+            (#{roleId}, #{deptId})
         </foreach>
     </insert>
 

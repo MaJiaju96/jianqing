@@ -355,6 +355,8 @@
 - 已完成审计页真实回归：`/audit/oper-logs` 与 `/audit/login-logs` 的查询、重置、分页均通过，当前两页各返回 20 条数据且无异常。
 - 已补一轮前端异常处理收口：新增 `ignoreHandledError`，用于吞掉已由全局 HTTP 拦截器提示过的请求异常，避免 system/audit/dashboard 页面在加载失败时继续抛出未处理 Promise 警告。
 - 已修复非 admin 账号登录后的 dashboard 噪音：`DashboardView` 改为按权限拉取统计数据，避免低权限账号登录后立即请求无权访问的 roles/menus 接口导致 401 噪音。
+- 已完成 `CUSTOM` 数据范围真实接口回归：在默认后端 `127.0.0.1:8080` 上，将 `dept_scope_role` 临时切到 `CUSTOM + [外部协作部(3)]` 后，`dept_user/test123` 查询 `/api/system/users` 仅返回 `outside_user`，验证后已恢复为 `DEPT` 基线。
+- 已确认默认联调口径已恢复到新版代码：`127.0.0.1:8080` 可直接保存 `CUSTOM` 数据范围，不再受旧版“四种数据范围”限制。
 
 ## Visual/Browser Findings
 - 本轮无网页或图像类输入。

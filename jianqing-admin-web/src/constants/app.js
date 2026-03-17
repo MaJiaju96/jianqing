@@ -21,10 +21,12 @@ export const DATA_SCOPE_ALL = 1;
 export const DATA_SCOPE_DEPT_AND_CHILD = 2;
 export const DATA_SCOPE_DEPT = 3;
 export const DATA_SCOPE_SELF = 4;
+export const DATA_SCOPE_CUSTOM = 5;
 
 export const DATA_SCOPE_OPTIONS = [
   { label: '全部数据', value: DATA_SCOPE_ALL },
   { label: '本部门及以下数据', value: DATA_SCOPE_DEPT_AND_CHILD },
   { label: '本部门数据', value: DATA_SCOPE_DEPT },
-  { label: '仅本人数据', value: DATA_SCOPE_SELF }
+  { label: '仅本人数据', value: DATA_SCOPE_SELF },
+  { label: '自定义部门数据', value: DATA_SCOPE_CUSTOM }
 ];

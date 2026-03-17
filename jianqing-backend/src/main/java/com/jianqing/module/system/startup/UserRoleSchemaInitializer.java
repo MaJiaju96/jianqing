@@ -23,6 +23,7 @@ public class UserRoleSchemaInitializer implements ApplicationRunner {
         ensureUserTable(schemaName);
         ensureRoleTable(schemaName);
         ensureUserRoleTable(schemaName);
+        ensureRoleDeptTable(schemaName);
         ensureUserColumns(schemaName);
         ensureRoleColumns(schemaName);
     }
@@ -87,6 +88,20 @@ public class UserRoleSchemaInitializer implements ApplicationRunner {
                 + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
                 + "UNIQUE KEY uk_jq_sys_user_role (user_id, role_id),"
                 + "KEY idx_jq_sys_user_role_role_id (role_id)"
+                + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    private void ensureRoleDeptTable(String schemaName) {
+        if (tableExists(schemaName, "jq_sys_role_dept")) {
+            return;
+        }
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS jq_sys_role_dept ("
+                + "id BIGINT PRIMARY KEY AUTO_INCREMENT,"
+                + "role_id BIGINT NOT NULL,"
+                + "dept_id BIGINT NOT NULL,"
+                + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                + "UNIQUE KEY uk_jq_sys_role_dept (role_id, dept_id),"
+                + "KEY idx_jq_sys_role_dept_dept_id (dept_id)"
                 + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 

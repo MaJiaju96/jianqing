@@ -98,6 +98,15 @@ CREATE TABLE IF NOT EXISTS jq_sys_role_menu (
   KEY idx_jq_sys_role_menu_menu_id (menu_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS jq_sys_role_dept (
+  id              BIGINT PRIMARY KEY AUTO_INCREMENT,
+  role_id         BIGINT       NOT NULL,
+  dept_id         BIGINT       NOT NULL,
+  created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_jq_sys_role_dept (role_id, dept_id),
+  KEY idx_jq_sys_role_dept_dept_id (dept_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS jq_sys_dict_type (
   id              BIGINT PRIMARY KEY AUTO_INCREMENT,
   dict_name       VARCHAR(64)  NOT NULL,

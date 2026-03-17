@@ -86,6 +86,36 @@ class UserDataScopeResolverTest {
     }
 
     @Test
+    void shouldResolveCustomScopeForCustomRole() {
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
+        mockCurrentUser("custom_user", 7L, 200L);
+        when(roleService.listEnabledRolesByUserId(7L))
+                .thenReturn(List.of(buildRole(11L, "custom_role", DataScopeConstants.CUSTOM)));
+        when(roleService.listRoleCustomDeptIds(11L)).thenReturn(List.of(301L, 302L));
+
+        CurrentDataScope currentDataScope = resolver.resolveCurrentDataScope();
+
+        Assertions.assertFalse(currentDataScope.all());
+        Assertions.assertFalse(currentDataScope.selfOnly());
+        Assertions.assertEquals(List.of(301L, 302L), currentDataScope.deptIds());
+    }
+
+    @Test
+    void shouldMergeDeptAndCustomScopes() {
+        UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
+        mockCurrentUser("mixed_scope_user", 8L, 200L);
+        when(roleService.listEnabledRolesByUserId(8L)).thenReturn(List.of(
+                buildRole(12L, "dept_role", DataScopeConstants.DEPT),
+                buildRole(13L, "custom_role", DataScopeConstants.CUSTOM)
+        ));
+        when(roleService.listRoleCustomDeptIds(13L)).thenReturn(List.of(301L, 302L));
+
+        CurrentDataScope currentDataScope = resolver.resolveCurrentDataScope();
+
+        Assertions.assertEquals(List.of(200L, 301L, 302L), currentDataScope.deptIds());
+    }
+
+    @Test
     void shouldPreferAllScopeOverDeptAndChildScope() {
         UserDataScopeResolver resolver = new UserDataScopeResolver(sysUserMapper, roleService, deptService);
         mockCurrentUser("mixed_scope_user", 6L, 200L);
@@ -191,7 +221,12 @@ class UserDataScopeResolverTest {
     }
 
     private SysRole buildRole(String roleCode, Integer dataScope) {
+        return buildRole(null, roleCode, dataScope);
+    }
+
+    private SysRole buildRole(Long id, String roleCode, Integer dataScope) {
         SysRole role = new SysRole();
+        role.setId(id);
         role.setRoleCode(roleCode);
         role.setDataScope(dataScope);
         return role;

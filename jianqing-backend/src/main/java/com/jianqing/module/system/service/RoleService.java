@@ -43,6 +43,11 @@ public interface RoleService extends IService<SysRole> {
     void assignRoleMenus(Long roleId, List<Long> menuIds);
 
     /**
+     * 查询角色自定义部门 ID。
+     */
+    List<Long> listRoleCustomDeptIds(Long roleId);
+
+    /**
      * 查询用户角色编码集合。
      */
     List<String> listRoleCodesByUserId(Long userId);

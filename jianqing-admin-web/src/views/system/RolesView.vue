@@ -68,6 +68,17 @@
           <el-option v-for="item in dataScopeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
+      <el-form-item v-if="form.dataScope === DATA_SCOPE_CUSTOM" label="自定义部门">
+        <el-tree
+          ref="deptTreeRef"
+          :data="deptRows"
+          node-key="id"
+          show-checkbox
+          default-expand-all
+          :props="{ label: 'deptName', children: 'children' }"
+          class="role-dept-tree"
+        />
+      </el-form-item>
       <el-form-item label="状态">
         <el-select v-model="form.status" style="width: 100%;">
           <el-option v-for="item in statusOptions" :key="item.value" :value="Number(item.value)" :label="item.label" />
@@ -117,7 +128,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { Plus } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import ListPageHeader from '../../components/ListPageHeader.vue';
@@ -127,6 +138,7 @@ import {
   MENU_TYPE_DIRECTORY,
   MENU_TYPE_PAGE,
   DATA_SCOPE_ALL,
+  DATA_SCOPE_CUSTOM,
   DATA_SCOPE_DEPT_AND_CHILD,
   DATA_SCOPE_DEPT,
   DATA_SCOPE_OPTIONS,
@@ -139,6 +151,7 @@ import {
   assignRoleMenus,
   createRole,
   deleteRole,
+  fetchDepts,
   fetchMenus,
   fetchRoleMenuIds,
   fetchRoles,
@@ -157,11 +170,13 @@ import { isValidRoleCode } from '../../utils/validators';
 import { getMenuTypeTag as menuTypeTag, getMenuTypeText as menuTypeText } from './menuMeta';
 
 const rows = ref([]);
+const deptRows = ref([]);
 const COMMON_STATUS_DICT = 'sys_common_status';
 const menuDialogVisible = ref(false);
 const currentRole = ref(null);
 const menuTree = ref([]);
 const menuTreeRef = ref(null);
+const deptTreeRef = ref(null);
 const assignTypeFilter = ref('all');
 const dataScopeOptions = DATA_SCOPE_OPTIONS;
 
@@ -208,17 +223,19 @@ const tableEmptyText = tableFeedback.emptyText;
 const { loadDictOptions, getOptions, getLabel, getTagType } = useDictOptions();
 const statusOptions = computed(() => getOptions(COMMON_STATUS_DICT));
 
-const { dialogVisible, isEdit, editingId, form, openCreate, openEdit, closeDialog } = useEntityDialogForm({
+const { dialogVisible, isEdit, editingId, form, openCreate: openCreateForm, openEdit: openEditForm, closeDialog } = useEntityDialogForm({
   createForm: () => ({
     roleName: '',
     roleCode: '',
     dataScope: DATA_SCOPE_ALL,
+    customDeptIds: [],
     status: STATUS_ENABLED
   }),
   mapForm: (row) => ({
     roleName: row.roleName,
     roleCode: row.roleCode,
     dataScope: row.dataScope,
+    customDeptIds: row.customDeptIds || [],
     status: row.status
   })
 });
@@ -239,7 +256,9 @@ const { submitLoading, handleSubmit: runSubmit } = useEntitySubmitAction({
 
 async function loadData() {
   await tableFeedback.run(async () => {
-    rows.value = await fetchRoles();
+    const [roles, depts] = await Promise.all([fetchRoles(), fetchDepts()]);
+    rows.value = roles;
+    deptRows.value = depts;
   });
 }
 
@@ -252,6 +271,15 @@ async function handleSubmit() {
     ElMessage.warning('角色编码仅支持字母数字及 : _ -');
     return;
   }
+  if (form.value.dataScope === DATA_SCOPE_CUSTOM) {
+    syncCustomDeptIds();
+    if (!form.value.customDeptIds.length) {
+      ElMessage.warning('请选择至少一个自定义部门');
+      return;
+    }
+  } else {
+    form.value.customDeptIds = [];
+  }
   await runSubmit(async () => {
     if (isEdit.value) {
       await updateRole(editingId.value, form.value);
@@ -260,6 +288,46 @@ async function handleSubmit() {
     }
   });
 }
+
+function syncCustomDeptIds() {
+  if (!deptTreeRef.value) {
+    form.value.customDeptIds = [];
+    return;
+  }
+  const checkedKeys = deptTreeRef.value.getCheckedKeys(false);
+  const halfCheckedKeys = deptTreeRef.value.getHalfCheckedKeys();
+  form.value.customDeptIds = Array.from(new Set([...checkedKeys, ...halfCheckedKeys])).sort((a, b) => a - b);
+}
+
+async function openCreate() {
+  openCreateForm();
+  await nextTick();
+  syncDeptTreeCheckedKeys();
+}
+
+async function openEdit(row) {
+  openEditForm(row);
+  await nextTick();
+  syncDeptTreeCheckedKeys();
+}
+
+function syncDeptTreeCheckedKeys() {
+  if (!deptTreeRef.value) {
+    return;
+  }
+  deptTreeRef.value.setCheckedKeys([]);
+  if (form.value.dataScope === DATA_SCOPE_CUSTOM) {
+    deptTreeRef.value.setCheckedKeys(form.value.customDeptIds || []);
+  }
+}
+
+watch(() => form.value.dataScope, async (value) => {
+  if (value !== DATA_SCOPE_CUSTOM) {
+    return;
+  }
+  await nextTick();
+  syncDeptTreeCheckedKeys();
+});
 
 async function openAssignMenus(row) {
   currentRole.value = row;
@@ -295,6 +363,9 @@ function filterAssignNode(value, data) {
 }
 
 function dataScopeText(dataScope) {
+  if (dataScope === DATA_SCOPE_CUSTOM) {
+    return '自定义部门';
+  }
   if (dataScope === DATA_SCOPE_DEPT_AND_CHILD) {
     return '本部门及以下';
   }
@@ -358,6 +429,13 @@ usePageInitializer(async () => {
 }
 
 .role-menu-tree {
+  border: 1px solid rgba(120, 140, 180, 0.2);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.role-dept-tree {
+  width: 100%;
   border: 1px solid rgba(120, 140, 180, 0.2);
   border-radius: 10px;
   padding: 10px;

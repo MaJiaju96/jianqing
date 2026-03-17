@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,7 +32,7 @@ class RoleWriteOperationHandlerTest {
     void shouldCreateRoleAndEvictSystemRoles() {
         RoleWriteOperationHandler handler = new RoleWriteOperationHandler(sysUserMapper, roleService, systemCacheEvictor);
         RoleSaveRequest request = new RoleSaveRequest();
-        RoleSummary summary = new RoleSummary(1L, "管理员", "ADMIN", 1, 1);
+        RoleSummary summary = new RoleSummary(1L, "管理员", "ADMIN", 1, 1, Collections.emptyList());
         when(roleService.createRole(request)).thenReturn(summary);
 
         RoleSummary actual = handler.createRole(request);
@@ -45,7 +46,7 @@ class RoleWriteOperationHandlerTest {
     void shouldUpdateRoleAndEvictAffectedUserAuth() {
         RoleWriteOperationHandler handler = new RoleWriteOperationHandler(sysUserMapper, roleService, systemCacheEvictor);
         RoleSaveRequest request = new RoleSaveRequest();
-        RoleSummary summary = new RoleSummary(2L, "审计员", "AUDITOR", 2, 1);
+        RoleSummary summary = new RoleSummary(2L, "审计员", "AUDITOR", 2, 1, Collections.emptyList());
         when(sysUserMapper.selectUserIdsByRoleId(2L)).thenReturn(Arrays.asList(9L, 10L));
         when(roleService.updateRole(2L, request)).thenReturn(summary);
 

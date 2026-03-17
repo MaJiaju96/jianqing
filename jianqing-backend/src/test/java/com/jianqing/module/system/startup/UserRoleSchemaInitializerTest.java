@@ -27,6 +27,7 @@ class UserRoleSchemaInitializerTest {
         mockTable("jq_sys_user", 0);
         mockTable("jq_sys_role", 0);
         mockTable("jq_sys_user_role", 0);
+        mockTable("jq_sys_role_dept", 0);
         mockUserColumnMissing("mobile");
         mockUserColumnMissing("email");
         mockUserColumnMissing("dept_id");
@@ -54,6 +55,7 @@ class UserRoleSchemaInitializerTest {
         inOrder.verify(jdbcTemplate).execute("CREATE TABLE IF NOT EXISTS jq_sys_user (id BIGINT PRIMARY KEY AUTO_INCREMENT,username VARCHAR(64) NOT NULL,password_hash VARCHAR(255) NOT NULL,nickname VARCHAR(64) NOT NULL DEFAULT '',real_name VARCHAR(64) NOT NULL DEFAULT '',mobile VARCHAR(20) NOT NULL DEFAULT '',email VARCHAR(128) NOT NULL DEFAULT '',dept_id BIGINT NOT NULL DEFAULT 0,status TINYINT NOT NULL DEFAULT 1,is_deleted TINYINT NOT NULL DEFAULT 0,last_login_ip VARCHAR(64) NOT NULL DEFAULT '',last_login_time DATETIME NULL,remark VARCHAR(255) NOT NULL DEFAULT '',created_by BIGINT NOT NULL DEFAULT 0,updated_by BIGINT NOT NULL DEFAULT 0,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,UNIQUE KEY uk_jq_sys_user_username (username),KEY idx_jq_sys_user_dept_id (dept_id),KEY idx_jq_sys_user_status (status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         inOrder.verify(jdbcTemplate).execute("CREATE TABLE IF NOT EXISTS jq_sys_role (id BIGINT PRIMARY KEY AUTO_INCREMENT,role_name VARCHAR(64) NOT NULL,role_code VARCHAR(64) NOT NULL,data_scope TINYINT NOT NULL DEFAULT 1,status TINYINT NOT NULL DEFAULT 1,is_deleted TINYINT NOT NULL DEFAULT 0,remark VARCHAR(255) NOT NULL DEFAULT '',created_by BIGINT NOT NULL DEFAULT 0,updated_by BIGINT NOT NULL DEFAULT 0,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,UNIQUE KEY uk_jq_sys_role_role_code (role_code),KEY idx_jq_sys_role_status (status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         inOrder.verify(jdbcTemplate).execute("CREATE TABLE IF NOT EXISTS jq_sys_user_role (id BIGINT PRIMARY KEY AUTO_INCREMENT,user_id BIGINT NOT NULL,role_id BIGINT NOT NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE KEY uk_jq_sys_user_role (user_id, role_id),KEY idx_jq_sys_user_role_role_id (role_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        inOrder.verify(jdbcTemplate).execute("CREATE TABLE IF NOT EXISTS jq_sys_role_dept (id BIGINT PRIMARY KEY AUTO_INCREMENT,role_id BIGINT NOT NULL,dept_id BIGINT NOT NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE KEY uk_jq_sys_role_dept (role_id, dept_id),KEY idx_jq_sys_role_dept_dept_id (dept_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
     @Test
@@ -63,6 +65,7 @@ class UserRoleSchemaInitializerTest {
         mockTable("jq_sys_user", 1);
         mockTable("jq_sys_role", 1);
         mockTable("jq_sys_user_role", 1);
+        mockTable("jq_sys_role_dept", 1);
         mockUserColumnReady("mobile");
         mockUserColumnReady("email");
         mockUserColumnReady("dept_id");

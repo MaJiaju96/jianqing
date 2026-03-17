@@ -3,8 +3,8 @@
 ## Active
 
 - [BE-DATA-001] CUSTOM 数据范围后端最小闭环
-  Status: not_started
-  Regression: pending
+  Status: done
+  Regression: verified
   Priority: high
   Phase: 53
   Ref: decisions.md#custom-数据范围先走最小闭环

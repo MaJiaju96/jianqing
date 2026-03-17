@@ -3,8 +3,8 @@
 ## Active
 
 - [FE-DATA-001] 配合后端完成 CUSTOM 数据范围前端配置闭环
-  Status: not_started
-  Regression: pending
+  Status: done
+  Regression: verified
   Priority: high
   Phase: 49
   Ref: decisions.md#custom-数据范围前端先做配置闭环

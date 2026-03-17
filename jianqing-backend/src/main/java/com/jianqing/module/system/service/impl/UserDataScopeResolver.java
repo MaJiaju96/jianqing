@@ -12,7 +12,9 @@ import com.jianqing.module.system.service.RoleService;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class UserDataScopeResolver {
@@ -46,14 +48,27 @@ public class UserDataScopeResolver {
         if (roles.stream().anyMatch(role -> role.getDataScope() != null && role.getDataScope() == DataScopeConstants.ALL)) {
             return new CurrentDataScope(currentUser.getId(), currentUser.getDeptId(), Collections.emptyList(), true, false);
         }
-        if (roles.stream().anyMatch(role -> role.getDataScope() != null
-                && role.getDataScope() == DataScopeConstants.DEPT_AND_CHILD)) {
-            List<Long> deptIds = deptService.listSelfAndDescendantDeptIds(currentUser.getDeptId());
-            return new CurrentDataScope(currentUser.getId(), currentUser.getDeptId(), deptIds, false, false);
+        Set<Long> deptIds = new LinkedHashSet<>();
+        for (SysRole role : roles) {
+            if (role.getDataScope() == null) {
+                continue;
+            }
+            if (role.getDataScope() == DataScopeConstants.DEPT_AND_CHILD) {
+                deptIds.addAll(deptService.listSelfAndDescendantDeptIds(currentUser.getDeptId()));
+                continue;
+            }
+            if (role.getDataScope() == DataScopeConstants.DEPT) {
+                if (currentUser.getDeptId() != null) {
+                    deptIds.add(currentUser.getDeptId());
+                }
+                continue;
+            }
+            if (role.getDataScope() == DataScopeConstants.CUSTOM && role.getId() != null) {
+                deptIds.addAll(roleService.listRoleCustomDeptIds(role.getId()));
+            }
         }
-        if (roles.stream().anyMatch(role -> role.getDataScope() != null && role.getDataScope() == DataScopeConstants.DEPT)) {
-            return new CurrentDataScope(currentUser.getId(), currentUser.getDeptId(), currentUser.getDeptId() == null
-                    ? Collections.emptyList() : List.of(currentUser.getDeptId()), false, false);
+        if (!deptIds.isEmpty()) {
+            return new CurrentDataScope(currentUser.getId(), currentUser.getDeptId(), List.copyOf(deptIds), false, false);
         }
         return new CurrentDataScope(currentUser.getId(), currentUser.getDeptId(), Collections.emptyList(), false, true);
     }

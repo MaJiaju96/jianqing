@@ -3,26 +3,32 @@ package com.jianqing.module.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jianqing.module.system.constant.DataScopeConstants;
+import com.jianqing.module.system.dto.DeptTreeNode;
 import com.jianqing.module.system.dto.RoleSaveRequest;
 import com.jianqing.module.system.dto.RoleSummary;
 import com.jianqing.module.system.entity.SysRole;
 import com.jianqing.module.system.mapper.SysRoleMapper;
+import com.jianqing.module.system.service.DeptService;
 import com.jianqing.module.system.service.MenuService;
 import com.jianqing.module.system.service.RoleService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements RoleService {
 
     private final MenuService menuService;
+    private final DeptService deptService;
 
-    public RoleServiceImpl(MenuService menuService) {
+    public RoleServiceImpl(MenuService menuService, DeptService deptService) {
         this.menuService = menuService;
+        this.deptService = deptService;
     }
 
     @Override
@@ -45,6 +51,7 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         role.setStatus(request.getStatus());
         role.setIsDeleted(0);
         baseMapper.insert(role);
+        saveCustomDeptScope(role.getId(), request);
         return toRoleSummary(role);
     }
 
@@ -59,6 +66,7 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         role.setDataScope(request.getDataScope());
         role.setStatus(request.getStatus());
         baseMapper.updateById(role);
+        saveCustomDeptScope(role.getId(), request);
         return toRoleSummary(role);
     }
 
@@ -70,6 +78,7 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         baseMapper.updateById(role);
         baseMapper.deleteUserRoleByRoleId(id);
         baseMapper.deleteRoleMenuByRoleId(id);
+        baseMapper.deleteRoleDeptByRoleId(id);
     }
 
     @Override
@@ -88,6 +97,12 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         if (!validMenuIds.isEmpty()) {
             baseMapper.batchInsertRoleMenu(roleId, validMenuIds);
         }
+    }
+
+    @Override
+    public List<Long> listRoleCustomDeptIds(Long roleId) {
+        getRoleOrThrow(roleId);
+        return baseMapper.selectDeptIdsByRoleId(roleId);
     }
 
     @Override
@@ -117,7 +132,10 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
     }
 
     private RoleSummary toRoleSummary(SysRole role) {
-        return new RoleSummary(role.getId(), role.getRoleName(), role.getRoleCode(), role.getDataScope(), role.getStatus());
+        List<Long> customDeptIds = role.getDataScope() != null && role.getDataScope() == DataScopeConstants.CUSTOM
+                ? baseMapper.selectDeptIdsByRoleId(role.getId())
+                : Collections.emptyList();
+        return new RoleSummary(role.getId(), role.getRoleName(), role.getRoleCode(), role.getDataScope(), role.getStatus(), customDeptIds);
     }
 
     private void validateDataScope(Integer dataScope) {
@@ -127,8 +145,47 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
         if (dataScope != DataScopeConstants.ALL
                 && dataScope != DataScopeConstants.DEPT_AND_CHILD
                 && dataScope != DataScopeConstants.DEPT
-                && dataScope != DataScopeConstants.SELF) {
-            throw new IllegalArgumentException("当前版本仅支持全部、本部门及以下、本部门、本人四种数据范围");
+                && dataScope != DataScopeConstants.SELF
+                && dataScope != DataScopeConstants.CUSTOM) {
+            throw new IllegalArgumentException("当前版本仅支持全部、本部门及以下、本部门、本人、自定义部门五种数据范围");
+        }
+    }
+
+    private void saveCustomDeptScope(Long roleId, RoleSaveRequest request) {
+        baseMapper.deleteRoleDeptByRoleId(roleId);
+        if (request.getDataScope() != DataScopeConstants.CUSTOM) {
+            return;
+        }
+        List<Long> customDeptIds = normalizeCustomDeptIds(request.getCustomDeptIds());
+        validateCustomDeptIds(customDeptIds);
+        baseMapper.batchInsertRoleDept(roleId, customDeptIds);
+    }
+
+    private List<Long> normalizeCustomDeptIds(List<Long> customDeptIds) {
+        if (customDeptIds == null || customDeptIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return customDeptIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    private void validateCustomDeptIds(List<Long> customDeptIds) {
+        if (customDeptIds.isEmpty()) {
+            throw new IllegalArgumentException("自定义部门数据范围至少选择一个部门");
+        }
+        Set<Long> validDeptIds = new LinkedHashSet<>();
+        collectDeptIds(deptService.listDeptTree(), validDeptIds);
+        if (!validDeptIds.containsAll(customDeptIds)) {
+            throw new IllegalArgumentException("自定义部门数据范围包含无效部门");
+        }
+    }
+
+    private void collectDeptIds(List<DeptTreeNode> nodes, Set<Long> deptIds) {
+        for (DeptTreeNode node : nodes) {
+            deptIds.add(node.getId());
+            collectDeptIds(node.getChildren(), deptIds);
         }
     }
 
