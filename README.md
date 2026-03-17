@@ -37,6 +37,7 @@ jianqing
 工作区级 planning / memory 规范见：
 
 - `PLANNING_MEMORY_CONVENTIONS.md`
+- `MEMORIX_WORKFLOW.md`
 
 ## AI Prompt 模版
 
