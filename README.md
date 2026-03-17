@@ -18,13 +18,25 @@ jianqing
 
 ## 上下文恢复
 
-两个子项目都已维护独立规划文件：
+两个子项目当前均维护：
 
+- `current_state.md`
 - `task_plan.md`
+- `backlog.md`
+- `decisions.md`
 - `findings.md`
 - `progress.md`
 
-新开窗口时，先让 AI 读取当前目录下这三份文件，即可在上次基础上继续开发。
+推荐恢复顺序：
+
+1. 优先读取目标侧 `current_state.md`
+2. 若需要任务状态，读取 `backlog.md`
+3. 若需要关键决策，读取 `decisions.md`
+4. 若仍不足，再按需读取 `task_plan.md / findings.md / progress.md`
+
+工作区级 planning / memory 规范见：
+
+- `PLANNING_MEMORY_CONVENTIONS.md`
 
 ## AI Prompt 模版
 
@@ -49,6 +61,6 @@ jianqing
 
 工作区内已配置 `AGENTS.md`，AI 会默认执行续开发协议：
 
-- 自动读取前后端 `task_plan.md / findings.md / progress.md`
+- 优先读取前后端 `current_state.md`
 - 自动总结当前阶段与下一步
-- 自动按未完成项继续推进
+- 仅在需要时再展开读取更深 planning 文件

@@ -5,13 +5,11 @@
 ## 使用原则
 
 - 硬规则以 `AGENTS.md` 为准。
-- 执行上下文以两端三文件为准：
-  - `jianqing-backend/task_plan.md`
-  - `jianqing-backend/findings.md`
-  - `jianqing-backend/progress.md`
-  - `jianqing-admin-web/task_plan.md`
-  - `jianqing-admin-web/findings.md`
-  - `jianqing-admin-web/progress.md`
+- 执行上下文优先按工作区分层规范读取：
+  - 默认先读目标侧 `current_state.md`
+  - 任务状态优先看 `backlog.md`
+  - 关键 why 优先看 `decisions.md`
+  - 仅在需要时再展开 `task_plan.md / findings.md / progress.md`
 - Prompt 中只写本轮任务目标，不重复粘贴大段历史信息。
 
 ## 模版选择速查表
@@ -33,15 +31,15 @@
 
 1) 先读取并遵循：
 - AGENTS.md
-- 后端三文件：task_plan.md / findings.md / progress.md
-- 前端三文件：task_plan.md / findings.md / progress.md
+- 目标侧 `current_state.md`
+- 若摘要不足，再按需读取 `backlog.md / decisions.md / task_plan.md / findings.md / progress.md`
 
 2) 必须遵守：
 - 后端遵循阿里巴巴 Java 开发规范
 - 实现优先简单直接、可读、可维护
 - 关键分支/复杂流程/边界处理写必要注释
 - 前后端接口方法仅允许 GET/POST，不使用 PUT/DELETE
-- 涉及跨前后端改动时，同步更新两端 planning 文件
+- 涉及跨前后端改动时，同步更新两端相关 planning / memory 文件
 
 3) 本次任务：
 <在这里写本轮目标>
@@ -60,7 +58,8 @@
 你现在负责简擎接口改造任务。请严格执行：
 
 1) 启动阶段
-- 读取 AGENTS.md + 前后端三文件
+- 读取 AGENTS.md + 目标侧 `current_state.md`
+- 若接口改造涉及任务状态、历史决策或阶段上下文，再按需读取 `backlog.md / decisions.md / task_plan.md / findings.md / progress.md`
 - 全量扫描接口定义与前端调用（先查后改）
 - 先输出改造清单（按“后端路由/前端调用/文档”分组）
 
@@ -85,7 +84,7 @@
 - 风险点
 - 修改文件清单
 - 验证结果
-- 对 planning 文件的同步说明
+- 对 planning / memory 文件的同步说明
 ```
 
 ---
@@ -97,7 +96,7 @@
 
 [规范与一致性]
 - AGENTS.md 规则是否全部满足
-- 前后端 planning 文件是否与当前代码一致
+- 前后端 planning / memory 文件是否与当前代码一致
 - 是否仍满足“接口仅 GET/POST”约束
 
 [后端质量]
@@ -138,7 +137,8 @@
 
 1) 先读取上下文
 - AGENTS.md
-- 前后端三文件（task_plan.md / findings.md / progress.md）
+- 目标侧 `current_state.md`
+- 若摘要不足，再按需读取 `backlog.md / decisions.md / task_plan.md / findings.md / progress.md`
 
 2) 先复现，后修复
 - 先明确：现象、触发条件、预期结果、实际结果
@@ -168,7 +168,7 @@
 - 修改清单（文件 + 关键点）
 - 验证结果（复现前后对比）
 - 风险与后续观察点
-- planning 文件同步结果
+- planning / memory 文件同步结果
 ```
 
 ---
@@ -186,7 +186,8 @@
 
 1) 读取上下文
 - AGENTS.md
-- 前后端三文件（task_plan.md / findings.md / progress.md）
+- 目标侧 `current_state.md`
+- 若摘要不足，再按需读取 `backlog.md / decisions.md / task_plan.md / findings.md / progress.md`
 
 2) 需求澄清（先问清再做）
 - 业务目标是什么（为什么做）
@@ -206,7 +207,7 @@
 - 命名语义直白，可读性优先
 - 接口方法仅允许 GET/POST，不新增 PUT/DELETE
 - 关键分支/边界处理写必要注释
-- 跨前后端变更需同步两端 planning 文件
+- 跨前后端变更需同步两端相关 planning / memory 文件
 
 5) 交付物
 - 技术方案（后端/前端/接口/数据影响）
@@ -233,7 +234,8 @@
 
 1) 读取上下文
 - AGENTS.md
-- 前后端三文件（task_plan.md / findings.md / progress.md）
+- 目标侧 `current_state.md`
+- 若摘要不足，再按需读取 `backlog.md / decisions.md / task_plan.md / findings.md / progress.md`
 - 现有 SQL：初始化脚本与 patch 脚本目录
 
 2) 变更评审
@@ -264,7 +266,7 @@
 - SQL 清单（初始化/patch 分别列出）
 - 兼容性说明（新库/旧库）
 - 回滚方案
-- planning 文件同步结果
+- planning / memory 文件同步结果
 ```
 
 ---
@@ -282,7 +284,8 @@
 
 1) 读取上下文
 - AGENTS.md
-- 前后端三文件（task_plan.md / findings.md / progress.md）
+- 目标侧 `current_state.md`
+- 若摘要不足，再按需读取 `backlog.md / decisions.md / task_plan.md / findings.md / progress.md`
 - 权限相关代码与 SQL（用户/角色/菜单/角色菜单/用户角色）
 
 2) 变更盘点
@@ -314,7 +317,7 @@
 - 修改清单（后端/前端/SQL）
 - 验证结果（按角色列出）
 - 风险与回滚方案
-- planning 文件同步结果
+- planning / memory 文件同步结果
 ```
 
 ---

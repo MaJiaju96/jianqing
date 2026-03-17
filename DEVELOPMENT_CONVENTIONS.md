@@ -137,9 +137,10 @@
 
 - **MUST**：涉及接口/架构/规范变更，必须同步更新：
   - `README.md`
-  - `task_plan.md`
-  - `findings.md`
-  - `progress.md`
+  - 相关侧 `current_state.md`
+  - 相关 planning / memory 文档（如 `task_plan.md`、`findings.md`、`progress.md`、`backlog.md`、`decisions.md`）
+
+- **MUST**：planning / memory 文件职责遵循 `PLANNING_MEMORY_CONVENTIONS.md`，禁止同一状态在多个文件重复维护。
 
 ---
 
@@ -200,3 +201,4 @@
 2. **非跨端任务禁止默认加载双端 planning 文件**。
 3. **先最小读取，再按需扩展**：先读目标模块文件，再读依赖文件，避免全仓大范围扫描。
 4. 规范查询优先读子规范文件（前端/后端），统一规范仅作总览入口。
+5. 上下文恢复优先读取 `current_state.md`，再按需展开 `backlog.md / decisions.md / task_plan.md / findings.md / progress.md`。
