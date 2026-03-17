@@ -25,12 +25,17 @@ class GeneratorMenuInitializerTest {
     @Test
     void shouldCreateGeneratorMenusAndBindAdminRole() throws Exception {
         GeneratorMenuInitializer initializer = new GeneratorMenuInitializer(jdbcTemplate);
+        when(jdbcTemplate.query(eq("SELECT id FROM jq_sys_menu WHERE route_path = ? AND menu_type = 1 AND is_deleted = 0 ORDER BY id ASC LIMIT 1"), any(ResultSetExtractor.class), eq("/dev-tools")))
+                .thenReturn(null)
+                .thenReturn(9L);
         when(jdbcTemplate.query(eq("SELECT id FROM jq_sys_menu WHERE perms = ? AND is_deleted = 0 ORDER BY id ASC LIMIT 1"), any(ResultSetExtractor.class), eq("system:generator:list")))
                 .thenReturn(null)
                 .thenReturn(10L);
         when(jdbcTemplate.query(eq("SELECT id FROM jq_sys_menu WHERE perms = ? AND is_deleted = 0 ORDER BY id ASC LIMIT 1"), any(ResultSetExtractor.class), eq("system:generator:query")))
                 .thenReturn(null)
                 .thenReturn(11L);
+        when(jdbcTemplate.queryForObject(eq("SELECT COUNT(1) FROM jq_sys_role_menu WHERE role_id = ? AND menu_id = ?"), eq(Integer.class), eq(1L), eq(9L)))
+                .thenReturn(0);
         when(jdbcTemplate.queryForObject(eq("SELECT COUNT(1) FROM jq_sys_role_menu WHERE role_id = ? AND menu_id = ?"), eq(Integer.class), eq(1L), eq(10L)))
                 .thenReturn(0);
         when(jdbcTemplate.queryForObject(eq("SELECT COUNT(1) FROM jq_sys_role_menu WHERE role_id = ? AND menu_id = ?"), eq(Integer.class), eq(1L), eq(11L)))
@@ -40,11 +45,16 @@ class GeneratorMenuInitializerTest {
 
         InOrder inOrder = inOrder(jdbcTemplate);
         inOrder.verify(jdbcTemplate).update(eq("INSERT INTO jq_sys_menu (parent_id, menu_type, menu_name, route_path, component, perms, icon, sort_no, visible, status, is_deleted, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-                eq(1L), eq(2), eq("代码生成"), eq("generator"), eq("system/generator/index"), eq("system:generator:list"),
-                eq("MagicStick"), eq(7), eq(1), eq(1), eq(0), eq(1L), eq(1L));
+                eq(0L), eq(1), eq("开发工具"), eq("/dev-tools"), eq("Layout"), eq(""),
+                eq("MagicStick"), eq(18), eq(1), eq(1), eq(0), eq(1L), eq(1L));
         inOrder.verify(jdbcTemplate).update(eq("INSERT INTO jq_sys_menu (parent_id, menu_type, menu_name, route_path, component, perms, icon, sort_no, visible, status, is_deleted, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+                eq(0L), eq(2), eq("代码生成"), eq("generator"), eq("system/generator/index"), eq("system:generator:list"),
+                eq("MagicStick"), eq(1), eq(1), eq(1), eq(0), eq(1L), eq(1L));
+        verify(jdbcTemplate).update("UPDATE jq_sys_menu SET parent_id = ?, sort_no = ? WHERE id = ?", 9L, 1, 10L);
+        verify(jdbcTemplate).update(eq("INSERT INTO jq_sys_menu (parent_id, menu_type, menu_name, route_path, component, perms, icon, sort_no, visible, status, is_deleted, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
                 eq(10L), eq(3), eq("代码生成查询"), eq(""), eq(""), eq("system:generator:query"),
                 eq(""), eq(1), eq(1), eq(1), eq(0), eq(1L), eq(1L));
+        verify(jdbcTemplate).update("INSERT INTO jq_sys_role_menu (role_id, menu_id) VALUES (?, ?)", 1L, 9L);
         verify(jdbcTemplate).update("INSERT INTO jq_sys_role_menu (role_id, menu_id) VALUES (?, ?)", 1L, 10L);
         verify(jdbcTemplate).update("INSERT INTO jq_sys_role_menu (role_id, menu_id) VALUES (?, ?)", 1L, 11L);
     }
@@ -52,10 +62,14 @@ class GeneratorMenuInitializerTest {
     @Test
     void shouldSkipMenuCreationWhenAlreadyExists() throws Exception {
         GeneratorMenuInitializer initializer = new GeneratorMenuInitializer(jdbcTemplate);
+        when(jdbcTemplate.query(eq("SELECT id FROM jq_sys_menu WHERE route_path = ? AND menu_type = 1 AND is_deleted = 0 ORDER BY id ASC LIMIT 1"), any(ResultSetExtractor.class), eq("/dev-tools")))
+                .thenReturn(9L);
         when(jdbcTemplate.query(eq("SELECT id FROM jq_sys_menu WHERE perms = ? AND is_deleted = 0 ORDER BY id ASC LIMIT 1"), any(ResultSetExtractor.class), eq("system:generator:list")))
                 .thenReturn(10L);
         when(jdbcTemplate.query(eq("SELECT id FROM jq_sys_menu WHERE perms = ? AND is_deleted = 0 ORDER BY id ASC LIMIT 1"), any(ResultSetExtractor.class), eq("system:generator:query")))
                 .thenReturn(11L);
+        when(jdbcTemplate.queryForObject(eq("SELECT COUNT(1) FROM jq_sys_role_menu WHERE role_id = ? AND menu_id = ?"), eq(Integer.class), eq(1L), eq(9L)))
+                .thenReturn(1);
         when(jdbcTemplate.queryForObject(eq("SELECT COUNT(1) FROM jq_sys_role_menu WHERE role_id = ? AND menu_id = ?"), eq(Integer.class), eq(1L), eq(10L)))
                 .thenReturn(1);
         when(jdbcTemplate.queryForObject(eq("SELECT COUNT(1) FROM jq_sys_role_menu WHERE role_id = ? AND menu_id = ?"), eq(Integer.class), eq(1L), eq(11L)))

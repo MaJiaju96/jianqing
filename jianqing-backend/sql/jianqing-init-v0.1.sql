@@ -303,8 +303,10 @@ VALUES
 (1, 2, '角色管理', 'role', 'system/role/index', 'system:role:list', 'Avatar', 2, 1, 1, 0, 1, 1),
 (1, 2, '菜单管理', 'menu', 'system/menu/index', 'system:menu:list', 'Menu', 3, 1, 1, 0, 1, 1),
 (1, 2, '部门管理', 'dept', 'system/dept/index', 'system:dept:list', 'OfficeBuilding', 4, 1, 1, 0, 1, 1),
-(1, 2, '字典管理', 'dict', 'system/dict/index', 'system:dict:list', 'CollectionTag', 5, 1, 1, 0, 1, 1),
-(1, 2, '参数设置', 'config', 'system/config/index', 'system:config:list', 'Tools', 6, 1, 1, 0, 1, 1),
+(0, 1, '参数管理', '/settings', 'Layout', '', 'Tools', 15, 1, 1, 0, 1, 1),
+
+(6, 2, '参数设置', 'config', 'system/config/index', 'system:config:list', 'Tools', 1, 1, 1, 0, 1, 1),
+(6, 2, '字典管理', 'dict', 'system/dict/index', 'system:dict:list', 'CollectionTag', 2, 1, 1, 0, 1, 1),
 
 (2, 3, '用户查询', '', '', 'system:user:query', '', 1, 1, 1, 0, 1, 1),
 (2, 3, '用户新增', '', '', 'system:user:add', '', 2, 1, 1, 0, 1, 1),
@@ -316,27 +318,28 @@ VALUES
 (3, 3, '角色修改', '', '', 'system:role:edit', '', 3, 1, 1, 0, 1, 1),
 (3, 3, '角色删除', '', '', 'system:role:remove', '', 4, 1, 1, 0, 1, 1),
 
-(6, 3, '字典查询', '', '', 'system:dict:query', '', 1, 1, 1, 0, 1, 1),
-(6, 3, '字典新增', '', '', 'system:dict:add', '', 2, 1, 1, 0, 1, 1),
-(6, 3, '字典修改', '', '', 'system:dict:edit', '', 3, 1, 1, 0, 1, 1),
-(6, 3, '字典删除', '', '', 'system:dict:remove', '', 4, 1, 1, 0, 1, 1),
-(6, 3, '字典数据新增', '', '', 'system:dict-data:add', '', 5, 1, 1, 0, 1, 1),
-(6, 3, '字典数据修改', '', '', 'system:dict-data:edit', '', 6, 1, 1, 0, 1, 1),
-(6, 3, '字典数据删除', '', '', 'system:dict-data:remove', '', 7, 1, 1, 0, 1, 1),
+(8, 3, '字典查询', '', '', 'system:dict:query', '', 1, 1, 1, 0, 1, 1),
+(8, 3, '字典新增', '', '', 'system:dict:add', '', 2, 1, 1, 0, 1, 1),
+(8, 3, '字典修改', '', '', 'system:dict:edit', '', 3, 1, 1, 0, 1, 1),
+(8, 3, '字典删除', '', '', 'system:dict:remove', '', 4, 1, 1, 0, 1, 1),
+(8, 3, '字典数据新增', '', '', 'system:dict-data:add', '', 5, 1, 1, 0, 1, 1),
+(8, 3, '字典数据修改', '', '', 'system:dict-data:edit', '', 6, 1, 1, 0, 1, 1),
+(8, 3, '字典数据删除', '', '', 'system:dict-data:remove', '', 7, 1, 1, 0, 1, 1),
 
 (7, 3, '参数查询', '', '', 'system:config:query', '', 1, 1, 1, 0, 1, 1),
 (7, 3, '参数新增', '', '', 'system:config:add', '', 2, 1, 1, 0, 1, 1),
 (7, 3, '参数修改', '', '', 'system:config:edit', '', 3, 1, 1, 0, 1, 1),
 (7, 3, '参数删除', '', '', 'system:config:remove', '', 4, 1, 1, 0, 1, 1),
 
-(0, 1, '审计日志', '/audit', 'Layout', '', 'Document', 20, 1, 1, 0, 1, 1),
-(16, 2, '操作日志', 'oper-logs', 'audit/oper/index', 'audit:oper-log:list', 'List', 1, 1, 1, 0, 1, 1),
-(16, 2, '登录日志', 'login-logs', 'audit/login/index', 'audit:login-log:list', 'Tickets', 2, 1, 1, 0, 1, 1),
-(17, 3, '操作日志查询', '', '', 'audit:oper-log:query', '', 1, 1, 1, 0, 1, 1),
-(18, 3, '登录日志查询', '', '', 'audit:login-log:query', '', 1, 1, 1, 0, 1, 1),
+(0, 1, '开发工具', '/dev-tools', 'Layout', '', 'MagicStick', 18, 1, 1, 0, 1, 1),
+(22, 2, '代码生成', 'generator', 'system/generator/index', 'system:generator:list', 'MagicStick', 1, 1, 1, 0, 1, 1),
+(23, 3, '代码生成查询', '', '', 'system:generator:query', '', 1, 1, 1, 0, 1, 1),
 
-(1, 2, '代码生成', 'generator', 'system/generator/index', 'system:generator:list', 'MagicStick', 7, 1, 1, 0, 1, 1),
-(19, 3, '代码生成查询', '', '', 'system:generator:query', '', 1, 1, 1, 0, 1, 1);
+(0, 1, '审计日志', '/audit', 'Layout', '', 'Document', 20, 1, 1, 0, 1, 1),
+(25, 2, '操作日志', 'oper-logs', 'audit/oper/index', 'audit:oper-log:list', 'List', 1, 1, 1, 0, 1, 1),
+(25, 2, '登录日志', 'login-logs', 'audit/login/index', 'audit:login-log:list', 'Tickets', 2, 1, 1, 0, 1, 1),
+(26, 3, '操作日志查询', '', '', 'audit:oper-log:query', '', 1, 1, 1, 0, 1, 1),
+(27, 3, '登录日志查询', '', '', 'audit:login-log:query', '', 1, 1, 1, 0, 1, 1);
 
 INSERT INTO jq_sys_role_menu (role_id, menu_id)
 SELECT 1, id FROM jq_sys_menu;

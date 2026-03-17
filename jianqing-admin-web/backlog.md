@@ -2,6 +2,13 @@
 
 ## Active
 
+- [FE-MENU-001] 侧边栏菜单分组整理
+  Status: done
+  Regression: verified
+  Priority: high
+  Phase: 50
+  Ref: current_state.md
+
 - [FE-DATA-001] 配合后端完成 CUSTOM 数据范围前端配置闭环
   Status: done
   Regression: verified

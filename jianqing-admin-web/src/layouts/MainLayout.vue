@@ -8,11 +8,17 @@
           <template #title>系统管理</template>
           <el-menu-item v-if="canViewUsers" index="/system/users">用户管理</el-menu-item>
           <el-menu-item v-if="canViewDepts" index="/system/depts">部门管理</el-menu-item>
+          <el-menu-item v-if="canViewRoles" index="/system/roles">角色管理</el-menu-item>
+          <el-menu-item v-if="canViewMenus" index="/system/menus">菜单管理</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu v-if="showSettingsMenu" index="/settings">
+          <template #title>参数管理</template>
           <el-menu-item v-if="canViewConfigs" index="/system/config">参数设置</el-menu-item>
           <el-menu-item v-if="canViewDicts" index="/system/dicts">字典管理</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu v-if="showDevMenu" index="/dev-tools">
+          <template #title>开发工具</template>
           <el-menu-item v-if="canViewGenerator" index="/system/generator">代码生成</el-menu-item>
-          <el-menu-item v-if="canViewRoles" index="/system/roles">角色管理</el-menu-item>
-          <el-menu-item v-if="canViewMenus" index="/system/menus">菜单权限</el-menu-item>
         </el-sub-menu>
         <el-sub-menu v-if="showAuditMenu" index="/audit">
           <template #title>审计日志</template>
@@ -74,13 +80,13 @@ const currentThemeLabel = computed(() => {
   const current = themes.find((theme) => theme.key === currentTheme.value);
   return current ? current.label : '午夜蓝';
 });
-  const {
-    canViewUsers,
-    canViewDepts,
-    canViewConfigs,
-    canViewDicts,
-   canViewGenerator,
-   canViewRoles,
+const {
+  canViewUsers,
+  canViewDepts,
+  canViewConfigs,
+  canViewDicts,
+  canViewGenerator,
+  canViewRoles,
   canViewMenus,
   canViewOperLogs,
   canViewLoginLogs
@@ -95,7 +101,9 @@ const currentThemeLabel = computed(() => {
   canViewOperLogs: 'audit:oper-log:list',
   canViewLoginLogs: 'audit:login-log:list'
 });
-const showSystemMenu = computed(() => canViewUsers.value || canViewDepts.value || canViewConfigs.value || canViewDicts.value || canViewGenerator.value || canViewRoles.value || canViewMenus.value);
+const showSettingsMenu = computed(() => canViewConfigs.value || canViewDicts.value);
+const showDevMenu = computed(() => canViewGenerator.value);
+const showSystemMenu = computed(() => canViewUsers.value || canViewDepts.value || canViewRoles.value || canViewMenus.value);
 const showAuditMenu = computed(() => canViewOperLogs.value || canViewLoginLogs.value);
 
 function handleThemeChange(themeKey) {

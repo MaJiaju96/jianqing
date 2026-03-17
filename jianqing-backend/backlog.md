@@ -2,6 +2,13 @@
 
 ## Active
 
+- [BE-MENU-001] 系统菜单层级整理与初始化迁移
+  Status: done
+  Regression: verified
+  Priority: high
+  Phase: 54
+  Ref: current_state.md
+
 - [BE-DATA-001] CUSTOM 数据范围后端最小闭环
   Status: done
   Regression: verified

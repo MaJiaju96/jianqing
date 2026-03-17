@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GeneratorMenuInitializer implements ApplicationRunner {
 
+    private static final String DEV_ROOT_ROUTE = "/dev-tools";
     private static final String GENERATOR_LIST_PERMS = "system:generator:list";
     private static final String GENERATOR_QUERY_PERMS = "system:generator:query";
 
@@ -19,15 +20,31 @@ public class GeneratorMenuInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        Long devRootId = ensureDevRootMenu();
+        if (devRootId == null) {
+            return;
+        }
         Long generatorMenuId = ensureGeneratorListMenu();
         if (generatorMenuId == null) {
             return;
         }
+        bindAdminRole(devRootId);
+        moveMenuToRoot(generatorMenuId, devRootId, 1);
         Long generatorQueryMenuId = ensureGeneratorQueryMenu(generatorMenuId);
         bindAdminRole(generatorMenuId);
         if (generatorQueryMenuId != null) {
             bindAdminRole(generatorQueryMenuId);
         }
+    }
+
+    private Long ensureDevRootMenu() {
+        Long menuId = findMenuIdByRoutePath(DEV_ROOT_ROUTE);
+        if (menuId != null) {
+            return menuId;
+        }
+        jdbcTemplate.update("INSERT INTO jq_sys_menu (parent_id, menu_type, menu_name, route_path, component, perms, icon, sort_no, visible, status, is_deleted, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                0L, 1, "开发工具", DEV_ROOT_ROUTE, "Layout", "", "MagicStick", 18, 1, 1, 0, 1L, 1L);
+        return findMenuIdByRoutePath(DEV_ROOT_ROUTE);
     }
 
     private Long ensureGeneratorListMenu() {
@@ -36,8 +53,8 @@ public class GeneratorMenuInitializer implements ApplicationRunner {
             return menuId;
         }
         jdbcTemplate.update("INSERT INTO jq_sys_menu (parent_id, menu_type, menu_name, route_path, component, perms, icon, sort_no, visible, status, is_deleted, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                1L, 2, "代码生成", "generator", "system/generator/index", GENERATOR_LIST_PERMS,
-                "MagicStick", 7, 1, 1, 0, 1L, 1L);
+                0L, 2, "代码生成", "generator", "system/generator/index", GENERATOR_LIST_PERMS,
+                "MagicStick", 1, 1, 1, 0, 1L, 1L);
         return findMenuIdByPerms(GENERATOR_LIST_PERMS);
     }
 
@@ -60,6 +77,17 @@ public class GeneratorMenuInitializer implements ApplicationRunner {
             return;
         }
         jdbcTemplate.update("INSERT INTO jq_sys_role_menu (role_id, menu_id) VALUES (?, ?)", 1L, menuId);
+    }
+
+    private void moveMenuToRoot(Long menuId, Long parentId, int sortNo) {
+        jdbcTemplate.update("UPDATE jq_sys_menu SET parent_id = ?, sort_no = ? WHERE id = ?", parentId, sortNo, menuId);
+    }
+
+    private Long findMenuIdByRoutePath(String routePath) {
+        return jdbcTemplate.query(
+                "SELECT id FROM jq_sys_menu WHERE route_path = ? AND menu_type = 1 AND is_deleted = 0 ORDER BY id ASC LIMIT 1",
+                resultSet -> resultSet.next() ? resultSet.getLong(1) : null,
+                routePath);
     }
 
     private Long findMenuIdByPerms(String perms) {
