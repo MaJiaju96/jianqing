@@ -10,6 +10,9 @@ jianqing-admin-web/.ai-logs/
 # backend
 jianqing-backend/target/
 jianqing-backend/.idea/
+jianqing-backend/.classpath
+jianqing-backend/.project
+jianqing-backend/.settings/
 jianqing-backend/.ai-logs/
 jianqing-backend/src/main/resources/application-local.yml
 
@@ -22,3 +25,6 @@ jianqing-backend/src/main/resources/application-local.yml
 .opencode/package.json
 .opencode/bun.lock
 .opencode/.gitignore
+
+# local analysis outputs
+token-usage-output.txt
