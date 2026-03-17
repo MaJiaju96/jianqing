@@ -125,9 +125,10 @@ public class RoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impleme
             throw new IllegalArgumentException("数据范围不能为空");
         }
         if (dataScope != DataScopeConstants.ALL
+                && dataScope != DataScopeConstants.DEPT_AND_CHILD
                 && dataScope != DataScopeConstants.DEPT
                 && dataScope != DataScopeConstants.SELF) {
-            throw new IllegalArgumentException("当前版本仅支持全部、本部门、本人三种数据范围");
+            throw new IllegalArgumentException("当前版本仅支持全部、本部门及以下、本部门、本人四种数据范围");
         }
     }
 

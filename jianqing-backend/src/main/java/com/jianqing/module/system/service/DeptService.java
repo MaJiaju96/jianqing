@@ -11,6 +11,8 @@ public interface DeptService extends IService<SysDept> {
 
     List<DeptTreeNode> listDeptTree();
 
+    List<Long> listSelfAndDescendantDeptIds(Long deptId);
+
     DeptTreeNode createDept(DeptSaveRequest request);
 
     DeptTreeNode updateDept(Long id, DeptSaveRequest request);

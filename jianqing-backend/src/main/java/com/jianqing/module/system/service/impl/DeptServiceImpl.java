@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,21 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
     @Override
     public List<DeptTreeNode> listDeptTree() {
         return buildDeptTree(baseMapper.selectAllEnabledDepts());
+    }
+
+    @Override
+    public List<Long> listSelfAndDescendantDeptIds(Long deptId) {
+        if (deptId == null || deptId <= 0L) {
+            return Collections.emptyList();
+        }
+        List<SysDept> depts = baseMapper.selectAllEnabledDepts();
+        Map<Long, List<Long>> childrenMap = buildChildrenMap(depts);
+        if (!containsDept(depts, deptId)) {
+            return Collections.emptyList();
+        }
+        List<Long> deptIds = new ArrayList<>();
+        collectDeptIds(deptId, childrenMap, deptIds);
+        return deptIds;
     }
 
     @Override
@@ -115,6 +131,27 @@ public class DeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impleme
         }
         sortTree(roots);
         return roots;
+    }
+
+    private Map<Long, List<Long>> buildChildrenMap(List<SysDept> depts) {
+        Map<Long, List<Long>> childrenMap = new HashMap<>();
+        for (SysDept dept : depts) {
+            Long parentId = dept.getParentId() == null ? 0L : dept.getParentId();
+            childrenMap.computeIfAbsent(parentId, key -> new ArrayList<>()).add(dept.getId());
+        }
+        return childrenMap;
+    }
+
+    private boolean containsDept(List<SysDept> depts, Long deptId) {
+        return depts.stream().anyMatch(dept -> deptId.equals(dept.getId()));
+    }
+
+    private void collectDeptIds(Long deptId, Map<Long, List<Long>> childrenMap, List<Long> deptIds) {
+        deptIds.add(deptId);
+        List<Long> childIds = childrenMap.getOrDefault(deptId, Collections.emptyList());
+        for (Long childId : childIds) {
+            collectDeptIds(childId, childrenMap, deptIds);
+        }
     }
 
     private void sortTree(List<DeptTreeNode> nodes) {
