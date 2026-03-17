@@ -127,6 +127,7 @@ import {
   MENU_TYPE_DIRECTORY,
   MENU_TYPE_PAGE,
   DATA_SCOPE_ALL,
+  DATA_SCOPE_DEPT_AND_CHILD,
   DATA_SCOPE_DEPT,
   DATA_SCOPE_OPTIONS,
   DATA_SCOPE_SELF,
@@ -294,6 +295,9 @@ function filterAssignNode(value, data) {
 }
 
 function dataScopeText(dataScope) {
+  if (dataScope === DATA_SCOPE_DEPT_AND_CHILD) {
+    return '本部门及以下';
+  }
   if (dataScope === DATA_SCOPE_DEPT) {
     return '本部门';
   }

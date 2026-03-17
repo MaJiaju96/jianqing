@@ -674,6 +674,75 @@
   - `task_plan.md` (updated)
   - `findings.md` (updated)
   - `progress.md` (updated)
+
+### Phase 44: 角色页数据范围扩展到本部门及以下
+- **Status:** complete
+- Actions taken:
+  - 已在前端数据范围常量中新增 `DATA_SCOPE_DEPT_AND_CHILD = 2`，并补齐“本部门及以下数据”选项。
+  - 已更新角色页数据范围文案映射，确保列表与表单都能正确展示新范围。
+  - 已完成前端构建回归。
+- Files created/modified:
+  - `src/constants/app.js` (updated)
+  - `src/views/system/RolesView.vue` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 45: 角色页数据范围扩展真实回归
+- **Status:** complete
+- Actions taken:
+  - 已在真实浏览器中登录管理员并进入角色页，验证编辑弹窗出现“本部门及以下数据”选项。
+  - 已用既有 `dept_scope_role` 验证保存后列表文案切换为“本部门及以下”。
+  - 已在验证后将该角色恢复为“本部门数据”，并确认本轮控制台 warning/error = 0。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 46: 本部门及以下真实联调验证
+- **Status:** complete
+- Actions taken:
+  - 已结合真实后端确认当前部门树为“简擎总部 -> 外部协作部”，并以 `outside_user` 作为子部门可见样本。
+  - 已通过真实 API 临时创建树外根部门与树外用户，再以 `dept_user/test123` 验证 `DEPT_AND_CHILD` 下“子部门可见、树外不可见”。
+  - 已在联调结束后恢复 `dept_scope_role` 原始配置，并确认临时部门/用户已清理。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 47: 数据权限树形边界后端单测补强同步
+- **Status:** complete
+- Actions taken:
+  - 已同步记录后端新增的部门子树/树外边界单测结果，确保前端后续联调有稳定回归基线。
+  - 已确认本轮后端全量测试回归通过。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 48: dept_user 用户页真实回归
+- **Status:** complete
+- Actions taken:
+  - 已临时将 `dept_scope_role` 切到“本部门及以下”，并用 `dept_user/test123` 登录真实前端。
+  - 已验证用户页列表包含子部门用户 `outside_user`，总数为 6 条。
+  - 已确认控制台 warning/error = 0，并在回归后恢复 `dept_scope_role` 为“本部门数据”。
+- Files created/modified:
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
+
+### Phase 49: 上下文恢复降 token 优化同步
+- **Status:** complete
+- Actions taken:
+  - 已新增 `jianqing-admin-web/current_state.md`，沉淀当前阶段、最近完成、下一步任务与关键约束。
+  - 已同步工作区 `AGENTS.md` 的续开发协议：默认优先读取 `current_state.md`，只在需要历史决策时再展开完整 planning 文件。
+  - 已明确前端完整 planning 继续保留，但不再作为普通续开发场景的默认首读内容。
+- Files created/modified:
+  - `current_state.md` (new)
+  - `/Users/majiaju/Person/code/jianqing/AGENTS.md` (updated)
+  - `task_plan.md` (updated)
+  - `findings.md` (updated)
+  - `progress.md` (updated)
   - `StatusTag` 的文案与颜色已改为从字典映射读取，并保留前端兜底。
   - 已完成前端构建回归。
 - Files created/modified:
