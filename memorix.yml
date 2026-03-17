@@ -1,0 +1,24 @@
+embedding:
+  provider: off
+
+git:
+  autoHook: false
+  ingestOnCommit: true
+  maxDiffSize: 500
+  skipMergeCommits: true
+  excludePatterns:
+    - "*.lock"
+    - "dist/**"
+    - "node_modules/**"
+    - "coverage/**"
+
+behavior:
+  sessionInject: minimal
+  syncAdvisory: true
+  autoCleanup: true
+  formationMode: active
+
+server:
+  transport: stdio
+  dashboard: true
+  dashboardPort: 3210

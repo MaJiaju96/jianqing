@@ -16,3 +16,9 @@ jianqing-backend/src/main/resources/application-local.yml
 # env
 .env
 *.local
+
+# opencode plugin runtime
+.opencode/node_modules/
+.opencode/package.json
+.opencode/bun.lock
+.opencode/.gitignore
