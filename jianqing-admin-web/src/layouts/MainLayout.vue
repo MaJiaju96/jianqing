@@ -20,6 +20,11 @@
           <template #title>开发工具</template>
           <el-menu-item v-if="canViewGenerator" index="/system/generator">代码生成</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu v-if="showMessageCenterMenu" index="/messages">
+          <template #title>消息中心</template>
+          <el-menu-item index="/messages/mine">我的消息</el-menu-item>
+          <el-menu-item v-if="canViewNoticeManage" index="/messages/manage">通知管理</el-menu-item>
+        </el-sub-menu>
         <el-sub-menu v-if="showAuditMenu" index="/audit">
           <template #title>审计日志</template>
           <el-menu-item v-if="canViewOperLogs" index="/audit/oper-logs">操作日志</el-menu-item>
@@ -34,6 +39,32 @@
           <div class="jq-role">{{ rolesText }}</div>
         </div>
         <div class="jq-header-actions">
+          <el-dropdown trigger="click" @visible-change="handleNoticeVisibleChange">
+            <el-badge :value="unreadCount" :hidden="!unreadCount" class="notice-badge">
+              <el-button circle :icon="Bell" />
+            </el-badge>
+            <template #dropdown>
+              <el-dropdown-menu class="notice-dropdown-menu">
+                <div class="notice-dropdown-head">
+                  <span>最新消息</span>
+                  <el-button text size="small" @click="router.push('/messages/mine')">查看全部</el-button>
+                </div>
+                <div v-if="latestNotices.length" class="notice-dropdown-list">
+                  <div v-for="item in latestNotices" :key="item.noticeId" class="notice-dropdown-item" @click="openNotice(item.noticeId)">
+                    <div class="notice-dropdown-item__top">
+                      <span class="notice-dropdown-item__title">{{ item.title }}</span>
+                      <el-tag size="small" :type="levelTagType(item.level)">{{ levelText(item.level) }}</el-tag>
+                    </div>
+                    <div class="notice-dropdown-item__meta">
+                      <span>{{ item.publishedAt || '刚刚发布' }}</span>
+                      <span v-if="item.readStatus === 0" class="notice-dropdown-item__dot">未读</span>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="notice-dropdown-empty">暂无消息</div>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <el-dropdown trigger="click" @command="handleThemeChange">
             <el-button plain>主题：{{ currentThemeLabel }}</el-button>
             <template #dropdown>
@@ -60,18 +91,32 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { Bell } from '@element-plus/icons-vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { logout } from '../api/auth';
+import { fetchMyLatestNotices, fetchMyNoticeUnreadCount } from '../api/system';
+import { NOTICE_LEVEL_OPTIONS } from '../constants/app';
 import { authStore } from '../stores/auth';
 import { THEMES, themeStore } from '../stores/theme.js';
 import { usePermissionGroup } from '../composables/usePermissions';
+import { ignoreHandledError } from '../utils/errors';
 import { showSuccessMessage } from '../utils/feedback';
 
 const route = useRoute();
 const router = useRouter();
 
-const activePath = computed(() => route.path);
+const latestNotices = ref([]);
+const unreadCount = ref(0);
+const activePath = computed(() => {
+  if (route.path.startsWith('/messages/mine')) {
+    return '/messages/mine';
+  }
+  if (route.path.startsWith('/messages/manage')) {
+    return '/messages/manage';
+  }
+  return route.path;
+});
 const nickname = computed(() => authStore.profile?.nickname || authStore.profile?.username || '未登录');
 const rolesText = computed(() => (authStore.profile?.roles || []).join(' / ') || '暂无角色');
 const themes = THEMES;
@@ -86,6 +131,7 @@ const {
   canViewConfigs,
   canViewDicts,
   canViewGenerator,
+  canViewNoticeManage,
   canViewRoles,
   canViewMenus,
   canViewOperLogs,
@@ -96,6 +142,7 @@ const {
   canViewConfigs: 'system:config:list',
   canViewDicts: 'system:dict:list',
   canViewGenerator: 'system:generator:list',
+  canViewNoticeManage: 'system:notice:list',
   canViewRoles: 'system:role:list',
   canViewMenus: 'system:menu:list',
   canViewOperLogs: 'audit:oper-log:list',
@@ -103,6 +150,7 @@ const {
 });
 const showSettingsMenu = computed(() => canViewConfigs.value || canViewDicts.value);
 const showDevMenu = computed(() => canViewGenerator.value);
+const showMessageCenterMenu = computed(() => Boolean(authStore.profile));
 const showSystemMenu = computed(() => canViewUsers.value || canViewDepts.value || canViewRoles.value || canViewMenus.value);
 const showAuditMenu = computed(() => canViewOperLogs.value || canViewLoginLogs.value);
 
@@ -119,6 +167,41 @@ async function handleLogout() {
     router.replace('/login');
   }
 }
+
+function levelText(level) {
+  return NOTICE_LEVEL_OPTIONS.find((item) => item.value === level)?.label || level || '-';
+}
+
+function levelTagType(level) {
+  return NOTICE_LEVEL_OPTIONS.find((item) => item.value === level)?.tagType || 'info';
+}
+
+async function loadNoticePanel() {
+  if (!authStore.isLoggedIn()) {
+    return;
+  }
+  try {
+    const [count, latest] = await Promise.all([fetchMyNoticeUnreadCount(), fetchMyLatestNotices(5)]);
+    unreadCount.value = Number(count || 0);
+    latestNotices.value = latest || [];
+  } catch (error) {
+    ignoreHandledError(error);
+  }
+}
+
+function handleNoticeVisibleChange(visible) {
+  if (visible) {
+    loadNoticePanel();
+  }
+}
+
+function openNotice(noticeId) {
+  router.push(`/messages/mine/${noticeId}`);
+}
+
+watch(() => route.fullPath, () => {
+  loadNoticePanel();
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -208,6 +291,72 @@ async function handleLogout() {
   display: flex;
   gap: 10px;
   align-items: center;
+}
+
+.notice-badge {
+  display: inline-flex;
+}
+
+:deep(.notice-dropdown-menu) {
+  width: 340px;
+  padding: 0;
+}
+
+.notice-dropdown-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+  font-weight: 600;
+}
+
+.notice-dropdown-list {
+  max-height: 360px;
+  overflow: auto;
+  padding: 0 10px 10px;
+}
+
+.notice-dropdown-item {
+  padding: 10px 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.notice-dropdown-item:hover {
+  background: rgba(20, 74, 94, 0.07);
+}
+
+.notice-dropdown-item__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notice-dropdown-item__title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-dropdown-item__meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--jq-card-subtitle);
+}
+
+.notice-dropdown-item__dot {
+  color: #d9574a;
+  font-weight: 600;
+}
+
+.notice-dropdown-empty {
+  padding: 20px 14px;
+  text-align: center;
+  color: var(--jq-card-subtitle);
 }
 
 :deep(.el-dropdown-menu__item.is-current) {

@@ -47,6 +47,51 @@
         ORDER BY ur.user_id
     </select>
 
+    <select id="selectAllActiveUserIds" resultType="java.lang.Long">
+        SELECT id
+        FROM jq_sys_user
+        WHERE is_deleted = 0
+          AND status = 1
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectActiveUserIdsByRoleIds" resultType="java.lang.Long">
+        SELECT DISTINCT u.id
+        FROM jq_sys_user u
+        INNER JOIN jq_sys_user_role ur ON ur.user_id = u.id
+        WHERE u.is_deleted = 0
+          AND u.status = 1
+          AND ur.role_id IN
+        <foreach collection="roleIds" item="roleId" open="(" separator="," close=")">
+            #{roleId}
+        </foreach>
+        ORDER BY u.id ASC
+    </select>
+
+    <select id="selectActiveUserIdsByDeptIds" resultType="java.lang.Long">
+        SELECT id
+        FROM jq_sys_user
+        WHERE is_deleted = 0
+          AND status = 1
+          AND dept_id IN
+        <foreach collection="deptIds" item="deptId" open="(" separator="," close=")">
+            #{deptId}
+        </foreach>
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectExistingActiveUserIds" resultType="java.lang.Long">
+        SELECT id
+        FROM jq_sys_user
+        WHERE is_deleted = 0
+          AND status = 1
+          AND id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+        ORDER BY id ASC
+    </select>
+
     <insert id="batchInsertUserRole">
         INSERT INTO jq_sys_user_role (user_id, role_id)
         VALUES

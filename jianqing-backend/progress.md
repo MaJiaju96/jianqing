@@ -1,5 +1,36 @@
 # Progress Log
 
+## Session: 2026-03-17
+
+### Phase 55: 系统通知后端最小闭环
+- **Status:** in_progress
+- Actions taken:
+  - 新增系统通知 DTO、实体、Mapper、Service 与定时发布调度器。
+  - 在 `SystemController` / `SystemService` 中接入通知管理与我的消息接口。
+  - 补齐 `jq_sys_notice`、`jq_sys_notice_target`、`jq_sys_notice_user` 初始化 SQL 与 schema initializer。
+  - 完成 `NoticeServiceImplTest`、`NoticeSchemaInitializerTest` 回归验证。
+  - 补齐旧库兼容迁移：通知 schema initializer 现会补列并修正旧字段类型。
+  - 完成真实烟测：创建通知、发布、读取未读数、打开详情自动已读链路通过。
+  - 新增 `NoticeMenuInitializer`，补齐 `消息中心/我的消息/通知管理` 菜单与 `system:notice:*` 按钮权限初始化。
+  - 已在默认端口重启验证管理员权限与菜单树，确认消息中心入口已进入现网菜单体系。
+- Files created/modified:
+  - `src/main/java/com/jianqing/module/system/service/impl/NoticeServiceImpl.java` (created)
+  - `src/main/java/com/jianqing/module/system/service/impl/NoticePublishScheduler.java` (created)
+  - `src/main/java/com/jianqing/module/system/controller/SystemController.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/SystemService.java` (updated)
+  - `src/main/java/com/jianqing/module/system/service/impl/SystemServiceImpl.java` (updated)
+  - `src/main/java/com/jianqing/module/system/startup/NoticeSchemaInitializer.java` (created)
+  - `src/main/java/com/jianqing/module/system/mapper/SysNoticeMapper.java` (created)
+  - `src/main/java/com/jianqing/module/system/mapper/SysNoticeTargetMapper.java` (created)
+  - `src/main/java/com/jianqing/module/system/mapper/SysNoticeUserMapper.java` (created)
+  - `src/main/java/com/jianqing/module/system/mapper/SysUserMapper.java` (updated)
+  - `sql/jianqing-init-v0.1.sql` (updated)
+  - `src/test/java/com/jianqing/module/system/service/impl/NoticeServiceImplTest.java` (created)
+  - `src/test/java/com/jianqing/module/system/startup/NoticeSchemaInitializerTest.java` (created)
+  - `src/main/java/com/jianqing/module/system/startup/NoticeSchemaInitializer.java` (updated)
+  - `src/main/java/com/jianqing/module/system/startup/NoticeMenuInitializer.java` (created)
+  - `src/test/java/com/jianqing/module/system/startup/NoticeMenuInitializerTest.java` (created)
+
 ## Session: 2026-03-03
 
 ### Phase 1: 需求对齐与差异化定位

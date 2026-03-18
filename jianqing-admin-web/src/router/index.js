@@ -10,6 +10,9 @@ const DeptsView = () => import('../views/system/DeptsView.vue');
 const ConfigsView = () => import('../views/system/ConfigsView.vue');
 const DictsView = () => import('../views/system/DictsView.vue');
 const GeneratorView = () => import('../views/system/GeneratorView.vue');
+const MyNoticesView = () => import('../views/messages/MyNoticesView.vue');
+const MyNoticeDetailView = () => import('../views/messages/MyNoticeDetailView.vue');
+const NoticeManageView = () => import('../views/messages/NoticeManageView.vue');
 const UsersView = () => import('../views/system/UsersView.vue');
 const RolesView = () => import('../views/system/RolesView.vue');
 const MenusView = () => import('../views/system/MenusView.vue');
@@ -28,6 +31,9 @@ const routes = [
       { path: '/system/config', component: ConfigsView, meta: { perm: 'system:config:list' } },
       { path: '/system/dicts', component: DictsView, meta: { perm: 'system:dict:list' } },
       { path: '/system/generator', component: GeneratorView, meta: { perm: 'system:generator:list' } },
+      { path: '/messages/mine', component: MyNoticesView },
+      { path: '/messages/mine/:id', component: MyNoticeDetailView },
+      { path: '/messages/manage', component: NoticeManageView, meta: { perm: 'system:notice:list' } },
       { path: '/system/users', component: UsersView, meta: { perm: 'system:user:list' } },
       { path: '/system/roles', component: RolesView, meta: { perm: 'system:role:list' } },
       { path: '/system/menus', component: MenusView, meta: { perm: 'system:menu:list' } },

@@ -16,6 +16,11 @@ import com.jianqing.module.system.dto.DictTypeSaveRequest;
 import com.jianqing.module.system.dto.DictTypeSummary;
 import com.jianqing.module.system.dto.MenuTreeNode;
 import com.jianqing.module.system.dto.MenuSaveRequest;
+import com.jianqing.module.system.dto.MyNoticeDetailSummary;
+import com.jianqing.module.system.dto.MyNoticeSummary;
+import com.jianqing.module.system.dto.NoticeDetailSummary;
+import com.jianqing.module.system.dto.NoticeSaveRequest;
+import com.jianqing.module.system.dto.NoticeSummary;
 import com.jianqing.module.system.dto.IdListRequest;
 import com.jianqing.module.system.dto.RoleSaveRequest;
 import com.jianqing.module.system.dto.RoleSummary;
@@ -249,6 +254,80 @@ public class SystemController {
         return ApiResponse.success(systemService.listAllMenuTree());
     }
 
+    @GetMapping("/notices")
+    public ApiResponse<List<NoticeSummary>> notices() {
+        return ApiResponse.success(systemService.listNotices());
+    }
+
+    @GetMapping("/notices/{id}")
+    public ApiResponse<NoticeDetailSummary> noticeDetail(@PathVariable Long id) {
+        return ApiResponse.success(systemService.getNoticeDetail(id));
+    }
+
+    @PostMapping("/notices")
+    public ApiResponse<NoticeDetailSummary> createNotice(@Valid @RequestBody NoticeSaveRequest request) {
+        return ApiResponse.success(systemService.createNotice(request));
+    }
+
+    @PostMapping("/notices/{id}/update")
+    public ApiResponse<NoticeDetailSummary> updateNotice(@PathVariable Long id,
+                                                          @Valid @RequestBody NoticeSaveRequest request) {
+        return ApiResponse.success(systemService.updateNotice(id, request));
+    }
+
+    @PostMapping("/notices/{id}/publish")
+    public ApiResponse<NoticeDetailSummary> publishNotice(@PathVariable Long id) {
+        return ApiResponse.success(systemService.publishNotice(id));
+    }
+
+    @PostMapping("/notices/{id}/cancel")
+    public ApiResponse<NoticeDetailSummary> cancelNotice(@PathVariable Long id) {
+        return ApiResponse.success(systemService.cancelNotice(id));
+    }
+
+    @PostMapping("/notices/{id}/delete")
+    public ApiResponse<Void> deleteNotice(@PathVariable Long id) {
+        systemService.deleteNotice(id);
+        return ApiResponse.success(null);
+    }
+
+    @GetMapping("/my-notices")
+    public ApiResponse<List<MyNoticeSummary>> myNotices() {
+        return ApiResponse.success(systemService.listMyNotices(currentUserId()));
+    }
+
+    @GetMapping("/my-notices/unread-count")
+    public ApiResponse<Long> myNoticeUnreadCount() {
+        return ApiResponse.success(systemService.countUnreadNotices(currentUserId()));
+    }
+
+    @GetMapping("/my-notices/latest")
+    public ApiResponse<List<MyNoticeSummary>> myLatestNotices(@RequestParam(defaultValue = "5") Integer limit) {
+        return ApiResponse.success(systemService.listLatestNotices(currentUserId(), limit == null ? 5 : limit));
+    }
+
+    @GetMapping("/my-notices/popup-candidate")
+    public ApiResponse<List<MyNoticeSummary>> myPopupCandidates(@RequestParam(defaultValue = "3") Integer limit) {
+        return ApiResponse.success(systemService.listPopupCandidates(currentUserId(), limit == null ? 3 : limit));
+    }
+
+    @GetMapping("/my-notices/{id}")
+    public ApiResponse<MyNoticeDetailSummary> myNoticeDetail(@PathVariable Long id) {
+        return ApiResponse.success(systemService.getMyNoticeDetail(currentUserId(), id));
+    }
+
+    @PostMapping("/my-notices/{id}/read")
+    public ApiResponse<Void> markMyNoticeRead(@PathVariable Long id) {
+        systemService.markNoticeRead(currentUserId(), id);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/my-notices/read-all")
+    public ApiResponse<Void> markAllMyNoticeRead() {
+        systemService.markAllNoticesRead(currentUserId());
+        return ApiResponse.success(null);
+    }
+
     /** 查询当前用户可见菜单树。 */
     @GetMapping("/menus/tree")
     public ApiResponse<List<MenuTreeNode>> menuTree() {
@@ -277,5 +356,14 @@ public class SystemController {
     public ApiResponse<Void> deleteMenu(@PathVariable Long id) {
         systemService.deleteMenu(id);
         return ApiResponse.success(null);
+    }
+
+    private Long currentUserId() {
+        String username = SecurityUtils.currentUsername();
+        Long userId = systemService.findUserIdByUsername(username);
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("当前用户不存在");
+        }
+        return userId;
     }
 }

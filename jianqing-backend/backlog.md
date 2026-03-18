@@ -2,6 +2,20 @@
 
 ## Active
 
+- [BE-NOTICE-001] 系统通知后端最小闭环
+  Status: done
+  Regression: verified
+  Priority: high
+  Phase: 55
+  Ref: decisions.md#system-notice-先做站内通知最小闭环
+
+- [BE-NOTICE-002] 系统通知真实联调与菜单初始化补强
+  Status: not_started
+  Regression: pending
+  Priority: high
+  Phase: 55
+  Ref: current_state.md
+
 - [BE-MENU-001] 系统菜单层级整理与初始化迁移
   Status: done
   Regression: verified

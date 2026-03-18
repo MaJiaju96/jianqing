@@ -2,6 +2,13 @@
 
 ## Active
 
+- [FE-NOTICE-001] 系统通知前端最小闭环
+  Status: in_progress
+  Regression: pending
+  Priority: high
+  Phase: 51
+  Ref: decisions.md#system-notice-前端先做统一消息中心闭环
+
 - [FE-MENU-001] 侧边栏菜单分组整理
   Status: done
   Regression: verified

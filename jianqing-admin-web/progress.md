@@ -80,6 +80,25 @@
 - 已补一轮失败场景体验收口：audit/system/dashboard 页面在接口失败后不再额外抛出未处理 Promise 警告，loading 可恢复，页面仍可继续操作。
 - 已修复非 admin 账号登录后的 dashboard 401 噪音：统计卡片改为按权限加载，`outside_user` 登录后展示“用户规模 6 / 角色数量 -- / 菜单节点 --”，且无新增错误提示噪音。
 
+## Session: 2026-03-18
+
+### Phase 51: 系统通知前端最小闭环
+- **Status:** in_progress
+- Actions taken:
+  - 新增消息中心路由、通知 API 常量与前端消息页骨架。
+  - 完成 `我的消息` 列表/详情、`通知管理` 页、头部铃铛最新消息面板、首页首次提醒弹窗。
+  - 收口通知管理页权限显隐、表单校验与目标/定时字段联动清理。
+  - 完成前端构建验证，并基于真实后端通知数据验证未读数与详情已读闭环。
+- Files created/modified:
+  - `src/api/system.js` (updated)
+  - `src/constants/app.js` (updated)
+  - `src/router/index.js` (updated)
+  - `src/layouts/MainLayout.vue` (updated)
+  - `src/views/DashboardView.vue` (updated)
+  - `src/views/messages/MyNoticesView.vue` (created)
+  - `src/views/messages/MyNoticeDetailView.vue` (created)
+  - `src/views/messages/NoticeManageView.vue` (created)
+
 ## Test Results
 | Test | Input | Expected | Actual | Status |
 |------|-------|----------|--------|--------|

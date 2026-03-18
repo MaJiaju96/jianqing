@@ -22,5 +22,13 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
     List<Long> selectUserIdsByMenuId(@Param("menuId") Long menuId);
 
+    List<Long> selectAllActiveUserIds();
+
+    List<Long> selectActiveUserIdsByRoleIds(@Param("roleIds") List<Long> roleIds);
+
+    List<Long> selectActiveUserIdsByDeptIds(@Param("deptIds") List<Long> deptIds);
+
+    List<Long> selectExistingActiveUserIds(@Param("userIds") List<Long> userIds);
+
     void batchInsertUserRole(@Param("userId") Long userId, @Param("roleIds") List<Long> roleIds);
 }

@@ -40,3 +40,28 @@ export const DATA_SCOPE_OPTIONS = [
   { label: '仅本人数据', value: DATA_SCOPE_SELF },
   { label: '自定义部门数据', value: DATA_SCOPE_CUSTOM }
 ];
+
+export const NOTICE_LEVEL_OPTIONS = [
+  { label: '普通', value: 'NORMAL', tagType: 'info' },
+  { label: '重要', value: 'IMPORTANT', tagType: 'warning' },
+  { label: '紧急', value: 'URGENT', tagType: 'danger' }
+];
+
+export const NOTICE_PUBLISH_MODE_OPTIONS = [
+  { label: '立即发布', value: 'IMMEDIATE' },
+  { label: '定时发布', value: 'SCHEDULED' }
+];
+
+export const NOTICE_TARGET_TYPE_OPTIONS = [
+  { label: '全员', value: 'ALL' },
+  { label: '角色', value: 'ROLE' },
+  { label: '部门', value: 'DEPT' },
+  { label: '指定用户', value: 'USER' }
+];
+
+export const NOTICE_STATUS_OPTIONS = [
+  { label: '草稿', value: 'DRAFT', tagType: 'info' },
+  { label: '待发布', value: 'PENDING', tagType: 'warning' },
+  { label: '已发布', value: 'PUBLISHED', tagType: 'success' },
+  { label: '已取消', value: 'CANCELLED', tagType: 'info' }
+];

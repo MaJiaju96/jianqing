@@ -163,3 +163,63 @@ export function updateMenu(id, payload) {
 export function deleteMenu(id) {
   return http.post(`/system/menus/${id}/delete`);
 }
+
+export function fetchNotices() {
+  return http.get('/system/notices');
+}
+
+export function fetchNoticeDetail(id) {
+  return http.get(`/system/notices/${id}`);
+}
+
+export function createNotice(payload) {
+  return http.post('/system/notices', payload);
+}
+
+export function updateNotice(id, payload) {
+  return http.post(`/system/notices/${id}/update`, payload);
+}
+
+export function publishNotice(id) {
+  return http.post(`/system/notices/${id}/publish`);
+}
+
+export function cancelNotice(id) {
+  return http.post(`/system/notices/${id}/cancel`);
+}
+
+export function deleteNotice(id) {
+  return http.post(`/system/notices/${id}/delete`);
+}
+
+export function fetchMyNotices() {
+  return http.get('/system/my-notices');
+}
+
+export function fetchMyNoticeDetail(id) {
+  return http.get(`/system/my-notices/${id}`);
+}
+
+export function fetchMyNoticeUnreadCount() {
+  return http.get('/system/my-notices/unread-count');
+}
+
+export function fetchMyLatestNotices(limit = 5) {
+  return http.get('/system/my-notices/latest', {
+    params: { limit }
+  });
+}
+
+export function fetchMyPopupCandidates(limit = 3) {
+  return http.get('/system/my-notices/popup-candidate', {
+    params: { limit }
+  });
+}
+
+export function markMyNoticeRead(id) {
+  return http.post(`/system/my-notices/${id}/read`);
+}
+
+export function markAllMyNoticesRead() {
+  return http.post('/system/my-notices/read-all');
+}

@@ -16,6 +16,11 @@ import com.jianqing.module.system.dto.DictTypeSaveRequest;
 import com.jianqing.module.system.dto.DictTypeSummary;
 import com.jianqing.module.system.dto.MenuTreeNode;
 import com.jianqing.module.system.dto.MenuSaveRequest;
+import com.jianqing.module.system.dto.MyNoticeDetailSummary;
+import com.jianqing.module.system.dto.MyNoticeSummary;
+import com.jianqing.module.system.dto.NoticeDetailSummary;
+import com.jianqing.module.system.dto.NoticeSaveRequest;
+import com.jianqing.module.system.dto.NoticeSummary;
 import com.jianqing.module.system.dto.RoleSaveRequest;
 import com.jianqing.module.system.dto.RoleSummary;
 import com.jianqing.module.system.dto.UserSaveRequest;
@@ -26,6 +31,7 @@ import com.jianqing.module.system.service.DictTypeService;
 import com.jianqing.module.system.service.ConfigService;
 import com.jianqing.module.system.service.DeptService;
 import com.jianqing.module.system.service.MenuService;
+import com.jianqing.module.system.service.NoticeService;
 import com.jianqing.module.system.service.RoleService;
 import com.jianqing.module.system.service.SystemService;
 import com.jianqing.module.system.entity.SysUser;
@@ -56,6 +62,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     private final DictTypeService dictTypeService;
     private final DictDataService dictDataService;
     private final ConfigService configService;
+    private final NoticeService noticeService;
     private final MenuService menuService;
     private final UserDataScopeResolver userDataScopeResolver;
     private final UserWriteOperationHandler userWriteOperationHandler;
@@ -71,6 +78,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
                              DictTypeService dictTypeService,
                              DictDataService dictDataService,
                              ConfigService configService,
+                             NoticeService noticeService,
                              MenuService menuService,
                              UserDataScopeResolver userDataScopeResolver,
                              UserWriteOperationHandler userWriteOperationHandler,
@@ -85,6 +93,7 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
         this.dictTypeService = dictTypeService;
         this.dictDataService = dictDataService;
         this.configService = configService;
+        this.noticeService = noticeService;
         this.menuService = menuService;
         this.userDataScopeResolver = userDataScopeResolver;
         this.userWriteOperationHandler = userWriteOperationHandler;
@@ -308,6 +317,76 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     @Override
     public ConfigDiffSummary diffConfig(Long configId, Long historyId, Long compareHistoryId) {
         return configService.diffConfig(configId, historyId, compareHistoryId);
+    }
+
+    @Override
+    public List<NoticeSummary> listNotices() {
+        return noticeService.listNotices();
+    }
+
+    @Override
+    public NoticeDetailSummary getNoticeDetail(Long id) {
+        return noticeService.getNoticeDetail(id);
+    }
+
+    @Override
+    public NoticeDetailSummary createNotice(NoticeSaveRequest request) {
+        return noticeService.createNotice(request);
+    }
+
+    @Override
+    public NoticeDetailSummary updateNotice(Long id, NoticeSaveRequest request) {
+        return noticeService.updateNotice(id, request);
+    }
+
+    @Override
+    public NoticeDetailSummary publishNotice(Long id) {
+        return noticeService.publishNotice(id);
+    }
+
+    @Override
+    public NoticeDetailSummary cancelNotice(Long id) {
+        return noticeService.cancelNotice(id);
+    }
+
+    @Override
+    public void deleteNotice(Long id) {
+        noticeService.deleteNotice(id);
+    }
+
+    @Override
+    public List<MyNoticeSummary> listMyNotices(Long userId) {
+        return noticeService.listMyNotices(userId);
+    }
+
+    @Override
+    public MyNoticeDetailSummary getMyNoticeDetail(Long userId, Long noticeId) {
+        return noticeService.getMyNoticeDetail(userId, noticeId);
+    }
+
+    @Override
+    public Long countUnreadNotices(Long userId) {
+        return noticeService.countUnreadNotices(userId);
+    }
+
+    @Override
+    public List<MyNoticeSummary> listLatestNotices(Long userId, int limit) {
+        return noticeService.listLatestNotices(userId, limit);
+    }
+
+    @Override
+    public List<MyNoticeSummary> listPopupCandidates(Long userId, int limit) {
+        return noticeService.listPopupCandidates(userId, limit);
+    }
+
+    @Override
+    public void markNoticeRead(Long userId, Long noticeId) {
+        noticeService.markNoticeRead(userId, noticeId);
+    }
+
+    @Override
+    public void markAllNoticesRead(Long userId) {
+        noticeService.markAllNoticesRead(userId);
     }
 
     @Cacheable(cacheNames = CACHE_SYSTEM_MENUS, key = "'" + ALL_CACHE_KEY + "'")

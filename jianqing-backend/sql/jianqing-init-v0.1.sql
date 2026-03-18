@@ -173,6 +173,51 @@ CREATE TABLE IF NOT EXISTS jq_sys_config_history (
   KEY idx_jq_sys_config_history_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS jq_sys_notice (
+  id              BIGINT PRIMARY KEY AUTO_INCREMENT,
+  title           VARCHAR(128)  NOT NULL,
+  content         TEXT          NOT NULL,
+  level           VARCHAR(32)   NOT NULL DEFAULT 'NORMAL',
+  publish_mode    VARCHAR(32)   NOT NULL DEFAULT 'IMMEDIATE',
+  scheduled_at    DATETIME      NULL,
+  popup_enabled   TINYINT       NOT NULL DEFAULT 0,
+  valid_from      DATETIME      NULL,
+  valid_to        DATETIME      NULL,
+  target_type     VARCHAR(32)   NOT NULL DEFAULT 'ALL',
+  status          VARCHAR(32)   NOT NULL DEFAULT 'DRAFT',
+  published_at    DATETIME      NULL,
+  remark          VARCHAR(255)  NOT NULL DEFAULT '',
+  created_by      BIGINT        NOT NULL DEFAULT 0,
+  updated_by      BIGINT        NOT NULL DEFAULT 0,
+  created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_jq_sys_notice_status_schedule (status, scheduled_at),
+  KEY idx_jq_sys_notice_published_at (published_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS jq_sys_notice_target (
+  id              BIGINT PRIMARY KEY AUTO_INCREMENT,
+  notice_id       BIGINT        NOT NULL,
+  target_type     VARCHAR(32)   NOT NULL DEFAULT 'ALL',
+  target_id       BIGINT        NOT NULL DEFAULT 0,
+  created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_jq_sys_notice_target_notice_id (notice_id),
+  KEY idx_jq_sys_notice_target_type_id (target_type, target_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS jq_sys_notice_user (
+  id              BIGINT PRIMARY KEY AUTO_INCREMENT,
+  notice_id       BIGINT        NOT NULL,
+  user_id         BIGINT        NOT NULL,
+  read_status     TINYINT       NOT NULL DEFAULT 0,
+  read_at         DATETIME      NULL,
+  created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_jq_sys_notice_user_notice_user (notice_id, user_id),
+  KEY idx_jq_sys_notice_user_user_id (user_id, read_status),
+  KEY idx_jq_sys_notice_user_notice_id (notice_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT INTO jq_sys_config
 (config_key, config_value, config_name, config_group, value_type, is_builtin, remark, created_by, updated_by)
 VALUES
@@ -335,11 +380,20 @@ VALUES
 (22, 2, '代码生成', 'generator', 'system/generator/index', 'system:generator:list', 'MagicStick', 1, 1, 1, 0, 1, 1),
 (23, 3, '代码生成查询', '', '', 'system:generator:query', '', 1, 1, 1, 0, 1, 1),
 
+(0, 1, '消息中心', '/messages', 'Layout', '', 'Bell', 19, 1, 1, 0, 1, 1),
+(28, 2, '我的消息', 'mine', 'messages/mine/index', '', 'Message', 1, 1, 1, 0, 1, 1),
+(28, 2, '通知管理', 'manage', 'messages/manage/index', 'system:notice:list', 'BellFilled', 2, 1, 1, 0, 1, 1),
+(30, 3, '通知新增', '', '', 'system:notice:add', '', 1, 1, 1, 0, 1, 1),
+(30, 3, '通知修改', '', '', 'system:notice:edit', '', 2, 1, 1, 0, 1, 1),
+(30, 3, '通知发布', '', '', 'system:notice:publish', '', 3, 1, 1, 0, 1, 1),
+(30, 3, '通知取消', '', '', 'system:notice:cancel', '', 4, 1, 1, 0, 1, 1),
+(30, 3, '通知删除', '', '', 'system:notice:delete', '', 5, 1, 1, 0, 1, 1),
+
 (0, 1, '审计日志', '/audit', 'Layout', '', 'Document', 20, 1, 1, 0, 1, 1),
-(25, 2, '操作日志', 'oper-logs', 'audit/oper/index', 'audit:oper-log:list', 'List', 1, 1, 1, 0, 1, 1),
-(25, 2, '登录日志', 'login-logs', 'audit/login/index', 'audit:login-log:list', 'Tickets', 2, 1, 1, 0, 1, 1),
-(26, 3, '操作日志查询', '', '', 'audit:oper-log:query', '', 1, 1, 1, 0, 1, 1),
-(27, 3, '登录日志查询', '', '', 'audit:login-log:query', '', 1, 1, 1, 0, 1, 1);
+(36, 2, '操作日志', 'oper-logs', 'audit/oper/index', 'audit:oper-log:list', 'List', 1, 1, 1, 0, 1, 1),
+(36, 2, '登录日志', 'login-logs', 'audit/login/index', 'audit:login-log:list', 'Tickets', 2, 1, 1, 0, 1, 1),
+(37, 3, '操作日志查询', '', '', 'audit:oper-log:query', '', 1, 1, 1, 0, 1, 1),
+(38, 3, '登录日志查询', '', '', 'audit:login-log:query', '', 1, 1, 1, 0, 1, 1);
 
 INSERT INTO jq_sys_role_menu (role_id, menu_id)
 SELECT 1, id FROM jq_sys_menu;

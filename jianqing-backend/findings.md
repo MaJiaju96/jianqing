@@ -14,6 +14,14 @@
 - 规划前提：需提前考虑多技术分支（前端 TS/Vue2，后端 SpringBoot2/SpringCloud/JDK8）
 
 ## Research Findings
+- 已确认系统通知后端首期最稳模型为 `jq_sys_notice + jq_sys_notice_target + jq_sys_notice_user`，其中通知定义与用户收件箱分层，便于同时承接定时发布与已读状态。
+- 当前后端通知接口已按既有 system 模块风格接入 `/api/system`，并继续保持 `GET/POST` 约束，不额外拆 controller 风格。
+- 应用内定时发布已通过 `@EnableScheduling + NoticePublishScheduler` 落地，首期无需引入 MQ 即可补齐 `PENDING -> PUBLISHED` 链路。
+- 我的消息详情接口当前采用“打开即标已读”，与消息中心常见交互一致，额外保留显式 `read` 与 `read-all` 接口。
+- 通知管理前端虽然已接 `system:notice:*` 细粒度显隐，但若后端菜单种子不补齐，管理员 `auth/me` 仍拿不到这些权限，页面按钮会持续被隐藏。
+- 当前最稳的消息中心菜单补种方式仍是启动期 initializer：补 `消息中心(/messages)` 根菜单、`我的消息`、`通知管理` 与 `system:notice:add/edit/publish/cancel/delete` 按钮权限，再为管理员自动绑定。
+- 旧库里的 `jq_sys_notice.status` 可能仍是整型遗留字段；仅补列不够，必须在 schema initializer 中补做 `MODIFY COLUMN` 类型归一，否则 `DRAFT/PENDING` 写入会触发 `Incorrect integer value`。
+- 当前后端真实烟测已确认通知链路可用：`POST /api/system/notices` -> `publish` -> `GET /api/system/my-notices/unread-count` -> `GET /api/system/my-notices/{id}` 可形成未读到已读闭环。
 - 当前仓库已存在初始化能力说明，见 `README.md`。
 - 当前 README 已给出初始化 SQL、默认账号说明和后续建议路径（登录/JWT、权限、日志）。
 - 对比方向：不追求“大而全”，优先差异化在“轻量内核 + 可插拔集成 + 工程化规范”。

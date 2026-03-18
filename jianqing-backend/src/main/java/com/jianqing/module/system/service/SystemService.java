@@ -3,6 +3,11 @@ package com.jianqing.module.system.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jianqing.module.system.dto.MenuSaveRequest;
 import com.jianqing.module.system.dto.MenuTreeNode;
+import com.jianqing.module.system.dto.MyNoticeDetailSummary;
+import com.jianqing.module.system.dto.MyNoticeSummary;
+import com.jianqing.module.system.dto.NoticeDetailSummary;
+import com.jianqing.module.system.dto.NoticeSaveRequest;
+import com.jianqing.module.system.dto.NoticeSummary;
 import com.jianqing.module.system.dto.DeptSaveRequest;
 import com.jianqing.module.system.dto.DeptTreeNode;
 import com.jianqing.module.system.dto.ConfigSaveRequest;
@@ -133,6 +138,34 @@ public interface SystemService extends IService<SysUser> {
     ConfigSummary restoreDeletedConfig(Long historyId);
 
     ConfigDiffSummary diffConfig(Long configId, Long historyId, Long compareHistoryId);
+
+    List<NoticeSummary> listNotices();
+
+    NoticeDetailSummary getNoticeDetail(Long id);
+
+    NoticeDetailSummary createNotice(NoticeSaveRequest request);
+
+    NoticeDetailSummary updateNotice(Long id, NoticeSaveRequest request);
+
+    NoticeDetailSummary publishNotice(Long id);
+
+    NoticeDetailSummary cancelNotice(Long id);
+
+    void deleteNotice(Long id);
+
+    List<MyNoticeSummary> listMyNotices(Long userId);
+
+    MyNoticeDetailSummary getMyNoticeDetail(Long userId, Long noticeId);
+
+    Long countUnreadNotices(Long userId);
+
+    List<MyNoticeSummary> listLatestNotices(Long userId, int limit);
+
+    List<MyNoticeSummary> listPopupCandidates(Long userId, int limit);
+
+    void markNoticeRead(Long userId, Long noticeId);
+
+    void markAllNoticesRead(Long userId);
 
     /**
      * 查询全量菜单树。
