@@ -27,6 +27,8 @@ public interface SysNoticeUserMapper extends BaseMapper<SysNoticeUser> {
     List<NoticeInboxRow> selectPopupCandidates(@Param("userId") Long userId, @Param("now") LocalDateTime now,
                                                @Param("limit") int limit);
 
+    List<Long> selectUserIdsByNoticeId(@Param("noticeId") Long noticeId);
+
     int markRead(@Param("userId") Long userId, @Param("noticeId") Long noticeId, @Param("readAt") LocalDateTime readAt);
 
     int markAllRead(@Param("userId") Long userId, @Param("readAt") LocalDateTime readAt);

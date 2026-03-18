@@ -10,6 +10,7 @@ import com.jianqing.module.system.mapper.SysNoticeMapper;
 import com.jianqing.module.system.mapper.SysNoticeTargetMapper;
 import com.jianqing.module.system.mapper.SysNoticeUserMapper;
 import com.jianqing.module.system.mapper.SysUserMapper;
+import com.jianqing.module.system.service.NoticeRealtimeService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,10 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,11 +46,14 @@ class NoticeServiceImplTest {
     @Mock
     private SysUserMapper sysUserMapper;
 
+    @Mock
+    private NoticeRealtimeService noticeRealtimeService;
+
     private NoticeServiceImpl noticeService;
 
     @BeforeEach
     void setUp() {
-        noticeService = new NoticeServiceImpl(sysNoticeMapper, sysNoticeTargetMapper, sysNoticeUserMapper, sysUserMapper);
+        noticeService = new NoticeServiceImpl(sysNoticeMapper, sysNoticeTargetMapper, sysNoticeUserMapper, sysUserMapper, noticeRealtimeService);
     }
 
     @Test
@@ -96,6 +104,31 @@ class NoticeServiceImplTest {
     }
 
     @Test
+    void shouldRetryWhenDeadlockOnBatchInsert() {
+        SysNotice notice = new SysNotice();
+        notice.setId(20L);
+        notice.setTitle("并发发布测试");
+        notice.setContent("测试重试");
+        notice.setLevel("IMPORTANT");
+        notice.setPublishMode("IMMEDIATE");
+        notice.setTargetType("USER");
+        notice.setPopupEnabled(1);
+        notice.setStatus("DRAFT");
+        when(sysNoticeMapper.selectById(20L)).thenReturn(notice);
+        when(sysNoticeTargetMapper.selectTargetIdsByNoticeId(20L)).thenReturn(List.of(1L));
+        when(sysUserMapper.selectExistingActiveUserIds(List.of(1L))).thenReturn(List.of(1L));
+        doThrow(new RuntimeException("Deadlock found when trying to get lock; try restarting transaction"))
+                .doNothing()
+                .when(sysNoticeUserMapper)
+                .batchInsert(any(List.class));
+
+        Assertions.assertEquals("PUBLISHED", noticeService.publishNotice(20L).status());
+
+        verify(sysNoticeUserMapper, times(2)).batchInsert(any(List.class));
+        verify(sysNoticeMapper).updateById(notice);
+    }
+
+    @Test
     void shouldListNotices() {
         SysNotice notice = new SysNotice();
         notice.setId(1L);
@@ -122,6 +155,7 @@ class NoticeServiceImplTest {
         row.setLevel("URGENT");
         row.setPopupEnabled(1);
         row.setReadStatus(0);
+        row.setRemark("备注测试");
         row.setPublishedAt(LocalDateTime.now());
         when(sysNoticeUserMapper.selectMyNoticeById(1L, 7L)).thenReturn(row);
 
@@ -129,6 +163,7 @@ class NoticeServiceImplTest {
 
         Assertions.assertEquals(7L, summary.noticeId());
         Assertions.assertEquals(1, summary.readStatus());
+        Assertions.assertEquals("备注测试", summary.remark());
         verify(sysNoticeUserMapper).markRead(eq(1L), eq(7L), any(LocalDateTime.class));
     }
 
@@ -148,6 +183,41 @@ class NoticeServiceImplTest {
         verify(sysNoticeUserMapper).batchInsert(any(List.class));
         verify(sysNoticeMapper).updateById(notice);
         Assertions.assertEquals("PUBLISHED", notice.getStatus());
+    }
+
+    @Test
+    void shouldDeletePublishedNotice() {
+        SysNotice notice = new SysNotice();
+        notice.setId(15L);
+        notice.setStatus("PUBLISHED");
+        notice.setIsDeleted(0);
+        when(sysNoticeMapper.selectById(15L)).thenReturn(notice);
+        when(sysNoticeUserMapper.selectUserIdsByNoticeId(15L)).thenReturn(List.of(1L, 2L));
+
+        noticeService.deleteNotice(15L);
+
+        verify(sysNoticeMapper).updateById(notice);
+        verify(sysNoticeTargetMapper, never()).deleteByNoticeId(15L);
+        verify(sysNoticeUserMapper, never()).deleteByNoticeId(15L);
+        verify(sysNoticeMapper, never()).deleteById(15L);
+        Assertions.assertEquals(1, notice.getIsDeleted());
+        Assertions.assertEquals("PUBLISHED", notice.getDeletedCategory());
+    }
+
+    @Test
+    void shouldPurgeDeletedNotice() {
+        SysNotice notice = new SysNotice();
+        notice.setId(18L);
+        notice.setStatus("PUBLISHED");
+        notice.setIsDeleted(1);
+        when(sysNoticeMapper.selectById(18L)).thenReturn(notice);
+        when(sysNoticeUserMapper.selectUserIdsByNoticeId(18L)).thenReturn(List.of(3L));
+
+        noticeService.purgeNotice(18L);
+
+        verify(sysNoticeTargetMapper).deleteByNoticeId(18L);
+        verify(sysNoticeUserMapper).deleteByNoticeId(18L);
+        verify(sysNoticeMapper).deleteById(18L);
     }
 
     private NoticeSaveRequest buildScheduledRequest() {

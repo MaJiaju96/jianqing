@@ -1,4 +1,5 @@
 import { http } from './http';
+import { authStore } from '../stores/auth';
 
 export function fetchUsers() {
   return http.get('/system/users');
@@ -168,6 +169,12 @@ export function fetchNotices() {
   return http.get('/system/notices');
 }
 
+export function fetchNoticeTrash(category = 'all') {
+  return http.get('/system/notices/trash', {
+    params: { category }
+  });
+}
+
 export function fetchNoticeDetail(id) {
   return http.get(`/system/notices/${id}`);
 }
@@ -192,6 +199,14 @@ export function deleteNotice(id) {
   return http.post(`/system/notices/${id}/delete`);
 }
 
+export function restoreNotice(id) {
+  return http.post(`/system/notices/${id}/restore`);
+}
+
+export function purgeNotice(id) {
+  return http.post(`/system/notices/${id}/purge`);
+}
+
 export function fetchMyNotices() {
   return http.get('/system/my-notices');
 }
@@ -202,6 +217,10 @@ export function fetchMyNoticeDetail(id) {
 
 export function fetchMyNoticeUnreadCount() {
   return http.get('/system/my-notices/unread-count');
+}
+
+export function fetchMyNoticeRealtime() {
+  return http.get('/system/my-notices/realtime');
 }
 
 export function fetchMyLatestNotices(limit = 5) {
@@ -222,4 +241,59 @@ export function markMyNoticeRead(id) {
 
 export function markAllMyNoticesRead() {
   return http.post('/system/my-notices/read-all');
+}
+
+export async function subscribeMyNoticeStream(onMessage, onOpen, onError, signal) {
+  const response = await fetch('/api/system/my-notices/stream', {
+    method: 'GET',
+    headers: {
+      Accept: 'text/event-stream',
+      Authorization: authStore.token ? `Bearer ${authStore.token}` : ''
+    },
+    cache: 'no-store',
+    signal
+  });
+  if (!response.ok || !response.body) {
+    throw new Error(`通知流连接失败: ${response.status}`);
+  }
+  if (onOpen) {
+    onOpen();
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split('\n\n');
+    buffer = chunks.pop() || '';
+    chunks.forEach((chunk) => {
+      const event = parseSseChunk(chunk);
+      if (event?.event === 'notice-sync' && event.data && onMessage) {
+        onMessage(JSON.parse(event.data));
+      }
+    });
+  }
+}
+
+function parseSseChunk(chunk) {
+  if (!chunk) {
+    return null;
+  }
+  const lines = chunk.split('\n');
+  const event = { event: 'message', data: '' };
+  lines.forEach((line) => {
+    if (line.startsWith('event:')) {
+      event.event = line.slice(6).trim();
+      return;
+    }
+    if (line.startsWith('data:')) {
+      event.data += line.slice(5).trim();
+    }
+  });
+  return event;
 }

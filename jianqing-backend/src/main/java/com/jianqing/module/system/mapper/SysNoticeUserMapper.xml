@@ -12,7 +12,8 @@
         n.published_at AS published_at,
         nu.read_at AS read_at,
         n.valid_from AS valid_from,
-        n.valid_to AS valid_to
+        n.valid_to AS valid_to,
+        n.remark AS remark
     </sql>
 
     <delete id="deleteByNoticeId">
@@ -34,6 +35,7 @@
         INNER JOIN jq_sys_notice n ON n.id = nu.notice_id
         WHERE nu.user_id = #{userId}
           AND n.status = 'PUBLISHED'
+          AND n.is_deleted = 0
         ORDER BY nu.read_status ASC, n.published_at DESC, n.id DESC
     </select>
 
@@ -44,6 +46,7 @@
         WHERE nu.user_id = #{userId}
           AND nu.notice_id = #{noticeId}
           AND n.status = 'PUBLISHED'
+          AND n.is_deleted = 0
         LIMIT 1
     </select>
 
@@ -54,6 +57,7 @@
         WHERE nu.user_id = #{userId}
           AND nu.read_status = 0
           AND n.status = 'PUBLISHED'
+          AND n.is_deleted = 0
     </select>
 
     <select id="selectLatestByUserId" resultType="com.jianqing.module.system.dto.NoticeInboxRow">
@@ -62,6 +66,7 @@
         INNER JOIN jq_sys_notice n ON n.id = nu.notice_id
         WHERE nu.user_id = #{userId}
           AND n.status = 'PUBLISHED'
+          AND n.is_deleted = 0
         ORDER BY n.published_at DESC, n.id DESC
         LIMIT #{limit}
     </select>
@@ -73,11 +78,26 @@
         WHERE nu.user_id = #{userId}
           AND nu.read_status = 0
           AND n.status = 'PUBLISHED'
+          AND n.is_deleted = 0
           AND n.popup_enabled = 1
           AND (n.valid_from IS NULL OR n.valid_from &lt;= #{now})
           AND (n.valid_to IS NULL OR n.valid_to &gt;= #{now})
-        ORDER BY n.level DESC, n.published_at DESC, n.id DESC
+        ORDER BY CASE n.level
+                     WHEN 'URGENT' THEN 3
+                     WHEN 'IMPORTANT' THEN 2
+                     WHEN 'NORMAL' THEN 1
+                     ELSE 0
+                 END DESC,
+                 n.published_at DESC,
+                 n.id DESC
         LIMIT #{limit}
+    </select>
+
+    <select id="selectUserIdsByNoticeId" resultType="java.lang.Long">
+        SELECT user_id
+        FROM jq_sys_notice_user
+        WHERE notice_id = #{noticeId}
+        ORDER BY user_id ASC
     </select>
 
     <update id="markRead">

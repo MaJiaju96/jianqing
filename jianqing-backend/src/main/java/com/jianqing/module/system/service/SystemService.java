@@ -6,6 +6,7 @@ import com.jianqing.module.system.dto.MenuTreeNode;
 import com.jianqing.module.system.dto.MyNoticeDetailSummary;
 import com.jianqing.module.system.dto.MyNoticeSummary;
 import com.jianqing.module.system.dto.NoticeDetailSummary;
+import com.jianqing.module.system.dto.NoticeRealtimeSummary;
 import com.jianqing.module.system.dto.NoticeSaveRequest;
 import com.jianqing.module.system.dto.NoticeSummary;
 import com.jianqing.module.system.dto.DeptSaveRequest;
@@ -27,6 +28,7 @@ import com.jianqing.module.system.dto.UserSummary;
 import com.jianqing.module.system.entity.SysUser;
 
 import java.util.List;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * 系统服务聚合接口，负责用户侧编排与跨角色/菜单缓存一致性收敛。
@@ -141,6 +143,8 @@ public interface SystemService extends IService<SysUser> {
 
     List<NoticeSummary> listNotices();
 
+    List<NoticeSummary> listTrashNotices(String category);
+
     NoticeDetailSummary getNoticeDetail(Long id);
 
     NoticeDetailSummary createNotice(NoticeSaveRequest request);
@@ -152,6 +156,10 @@ public interface SystemService extends IService<SysUser> {
     NoticeDetailSummary cancelNotice(Long id);
 
     void deleteNotice(Long id);
+
+    NoticeDetailSummary restoreNotice(Long id);
+
+    void purgeNotice(Long id);
 
     List<MyNoticeSummary> listMyNotices(Long userId);
 
@@ -166,6 +174,10 @@ public interface SystemService extends IService<SysUser> {
     void markNoticeRead(Long userId, Long noticeId);
 
     void markAllNoticesRead(Long userId);
+
+    SseEmitter subscribeNoticeStream(Long userId);
+
+    NoticeRealtimeSummary getNoticeRealtimeSummary(Long userId);
 
     /**
      * 查询全量菜单树。

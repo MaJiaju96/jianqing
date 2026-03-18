@@ -49,12 +49,17 @@ public class NoticeSchemaInitializer implements ApplicationRunner {
                 + "status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',"
                 + "published_at DATETIME NULL,"
                 + "remark VARCHAR(255) NOT NULL DEFAULT '',"
+                + "is_deleted TINYINT NOT NULL DEFAULT 0,"
+                + "deleted_category VARCHAR(32) NULL,"
+                + "deleted_at DATETIME NULL,"
+                + "deleted_by BIGINT NULL,"
                 + "created_by BIGINT NOT NULL DEFAULT 0,"
                 + "updated_by BIGINT NOT NULL DEFAULT 0,"
                 + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
                 + "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
                 + "KEY idx_jq_sys_notice_status_schedule (status, scheduled_at),"
-                + "KEY idx_jq_sys_notice_published_at (published_at)"
+                + "KEY idx_jq_sys_notice_published_at (published_at),"
+                + "KEY idx_jq_sys_notice_deleted_category (is_deleted, deleted_category)"
                 + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
@@ -116,8 +121,16 @@ public class NoticeSchemaInitializer implements ApplicationRunner {
                 "ALTER TABLE jq_sys_notice ADD COLUMN published_at DATETIME NULL AFTER status");
         ensureColumnExists(schemaName, "jq_sys_notice", "remark",
                 "ALTER TABLE jq_sys_notice ADD COLUMN remark VARCHAR(255) NOT NULL DEFAULT '' AFTER published_at");
+        ensureColumnExists(schemaName, "jq_sys_notice", "is_deleted",
+                "ALTER TABLE jq_sys_notice ADD COLUMN is_deleted TINYINT NOT NULL DEFAULT 0 AFTER remark");
+        ensureColumnExists(schemaName, "jq_sys_notice", "deleted_category",
+                "ALTER TABLE jq_sys_notice ADD COLUMN deleted_category VARCHAR(32) NULL AFTER is_deleted");
+        ensureColumnExists(schemaName, "jq_sys_notice", "deleted_at",
+                "ALTER TABLE jq_sys_notice ADD COLUMN deleted_at DATETIME NULL AFTER deleted_category");
+        ensureColumnExists(schemaName, "jq_sys_notice", "deleted_by",
+                "ALTER TABLE jq_sys_notice ADD COLUMN deleted_by BIGINT NULL AFTER deleted_at");
         ensureColumnExists(schemaName, "jq_sys_notice", "created_by",
-                "ALTER TABLE jq_sys_notice ADD COLUMN created_by BIGINT NOT NULL DEFAULT 0 AFTER remark");
+                "ALTER TABLE jq_sys_notice ADD COLUMN created_by BIGINT NOT NULL DEFAULT 0 AFTER deleted_by");
         ensureColumnExists(schemaName, "jq_sys_notice", "updated_by",
                 "ALTER TABLE jq_sys_notice ADD COLUMN updated_by BIGINT NOT NULL DEFAULT 0 AFTER created_by");
         ensureColumnExists(schemaName, "jq_sys_notice", "created_at",
@@ -161,6 +174,10 @@ public class NoticeSchemaInitializer implements ApplicationRunner {
         jdbcTemplate.execute("ALTER TABLE jq_sys_notice MODIFY COLUMN target_type VARCHAR(32) NOT NULL DEFAULT 'ALL'");
         jdbcTemplate.execute("ALTER TABLE jq_sys_notice MODIFY COLUMN status VARCHAR(32) NOT NULL DEFAULT 'DRAFT'");
         jdbcTemplate.execute("ALTER TABLE jq_sys_notice MODIFY COLUMN remark VARCHAR(255) NOT NULL DEFAULT ''");
+        jdbcTemplate.execute("ALTER TABLE jq_sys_notice MODIFY COLUMN is_deleted TINYINT NOT NULL DEFAULT 0");
+        jdbcTemplate.execute("ALTER TABLE jq_sys_notice MODIFY COLUMN deleted_category VARCHAR(32) NULL");
+        jdbcTemplate.execute("ALTER TABLE jq_sys_notice MODIFY COLUMN deleted_at DATETIME NULL");
+        jdbcTemplate.execute("ALTER TABLE jq_sys_notice MODIFY COLUMN deleted_by BIGINT NULL");
     }
 
     private void normalizeNoticeTargetColumns() {

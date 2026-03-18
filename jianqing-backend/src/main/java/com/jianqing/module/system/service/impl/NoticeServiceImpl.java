@@ -4,6 +4,7 @@ import com.jianqing.module.system.dto.MyNoticeDetailSummary;
 import com.jianqing.module.system.dto.MyNoticeSummary;
 import com.jianqing.module.system.dto.NoticeDetailSummary;
 import com.jianqing.module.system.dto.NoticeInboxRow;
+import com.jianqing.module.system.dto.NoticeRealtimeSummary;
 import com.jianqing.module.system.dto.NoticeSaveRequest;
 import com.jianqing.module.system.dto.NoticeSummary;
 import com.jianqing.module.system.entity.SysNotice;
@@ -15,9 +16,11 @@ import com.jianqing.module.system.mapper.SysUserMapper;
 import com.jianqing.module.system.service.NoticeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -31,25 +34,35 @@ public class NoticeServiceImpl implements NoticeService {
     private static final Set<String> ALLOWED_TARGET_TYPES = Set.of("ALL", "ROLE", "DEPT", "USER");
     private static final Set<String> EDITABLE_STATUSES = Set.of("DRAFT", "PENDING", "CANCELLED");
     private static final int DEFAULT_LATEST_LIMIT = 5;
+    private static final int NOTICE_INSERT_RETRY_MAX = 2;
 
     private final SysNoticeMapper sysNoticeMapper;
     private final SysNoticeTargetMapper sysNoticeTargetMapper;
     private final SysNoticeUserMapper sysNoticeUserMapper;
     private final SysUserMapper sysUserMapper;
+    private final NoticeRealtimeService noticeRealtimeService;
 
     public NoticeServiceImpl(SysNoticeMapper sysNoticeMapper,
                              SysNoticeTargetMapper sysNoticeTargetMapper,
                              SysNoticeUserMapper sysNoticeUserMapper,
-                             SysUserMapper sysUserMapper) {
+                             SysUserMapper sysUserMapper,
+                             NoticeRealtimeService noticeRealtimeService) {
         this.sysNoticeMapper = sysNoticeMapper;
         this.sysNoticeTargetMapper = sysNoticeTargetMapper;
         this.sysNoticeUserMapper = sysNoticeUserMapper;
         this.sysUserMapper = sysUserMapper;
+        this.noticeRealtimeService = noticeRealtimeService;
     }
 
     @Override
     public List<NoticeSummary> listNotices() {
         return sysNoticeMapper.selectAllNotices().stream().map(this::toNoticeSummary).toList();
+    }
+
+    @Override
+    public List<NoticeSummary> listTrashNotices(String category) {
+        String normalizedCategory = normalizeTrashCategory(category);
+        return sysNoticeMapper.selectTrashNotices(normalizedCategory).stream().map(this::toNoticeSummary).toList();
     }
 
     @Override
@@ -64,6 +77,10 @@ public class NoticeServiceImpl implements NoticeService {
         fillNotice(notice, request);
         notice.setStatus(resolveDraftStatus(notice));
         notice.setPublishedAt(null);
+        notice.setIsDeleted(0);
+        notice.setDeletedCategory(null);
+        notice.setDeletedAt(null);
+        notice.setDeletedBy(null);
         sysNoticeMapper.insert(notice);
         replaceTargets(notice.getId(), notice.getTargetType(), normalizeTargetIds(notice.getTargetType(), request.getTargetIds()));
         return toNoticeDetail(notice);
@@ -73,6 +90,7 @@ public class NoticeServiceImpl implements NoticeService {
     @Transactional(rollbackFor = Exception.class)
     public NoticeDetailSummary updateNotice(Long id, NoticeSaveRequest request) {
         SysNotice notice = getNoticeOrThrow(id);
+        ensureNotDeleted(notice, "通知已在垃圾箱，无法编辑");
         if (!EDITABLE_STATUSES.contains(safeUpper(notice.getStatus()))) {
             throw new IllegalArgumentException("已发布通知不允许编辑");
         }
@@ -88,6 +106,7 @@ public class NoticeServiceImpl implements NoticeService {
     @Transactional(rollbackFor = Exception.class)
     public NoticeDetailSummary publishNotice(Long id) {
         SysNotice notice = getNoticeOrThrow(id);
+        ensureNotDeleted(notice, "通知已在垃圾箱，无法发布");
         if ("PUBLISHED".equals(safeUpper(notice.getStatus()))) {
             throw new IllegalArgumentException("通知已发布");
         }
@@ -106,6 +125,7 @@ public class NoticeServiceImpl implements NoticeService {
     @Transactional(rollbackFor = Exception.class)
     public NoticeDetailSummary cancelNotice(Long id) {
         SysNotice notice = getNoticeOrThrow(id);
+        ensureNotDeleted(notice, "通知已在垃圾箱，无法取消");
         if ("PUBLISHED".equals(safeUpper(notice.getStatus()))) {
             throw new IllegalArgumentException("已发布通知不支持取消");
         }
@@ -118,12 +138,49 @@ public class NoticeServiceImpl implements NoticeService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteNotice(Long id) {
         SysNotice notice = getNoticeOrThrow(id);
-        if ("PUBLISHED".equals(safeUpper(notice.getStatus()))) {
-            throw new IllegalArgumentException("已发布通知不允许删除");
+        if (isDeleted(notice)) {
+            throw new IllegalArgumentException("通知已在垃圾箱");
         }
+        List<Long> affectedUserIds = sysNoticeUserMapper.selectUserIdsByNoticeId(notice.getId());
+        notice.setIsDeleted(1);
+        notice.setDeletedAt(LocalDateTime.now());
+        notice.setDeletedBy(0L);
+        notice.setDeletedCategory("PUBLISHED".equals(safeUpper(notice.getStatus())) ? "PUBLISHED" : "UNPUBLISHED");
+        sysNoticeMapper.updateById(notice);
+        noticeRealtimeService.publishUserNoticeStates(affectedUserIds);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public NoticeDetailSummary restoreNotice(Long id) {
+        SysNotice notice = getNoticeOrThrow(id);
+        if (!isDeleted(notice)) {
+            throw new IllegalArgumentException("通知未在垃圾箱");
+        }
+        notice.setIsDeleted(0);
+        notice.setDeletedAt(null);
+        notice.setDeletedBy(null);
+        notice.setDeletedCategory(null);
+        sysNoticeMapper.updateById(notice);
+        if ("PUBLISHED".equals(safeUpper(notice.getStatus()))) {
+            List<Long> affectedUserIds = sysNoticeUserMapper.selectUserIdsByNoticeId(notice.getId());
+            noticeRealtimeService.publishUserNoticeStates(affectedUserIds);
+        }
+        return toNoticeDetail(notice);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void purgeNotice(Long id) {
+        SysNotice notice = getNoticeOrThrow(id);
+        if (!isDeleted(notice)) {
+            throw new IllegalArgumentException("通知未在垃圾箱，无法彻底删除");
+        }
+        List<Long> affectedUserIds = sysNoticeUserMapper.selectUserIdsByNoticeId(notice.getId());
         sysNoticeTargetMapper.deleteByNoticeId(notice.getId());
         sysNoticeUserMapper.deleteByNoticeId(notice.getId());
         sysNoticeMapper.deleteById(notice.getId());
+        noticeRealtimeService.publishUserNoticeStates(affectedUserIds);
     }
 
     @Override
@@ -139,6 +196,7 @@ public class NoticeServiceImpl implements NoticeService {
             sysNoticeUserMapper.markRead(userId, noticeId, LocalDateTime.now());
             row.setReadStatus(1);
             row.setReadAt(LocalDateTime.now());
+            noticeRealtimeService.publishUserNoticeState(userId);
         }
         return toMyNoticeDetail(row);
     }
@@ -168,12 +226,24 @@ public class NoticeServiceImpl implements NoticeService {
     public void markNoticeRead(Long userId, Long noticeId) {
         getMyNoticeOrThrow(userId, noticeId);
         sysNoticeUserMapper.markRead(userId, noticeId, LocalDateTime.now());
+        noticeRealtimeService.publishUserNoticeState(userId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void markAllNoticesRead(Long userId) {
         sysNoticeUserMapper.markAllRead(userId, LocalDateTime.now());
+        noticeRealtimeService.publishUserNoticeState(userId);
+    }
+
+    @Override
+    public SseEmitter subscribeNoticeStream(Long userId) {
+        return noticeRealtimeService.connect(userId);
+    }
+
+    @Override
+    public NoticeRealtimeSummary getNoticeRealtimeSummary(Long userId) {
+        return new NoticeRealtimeSummary(countUnreadNotices(userId), listLatestNotices(userId, DEFAULT_LATEST_LIMIT));
     }
 
     @Override
@@ -187,7 +257,6 @@ public class NoticeServiceImpl implements NoticeService {
 
     private void publishNow(SysNotice notice, LocalDateTime publishTime) {
         List<Long> recipientUserIds = resolveRecipientUserIds(notice.getTargetType(), sysNoticeTargetMapper.selectTargetIdsByNoticeId(notice.getId()));
-        sysNoticeUserMapper.deleteByNoticeId(notice.getId());
         if (!recipientUserIds.isEmpty()) {
             List<SysNoticeUser> items = new ArrayList<>();
             for (Long userId : recipientUserIds) {
@@ -197,11 +266,12 @@ public class NoticeServiceImpl implements NoticeService {
                 item.setReadStatus(0);
                 items.add(item);
             }
-            sysNoticeUserMapper.batchInsert(items);
+            batchInsertNoticeUsersWithRetry(items);
         }
         notice.setStatus("PUBLISHED");
         notice.setPublishedAt(publishTime);
         sysNoticeMapper.updateById(notice);
+        noticeRealtimeService.publishUserNoticeStates(recipientUserIds);
     }
 
     private List<Long> resolveRecipientUserIds(String targetType, List<Long> targetIds) {
@@ -224,7 +294,45 @@ public class NoticeServiceImpl implements NoticeService {
         if (userIds == null || userIds.isEmpty()) {
             return List.of();
         }
-        return new ArrayList<>(new LinkedHashSet<>(userIds));
+        ArrayList<Long> normalized = new ArrayList<>(new LinkedHashSet<>(userIds));
+        Collections.sort(normalized);
+        return normalized;
+    }
+
+    private void batchInsertNoticeUsersWithRetry(List<SysNoticeUser> items) {
+        int attempt = 0;
+        while (true) {
+            try {
+                sysNoticeUserMapper.batchInsert(items);
+                return;
+            } catch (RuntimeException ex) {
+                if (!isDeadlock(ex) || attempt >= NOTICE_INSERT_RETRY_MAX) {
+                    throw ex;
+                }
+                attempt++;
+                try {
+                    Thread.sleep(80L * attempt);
+                } catch (InterruptedException interruptedException) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("通知发布重试被中断", interruptedException);
+                }
+            }
+        }
+    }
+
+    private boolean isDeadlock(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null) {
+                String normalized = message.toLowerCase(Locale.ROOT);
+                if (normalized.contains("deadlock") || normalized.contains("1213") || normalized.contains("try restarting transaction")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private void fillNotice(SysNotice notice, NoticeSaveRequest request) {
@@ -317,6 +425,27 @@ public class NoticeServiceImpl implements NoticeService {
         return notice;
     }
 
+    private String normalizeTrashCategory(String category) {
+        String normalized = safeUpper(category);
+        if (normalized.isEmpty() || "ALL".equals(normalized)) {
+            return "ALL";
+        }
+        if ("PUBLISHED".equals(normalized) || "UNPUBLISHED".equals(normalized)) {
+            return normalized;
+        }
+        throw new IllegalArgumentException("垃圾箱分类仅支持 ALL/PUBLISHED/UNPUBLISHED");
+    }
+
+    private void ensureNotDeleted(SysNotice notice, String message) {
+        if (isDeleted(notice)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    private boolean isDeleted(SysNotice notice) {
+        return notice.getIsDeleted() != null && notice.getIsDeleted() == 1;
+    }
+
     private NoticeInboxRow getMyNoticeOrThrow(Long userId, Long noticeId) {
         NoticeInboxRow row = sysNoticeUserMapper.selectMyNoticeById(userId, noticeId);
         if (row == null) {
@@ -343,14 +472,14 @@ public class NoticeServiceImpl implements NoticeService {
     }
 
     private MyNoticeSummary toMyNoticeSummary(NoticeInboxRow row) {
-        return new MyNoticeSummary(row.getNoticeId(), row.getTitle(), row.getLevel(), row.getPopupEnabled(),
+        return new MyNoticeSummary(row.getNoticeId(), row.getTitle(), row.getContent(), row.getLevel(), row.getPopupEnabled(),
                 row.getReadStatus(), timeText(row.getPublishedAt()), timeText(row.getReadAt()));
     }
 
     private MyNoticeDetailSummary toMyNoticeDetail(NoticeInboxRow row) {
         return new MyNoticeDetailSummary(row.getNoticeId(), row.getTitle(), row.getContent(), row.getLevel(),
                 row.getPopupEnabled(), row.getReadStatus(), timeText(row.getPublishedAt()), timeText(row.getReadAt()),
-                timeText(row.getValidFrom()), timeText(row.getValidTo()));
+                timeText(row.getValidFrom()), timeText(row.getValidTo()), row.getRemark());
     }
 
     private String normalizeEnum(String value, Set<String> allowedValues, String message) {

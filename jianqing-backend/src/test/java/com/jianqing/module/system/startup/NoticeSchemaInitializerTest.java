@@ -56,12 +56,17 @@ class NoticeSchemaInitializerTest {
                 + "status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',"
                 + "published_at DATETIME NULL,"
                 + "remark VARCHAR(255) NOT NULL DEFAULT '',"
+                + "is_deleted TINYINT NOT NULL DEFAULT 0,"
+                + "deleted_category VARCHAR(32) NULL,"
+                + "deleted_at DATETIME NULL,"
+                + "deleted_by BIGINT NULL,"
                 + "created_by BIGINT NOT NULL DEFAULT 0,"
                 + "updated_by BIGINT NOT NULL DEFAULT 0,"
                 + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
                 + "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
                 + "KEY idx_jq_sys_notice_status_schedule (status, scheduled_at),"
-                + "KEY idx_jq_sys_notice_published_at (published_at)"
+                + "KEY idx_jq_sys_notice_published_at (published_at),"
+                + "KEY idx_jq_sys_notice_deleted_category (is_deleted, deleted_category)"
                 + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         verify(jdbcTemplate).execute("CREATE TABLE IF NOT EXISTS jq_sys_notice_target ("
                 + "id BIGINT PRIMARY KEY AUTO_INCREMENT,"
@@ -110,6 +115,7 @@ class NoticeSchemaInitializerTest {
         initializer.run(new DefaultApplicationArguments(new String[0]));
 
         verify(jdbcTemplate).execute("ALTER TABLE jq_sys_notice ADD COLUMN level VARCHAR(32) NOT NULL DEFAULT 'NORMAL' AFTER content");
+        verify(jdbcTemplate).execute("ALTER TABLE jq_sys_notice ADD COLUMN is_deleted TINYINT NOT NULL DEFAULT 0 AFTER remark");
         verify(jdbcTemplate).execute("ALTER TABLE jq_sys_notice_target ADD COLUMN target_type VARCHAR(32) NOT NULL DEFAULT 'ALL' AFTER notice_id");
         verify(jdbcTemplate).execute("ALTER TABLE jq_sys_notice_user ADD COLUMN read_status TINYINT NOT NULL DEFAULT 0 AFTER user_id");
     }
@@ -143,12 +149,17 @@ class NoticeSchemaInitializerTest {
                 + "status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',"
                 + "published_at DATETIME NULL,"
                 + "remark VARCHAR(255) NOT NULL DEFAULT '',"
+                + "is_deleted TINYINT NOT NULL DEFAULT 0,"
+                + "deleted_category VARCHAR(32) NULL,"
+                + "deleted_at DATETIME NULL,"
+                + "deleted_by BIGINT NULL,"
                 + "created_by BIGINT NOT NULL DEFAULT 0,"
                 + "updated_by BIGINT NOT NULL DEFAULT 0,"
                 + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
                 + "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,"
                 + "KEY idx_jq_sys_notice_status_schedule (status, scheduled_at),"
-                + "KEY idx_jq_sys_notice_published_at (published_at)"
+                + "KEY idx_jq_sys_notice_published_at (published_at),"
+                + "KEY idx_jq_sys_notice_deleted_category (is_deleted, deleted_category)"
                 + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
         verify(jdbcTemplate).execute("ALTER TABLE jq_sys_notice MODIFY COLUMN status VARCHAR(32) NOT NULL DEFAULT 'DRAFT'");
     }

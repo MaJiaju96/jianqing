@@ -39,6 +39,14 @@ public class SysNotice {
     private LocalDateTime createdAt;
     @TableField("updated_at")
     private LocalDateTime updatedAt;
+    @TableField("is_deleted")
+    private Integer isDeleted;
+    @TableField("deleted_category")
+    private String deletedCategory;
+    @TableField("deleted_at")
+    private LocalDateTime deletedAt;
+    @TableField("deleted_by")
+    private Long deletedBy;
 
     public Long getId() {
         return id;
@@ -174,5 +182,37 @@ public class SysNotice {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Integer getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+
+    public String getDeletedCategory() {
+        return deletedCategory;
+    }
+
+    public void setDeletedCategory(String deletedCategory) {
+        this.deletedCategory = deletedCategory;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public Long getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(Long deletedBy) {
+        this.deletedBy = deletedBy;
     }
 }

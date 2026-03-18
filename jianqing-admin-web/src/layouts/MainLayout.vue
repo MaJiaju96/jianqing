@@ -55,8 +55,9 @@
                       <span class="notice-dropdown-item__title">{{ item.title }}</span>
                       <el-tag size="small" :type="levelTagType(item.level)">{{ levelText(item.level) }}</el-tag>
                     </div>
+                    <div class="notice-dropdown-item__content">{{ previewContent(item.content, 56) }}</div>
                     <div class="notice-dropdown-item__meta">
-                      <span>{{ item.publishedAt || '刚刚发布' }}</span>
+                      <span>{{ formatDateTimeText(item.publishedAt, '刚刚发布') }}</span>
                       <span v-if="item.readStatus === 0" class="notice-dropdown-item__dot">未读</span>
                     </div>
                   </div>
@@ -88,26 +89,75 @@
       </el-main>
     </el-container>
   </el-container>
+
+  <el-dialog v-model="noticeDialogVisible" title="待处理通知" width="620px" append-to-body>
+    <div v-if="popupCurrent" class="global-notice-panel">
+      <div class="global-notice-panel__summary">
+        <span>待提醒 {{ popupTotal }} 条</span>
+        <span>未读总计 {{ unreadCount }} 条</span>
+      </div>
+      <div class="global-notice-item" @click="openPopupNotice(popupCurrent.noticeId)">
+        <div class="global-notice-item__top">
+          <el-tag size="small" :type="levelTagType(popupCurrent.level)">{{ levelText(popupCurrent.level) }}</el-tag>
+          <span class="global-notice-item__page">{{ popupIndex + 1 }}/{{ popupTotal }}</span>
+        </div>
+        <div class="global-notice-item__title">{{ popupCurrent.title }}</div>
+        <div class="global-notice-item__content">{{ previewContent(popupCurrent.content, 180) }}</div>
+        <div class="global-notice-item__meta">
+          <span>{{ formatDateTimeText(popupCurrent.publishedAt, '刚刚发布') }}</span>
+          <span v-if="popupCurrent.readStatus === 0" class="global-notice-item__dot">未读</span>
+        </div>
+      </div>
+    </div>
+    <div v-else class="notice-dropdown-empty">暂无待处理通知</div>
+    <template #footer>
+      <el-button :disabled="popupActionLoading || popupTotal <= 1" @click="handlePopupPrev">上一个</el-button>
+      <el-button :disabled="popupActionLoading || popupTotal <= 1" @click="handlePopupNext">下一个</el-button>
+      <el-button :disabled="popupActionLoading || !popupCurrent" @click="handlePopupReadAll">设置已读</el-button>
+      <el-button :disabled="popupActionLoading" @click="handlePopupSnooze">五分钟内不再弹窗</el-button>
+      <el-button type="primary" :disabled="popupActionLoading" @click="openMessageCenter">进入消息中心</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
 import { Bell } from '@element-plus/icons-vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { logout } from '../api/auth';
-import { fetchMyLatestNotices, fetchMyNoticeUnreadCount } from '../api/system';
+import {
+  fetchMyLatestNotices,
+  fetchMyNoticeRealtime,
+  fetchMyNoticeUnreadCount,
+  fetchMyPopupCandidates,
+  markMyNoticeRead,
+  subscribeMyNoticeStream
+} from '../api/system';
 import { NOTICE_LEVEL_OPTIONS } from '../constants/app';
+import { useActionLoading } from '../composables/useAsyncState';
 import { authStore } from '../stores/auth';
 import { THEMES, themeStore } from '../stores/theme.js';
 import { usePermissionGroup } from '../composables/usePermissions';
+import { formatDateTimeText } from '../utils/datetime';
 import { ignoreHandledError } from '../utils/errors';
 import { showSuccessMessage } from '../utils/feedback';
+
+const NOTICE_SNOOZE_KEY = 'jq_notice_popup_muted_until';
+const NOTICE_STREAM_RETRY_DELAY = 3000;
 
 const route = useRoute();
 const router = useRouter();
 
 const latestNotices = ref([]);
 const unreadCount = ref(0);
+const popupCandidates = ref([]);
+const popupIndex = ref(0);
+const noticeDialogVisible = ref(false);
+const popupAction = useActionLoading();
+let noticeStreamController = null;
+let noticeStreamRetryTimer = null;
+const popupTotal = computed(() => popupCandidates.value.length);
+const popupCurrent = computed(() => popupCandidates.value[popupIndex.value] || null);
 const activePath = computed(() => {
   if (route.path.startsWith('/messages/mine')) {
     return '/messages/mine';
@@ -153,6 +203,7 @@ const showDevMenu = computed(() => canViewGenerator.value);
 const showMessageCenterMenu = computed(() => Boolean(authStore.profile));
 const showSystemMenu = computed(() => canViewUsers.value || canViewDepts.value || canViewRoles.value || canViewMenus.value);
 const showAuditMenu = computed(() => canViewOperLogs.value || canViewLoginLogs.value);
+const popupActionLoading = popupAction.loading;
 
 function handleThemeChange(themeKey) {
   themeStore.setTheme(themeKey);
@@ -189,19 +240,211 @@ async function loadNoticePanel() {
   }
 }
 
+async function loadNoticeRealtimeFallback() {
+  if (!authStore.isLoggedIn()) {
+    unreadCount.value = 0;
+    latestNotices.value = [];
+    return;
+  }
+  try {
+    const summary = await fetchMyNoticeRealtime();
+    unreadCount.value = Number(summary?.unreadCount || 0);
+    latestNotices.value = summary?.latestNotices || [];
+  } catch (error) {
+    ignoreHandledError(error);
+  }
+}
+
+function popupMuted() {
+  const mutedUntil = Number(sessionStorage.getItem(NOTICE_SNOOZE_KEY) || 0);
+  return mutedUntil > Date.now();
+}
+
+async function tryShowPopupNotices() {
+  if (!authStore.isLoggedIn() || popupMuted()) {
+    return;
+  }
+  if (route.path.startsWith('/messages/')) {
+    noticeDialogVisible.value = false;
+    popupCandidates.value = [];
+    return;
+  }
+  try {
+    const [candidates, realtime] = await Promise.all([
+      fetchMyPopupCandidates(20),
+      fetchMyNoticeRealtime()
+    ]);
+    popupCandidates.value = candidates || [];
+    unreadCount.value = Number(realtime?.unreadCount || 0);
+    latestNotices.value = realtime?.latestNotices || [];
+    popupIndex.value = 0;
+    noticeDialogVisible.value = popupCandidates.value.length > 0;
+  } catch (error) {
+    ignoreHandledError(error);
+  }
+}
+
+function handleNoticeRefreshEvent() {
+  loadNoticeRealtimeFallback();
+  tryShowPopupNotices();
+}
+
+function previewContent(content, maxLength = 72) {
+  if (!content) {
+    return '-';
+  }
+  const normalized = String(content).replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return '-';
+  }
+  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
+}
+
+function resetPopupDialog() {
+  noticeDialogVisible.value = false;
+  popupCandidates.value = [];
+  popupIndex.value = 0;
+}
+
 function handleNoticeVisibleChange(visible) {
   if (visible) {
     loadNoticePanel();
   }
 }
 
+function scheduleNoticeStreamReconnect() {
+  if (noticeStreamRetryTimer || !authStore.isLoggedIn()) {
+    return;
+  }
+  noticeStreamRetryTimer = window.setTimeout(() => {
+    noticeStreamRetryTimer = null;
+    connectNoticeStream();
+  }, NOTICE_STREAM_RETRY_DELAY);
+}
+
+function cleanupNoticeStream() {
+  if (noticeStreamController) {
+    noticeStreamController.abort();
+    noticeStreamController = null;
+  }
+  if (noticeStreamRetryTimer) {
+    window.clearTimeout(noticeStreamRetryTimer);
+    noticeStreamRetryTimer = null;
+  }
+}
+
+function connectNoticeStream() {
+  cleanupNoticeStream();
+  if (!authStore.isLoggedIn()) {
+    unreadCount.value = 0;
+    latestNotices.value = [];
+    return;
+  }
+  noticeStreamController = new AbortController();
+  subscribeMyNoticeStream(
+    (payload) => {
+      unreadCount.value = Number(payload?.unreadCount || 0);
+      latestNotices.value = payload?.latestNotices || [];
+    },
+    () => {
+      loadNoticeRealtimeFallback();
+    },
+    (error) => {
+      ignoreHandledError(error);
+    },
+    noticeStreamController.signal
+  ).then(() => {
+    if (!noticeStreamController?.signal.aborted) {
+      scheduleNoticeStreamReconnect();
+    }
+  }).catch((error) => {
+    if (noticeStreamController?.signal.aborted) {
+      return;
+    }
+    ignoreHandledError(error);
+    scheduleNoticeStreamReconnect();
+  });
+}
+
 function openNotice(noticeId) {
   router.push(`/messages/mine/${noticeId}`);
 }
 
+function openPopupNotice(noticeId) {
+  sessionStorage.setItem(NOTICE_SNOOZE_KEY, String(Date.now() + 10 * 1000));
+  resetPopupDialog();
+  router.push(`/messages/mine/${noticeId}`);
+}
+
+function handlePopupPrev() {
+  if (popupIndex.value <= 0) {
+    return;
+  }
+  popupIndex.value -= 1;
+}
+
+function handlePopupNext() {
+  if (popupIndex.value >= popupTotal.value - 1) {
+    return;
+  }
+  popupIndex.value += 1;
+}
+
+async function handlePopupReadAll() {
+  const current = popupCurrent.value;
+  if (!current?.noticeId) {
+    resetPopupDialog();
+    return;
+  }
+  try {
+    await popupAction.run(async () => {
+      await markMyNoticeRead(current.noticeId);
+      popupCandidates.value = popupCandidates.value.filter((item) => item.noticeId !== current.noticeId);
+      if (!popupCandidates.value.length) {
+        resetPopupDialog();
+        showSuccessMessage('已将当前消息标记为已读');
+        await loadNoticeRealtimeFallback();
+        return;
+      }
+      if (popupIndex.value >= popupCandidates.value.length) {
+        popupIndex.value = popupCandidates.value.length - 1;
+      }
+      showSuccessMessage('已将当前消息标记为已读');
+      await loadNoticeRealtimeFallback();
+    });
+  } catch (error) {
+    ignoreHandledError(error);
+  }
+}
+
+function handlePopupSnooze() {
+  sessionStorage.setItem(NOTICE_SNOOZE_KEY, String(Date.now() + 5 * 60 * 1000));
+  resetPopupDialog();
+  showSuccessMessage('五分钟内不再弹窗');
+}
+
+function openMessageCenter() {
+  sessionStorage.setItem(NOTICE_SNOOZE_KEY, String(Date.now() + 10 * 1000));
+  resetPopupDialog();
+  router.push('/messages/mine');
+}
+
 watch(() => route.fullPath, () => {
-  loadNoticePanel();
+  tryShowPopupNotices();
 }, { immediate: true });
+
+watch(() => authStore.token, () => {
+  connectNoticeStream();
+}, { immediate: true });
+
+onMounted(() => {
+  window.addEventListener('jq-notice-refresh', handleNoticeRefreshEvent);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('jq-notice-refresh', handleNoticeRefreshEvent);
+  cleanupNoticeStream();
+});
 </script>
 
 <style scoped>
@@ -297,6 +540,58 @@ watch(() => route.fullPath, () => {
   display: inline-flex;
 }
 
+.global-notice-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.global-notice-panel__summary {
+  display: flex;
+  justify-content: space-between;
+  color: var(--jq-card-subtitle);
+  font-size: 12px;
+}
+
+.global-notice-item {
+  padding: 14px 16px;
+  border-radius: 16px;
+  cursor: pointer;
+  background: linear-gradient(135deg, rgba(217, 238, 245, 0.75), rgba(247, 244, 230, 0.8));
+}
+
+.global-notice-item__title {
+  margin-top: 8px;
+  font-weight: 700;
+  color: var(--jq-card-title);
+}
+
+.global-notice-item__content {
+  margin-top: 8px;
+  color: var(--jq-card-subtitle);
+  line-height: 1.6;
+}
+
+.global-notice-item__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.global-notice-item__page {
+  font-size: 12px;
+  color: var(--jq-card-subtitle);
+}
+
+.global-notice-item__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  color: var(--jq-card-subtitle);
+  font-size: 12px;
+}
+
 :deep(.notice-dropdown-menu) {
   width: 340px;
   padding: 0;
@@ -348,7 +643,19 @@ watch(() => route.fullPath, () => {
   color: var(--jq-card-subtitle);
 }
 
+.notice-dropdown-item__content {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--jq-card-subtitle);
+}
+
 .notice-dropdown-item__dot {
+  color: #d9574a;
+  font-weight: 600;
+}
+
+.global-notice-item__dot {
   color: #d9574a;
   font-weight: 600;
 }

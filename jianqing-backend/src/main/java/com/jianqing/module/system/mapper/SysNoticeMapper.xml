@@ -4,17 +4,33 @@
 
     <select id="selectAllNotices" resultType="com.jianqing.module.system.entity.SysNotice">
         SELECT id, title, content, level, publish_mode, scheduled_at, popup_enabled, valid_from, valid_to,
-               target_type, status, published_at, remark, created_by, updated_by, created_at, updated_at
+               target_type, status, published_at, remark, created_by, updated_by, created_at, updated_at,
+               is_deleted, deleted_category, deleted_at, deleted_by
         FROM jq_sys_notice
+        WHERE is_deleted = 0
         ORDER BY id DESC
+    </select>
+
+    <select id="selectTrashNotices" resultType="com.jianqing.module.system.entity.SysNotice">
+        SELECT id, title, content, level, publish_mode, scheduled_at, popup_enabled, valid_from, valid_to,
+               target_type, status, published_at, remark, created_by, updated_by, created_at, updated_at,
+               is_deleted, deleted_category, deleted_at, deleted_by
+        FROM jq_sys_notice
+        WHERE is_deleted = 1
+        <if test="category != null and category != '' and category != 'ALL'">
+            AND deleted_category = #{category}
+        </if>
+        ORDER BY deleted_at DESC, id DESC
     </select>
 
     <select id="selectPendingPublishNotices" resultType="com.jianqing.module.system.entity.SysNotice">
         SELECT id, title, content, level, publish_mode, scheduled_at, popup_enabled, valid_from, valid_to,
-               target_type, status, published_at, remark, created_by, updated_by, created_at, updated_at
+               target_type, status, published_at, remark, created_by, updated_by, created_at, updated_at,
+               is_deleted, deleted_category, deleted_at, deleted_by
         FROM jq_sys_notice
         WHERE publish_mode = 'SCHEDULED'
           AND status = 'PENDING'
+          AND is_deleted = 0
           AND scheduled_at IS NOT NULL
           AND scheduled_at &lt;= #{now}
         ORDER BY scheduled_at ASC, id ASC

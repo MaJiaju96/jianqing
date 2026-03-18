@@ -19,6 +19,7 @@ import com.jianqing.module.system.dto.MenuSaveRequest;
 import com.jianqing.module.system.dto.MyNoticeDetailSummary;
 import com.jianqing.module.system.dto.MyNoticeSummary;
 import com.jianqing.module.system.dto.NoticeDetailSummary;
+import com.jianqing.module.system.dto.NoticeRealtimeSummary;
 import com.jianqing.module.system.dto.NoticeSaveRequest;
 import com.jianqing.module.system.dto.NoticeSummary;
 import com.jianqing.module.system.dto.RoleSaveRequest;
@@ -39,6 +40,7 @@ import com.jianqing.module.system.service.impl.UserDataScopeResolver.CurrentData
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -325,6 +327,11 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     }
 
     @Override
+    public List<NoticeSummary> listTrashNotices(String category) {
+        return noticeService.listTrashNotices(category);
+    }
+
+    @Override
     public NoticeDetailSummary getNoticeDetail(Long id) {
         return noticeService.getNoticeDetail(id);
     }
@@ -352,6 +359,16 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     @Override
     public void deleteNotice(Long id) {
         noticeService.deleteNotice(id);
+    }
+
+    @Override
+    public NoticeDetailSummary restoreNotice(Long id) {
+        return noticeService.restoreNotice(id);
+    }
+
+    @Override
+    public void purgeNotice(Long id) {
+        noticeService.purgeNotice(id);
     }
 
     @Override
@@ -387,6 +404,16 @@ public class SystemServiceImpl extends ServiceImpl<SysUserMapper, SysUser> imple
     @Override
     public void markAllNoticesRead(Long userId) {
         noticeService.markAllNoticesRead(userId);
+    }
+
+    @Override
+    public SseEmitter subscribeNoticeStream(Long userId) {
+        return noticeService.subscribeNoticeStream(userId);
+    }
+
+    @Override
+    public NoticeRealtimeSummary getNoticeRealtimeSummary(Long userId) {
+        return noticeService.getNoticeRealtimeSummary(userId);
     }
 
     @Cacheable(cacheNames = CACHE_SYSTEM_MENUS, key = "'" + ALL_CACHE_KEY + "'")

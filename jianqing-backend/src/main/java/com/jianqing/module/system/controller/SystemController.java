@@ -19,6 +19,7 @@ import com.jianqing.module.system.dto.MenuSaveRequest;
 import com.jianqing.module.system.dto.MyNoticeDetailSummary;
 import com.jianqing.module.system.dto.MyNoticeSummary;
 import com.jianqing.module.system.dto.NoticeDetailSummary;
+import com.jianqing.module.system.dto.NoticeRealtimeSummary;
 import com.jianqing.module.system.dto.NoticeSaveRequest;
 import com.jianqing.module.system.dto.NoticeSummary;
 import com.jianqing.module.system.dto.IdListRequest;
@@ -28,6 +29,7 @@ import com.jianqing.module.system.dto.UserSaveRequest;
 import com.jianqing.module.system.dto.UserSummary;
 import com.jianqing.module.system.service.SystemService;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -259,7 +262,12 @@ public class SystemController {
         return ApiResponse.success(systemService.listNotices());
     }
 
-    @GetMapping("/notices/{id}")
+    @GetMapping("/notices/trash")
+    public ApiResponse<List<NoticeSummary>> noticeTrash(@RequestParam(defaultValue = "all") String category) {
+        return ApiResponse.success(systemService.listTrashNotices(category));
+    }
+
+    @GetMapping("/notices/{id:\\d+}")
     public ApiResponse<NoticeDetailSummary> noticeDetail(@PathVariable Long id) {
         return ApiResponse.success(systemService.getNoticeDetail(id));
     }
@@ -269,25 +277,36 @@ public class SystemController {
         return ApiResponse.success(systemService.createNotice(request));
     }
 
-    @PostMapping("/notices/{id}/update")
+    @PostMapping("/notices/{id:\\d+}/update")
     public ApiResponse<NoticeDetailSummary> updateNotice(@PathVariable Long id,
-                                                          @Valid @RequestBody NoticeSaveRequest request) {
+                                                           @Valid @RequestBody NoticeSaveRequest request) {
         return ApiResponse.success(systemService.updateNotice(id, request));
     }
 
-    @PostMapping("/notices/{id}/publish")
+    @PostMapping("/notices/{id:\\d+}/publish")
     public ApiResponse<NoticeDetailSummary> publishNotice(@PathVariable Long id) {
         return ApiResponse.success(systemService.publishNotice(id));
     }
 
-    @PostMapping("/notices/{id}/cancel")
+    @PostMapping("/notices/{id:\\d+}/cancel")
     public ApiResponse<NoticeDetailSummary> cancelNotice(@PathVariable Long id) {
         return ApiResponse.success(systemService.cancelNotice(id));
     }
 
-    @PostMapping("/notices/{id}/delete")
+    @PostMapping("/notices/{id:\\d+}/delete")
     public ApiResponse<Void> deleteNotice(@PathVariable Long id) {
         systemService.deleteNotice(id);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/notices/{id:\\d+}/restore")
+    public ApiResponse<NoticeDetailSummary> restoreNotice(@PathVariable Long id) {
+        return ApiResponse.success(systemService.restoreNotice(id));
+    }
+
+    @PostMapping("/notices/{id:\\d+}/purge")
+    public ApiResponse<Void> purgeNotice(@PathVariable Long id) {
+        systemService.purgeNotice(id);
         return ApiResponse.success(null);
     }
 
@@ -301,6 +320,16 @@ public class SystemController {
         return ApiResponse.success(systemService.countUnreadNotices(currentUserId()));
     }
 
+    @GetMapping(path = "/my-notices/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter myNoticeStream() {
+        return systemService.subscribeNoticeStream(currentUserId());
+    }
+
+    @GetMapping("/my-notices/realtime")
+    public ApiResponse<NoticeRealtimeSummary> myNoticeRealtime() {
+        return ApiResponse.success(systemService.getNoticeRealtimeSummary(currentUserId()));
+    }
+
     @GetMapping("/my-notices/latest")
     public ApiResponse<List<MyNoticeSummary>> myLatestNotices(@RequestParam(defaultValue = "5") Integer limit) {
         return ApiResponse.success(systemService.listLatestNotices(currentUserId(), limit == null ? 5 : limit));
@@ -311,12 +340,12 @@ public class SystemController {
         return ApiResponse.success(systemService.listPopupCandidates(currentUserId(), limit == null ? 3 : limit));
     }
 
-    @GetMapping("/my-notices/{id}")
+    @GetMapping("/my-notices/{id:\\d+}")
     public ApiResponse<MyNoticeDetailSummary> myNoticeDetail(@PathVariable Long id) {
         return ApiResponse.success(systemService.getMyNoticeDetail(currentUserId(), id));
     }
 
-    @PostMapping("/my-notices/{id}/read")
+    @PostMapping("/my-notices/{id:\\d+}/read")
     public ApiResponse<Void> markMyNoticeRead(@PathVariable Long id) {
         systemService.markNoticeRead(currentUserId(), id);
         return ApiResponse.success(null);

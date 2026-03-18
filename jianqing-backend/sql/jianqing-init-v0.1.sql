@@ -187,12 +187,17 @@ CREATE TABLE IF NOT EXISTS jq_sys_notice (
   status          VARCHAR(32)   NOT NULL DEFAULT 'DRAFT',
   published_at    DATETIME      NULL,
   remark          VARCHAR(255)  NOT NULL DEFAULT '',
+  is_deleted      TINYINT       NOT NULL DEFAULT 0,
+  deleted_category VARCHAR(32)  NULL,
+  deleted_at      DATETIME      NULL,
+  deleted_by      BIGINT        NULL,
   created_by      BIGINT        NOT NULL DEFAULT 0,
   updated_by      BIGINT        NOT NULL DEFAULT 0,
   created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_jq_sys_notice_status_schedule (status, scheduled_at),
-  KEY idx_jq_sys_notice_published_at (published_at)
+  KEY idx_jq_sys_notice_published_at (published_at),
+  KEY idx_jq_sys_notice_deleted_category (is_deleted, deleted_category)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS jq_sys_notice_target (

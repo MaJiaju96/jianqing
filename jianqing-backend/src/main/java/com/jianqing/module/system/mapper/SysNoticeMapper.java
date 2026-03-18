@@ -13,5 +13,7 @@ public interface SysNoticeMapper extends BaseMapper<SysNotice> {
 
     List<SysNotice> selectAllNotices();
 
+    List<SysNotice> selectTrashNotices(@Param("category") String category);
+
     List<SysNotice> selectPendingPublishNotices(@Param("now") LocalDateTime now);
 }

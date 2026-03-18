@@ -3,14 +3,18 @@ package com.jianqing.module.system.service;
 import com.jianqing.module.system.dto.MyNoticeDetailSummary;
 import com.jianqing.module.system.dto.MyNoticeSummary;
 import com.jianqing.module.system.dto.NoticeDetailSummary;
+import com.jianqing.module.system.dto.NoticeRealtimeSummary;
 import com.jianqing.module.system.dto.NoticeSaveRequest;
 import com.jianqing.module.system.dto.NoticeSummary;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
 public interface NoticeService {
 
     List<NoticeSummary> listNotices();
+
+    List<NoticeSummary> listTrashNotices(String category);
 
     NoticeDetailSummary getNoticeDetail(Long id);
 
@@ -23,6 +27,10 @@ public interface NoticeService {
     NoticeDetailSummary cancelNotice(Long id);
 
     void deleteNotice(Long id);
+
+    NoticeDetailSummary restoreNotice(Long id);
+
+    void purgeNotice(Long id);
 
     List<MyNoticeSummary> listMyNotices(Long userId);
 
@@ -37,6 +45,10 @@ public interface NoticeService {
     void markNoticeRead(Long userId, Long noticeId);
 
     void markAllNoticesRead(Long userId);
+
+    SseEmitter subscribeNoticeStream(Long userId);
+
+    NoticeRealtimeSummary getNoticeRealtimeSummary(Long userId);
 
     void publishPendingNotices();
 }

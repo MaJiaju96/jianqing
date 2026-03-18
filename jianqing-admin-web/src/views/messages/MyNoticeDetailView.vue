@@ -16,8 +16,8 @@
       <div class="notice-hero" :class="`notice-hero--${detail.level?.toLowerCase() || 'normal'}`">
         <div class="notice-hero__meta">
           <el-tag :type="levelTagType(detail.level)">{{ levelText(detail.level) }}</el-tag>
-          <span>发布时间：{{ detail.publishedAt || '-' }}</span>
-          <span>阅读时间：{{ detail.readAt || '刚刚已读' }}</span>
+          <span>发布时间：{{ formatDateTimeText(detail.publishedAt) }}</span>
+          <span>阅读时间：{{ formatDateTimeText(detail.readAt, '刚刚已读') }}</span>
         </div>
         <div class="notice-hero__title">{{ detail.title }}</div>
       </div>
@@ -25,13 +25,18 @@
       <el-descriptions :column="2" border class="notice-detail-meta">
         <el-descriptions-item label="消息状态">{{ detail.readStatus === 1 ? '已读' : '未读' }}</el-descriptions-item>
         <el-descriptions-item label="提醒方式">{{ detail.popupEnabled === 1 ? '首页弹窗提醒' : '仅列表展示' }}</el-descriptions-item>
-        <el-descriptions-item label="生效开始">{{ detail.validFrom || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="生效结束">{{ detail.validTo || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="生效开始">{{ formatDateTimeText(detail.validFrom) }}</el-descriptions-item>
+        <el-descriptions-item label="生效结束">{{ formatDateTimeText(detail.validTo) }}</el-descriptions-item>
       </el-descriptions>
 
       <el-card shadow="never" class="notice-content-card">
         <template #header>通知正文</template>
         <div class="notice-content">{{ detail.content }}</div>
+      </el-card>
+
+      <el-card shadow="never" class="notice-content-card">
+        <template #header>备注</template>
+        <div class="notice-content">{{ detail.remark || '-' }}</div>
       </el-card>
     </template>
   </el-card>
@@ -42,6 +47,7 @@ import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { fetchMyNoticeDetail } from '../../api/system';
 import { NOTICE_LEVEL_OPTIONS } from '../../constants/app';
+import { formatDateTimeText } from '../../utils/datetime';
 import { ignoreHandledError } from '../../utils/errors';
 
 const route = useRoute();

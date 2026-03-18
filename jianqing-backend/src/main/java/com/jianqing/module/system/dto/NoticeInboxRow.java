@@ -14,6 +14,7 @@ public class NoticeInboxRow {
     private LocalDateTime readAt;
     private LocalDateTime validFrom;
     private LocalDateTime validTo;
+    private String remark;
 
     public Long getNoticeId() {
         return noticeId;
@@ -93,5 +94,13 @@ public class NoticeInboxRow {
 
     public void setValidTo(LocalDateTime validTo) {
         this.validTo = validTo;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
     }
 }
