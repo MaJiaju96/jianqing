@@ -139,7 +139,7 @@
     </div>
   </el-card>
 
-  <el-dialog v-model="dialogVisible" :title="editingId ? '编辑通知' : '新建通知'" width="760px" append-to-body>
+  <el-dialog v-model="dialogVisible" :title="editingId ? '编辑通知' : '新建通知'" width="760px" append-to-body @close="handleEditDialogClose">
     <el-form label-width="96px">
       <el-form-item label="通知标题">
         <el-input v-model="form.title" maxlength="128" />
@@ -200,13 +200,13 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button :disabled="submitting" @click="dialogVisible = false">取消</el-button>
+      <el-button :disabled="submitting" @click="handleEditDialogClose">取消</el-button>
       <el-button type="primary" plain :loading="submitting" @click="handleSaveDraft">保存草稿</el-button>
       <el-button type="primary" :loading="submitting" @click="handleSubmitAndPublish">发布</el-button>
     </template>
   </el-dialog>
 
-  <el-dialog v-model="detailVisible" title="通知详情" width="760px" append-to-body>
+  <el-dialog v-model="detailVisible" title="通知详情" width="760px" append-to-body @close="handleDetailDialogClose">
     <template v-if="detail">
       <div class="notice-manage-detail__head">
         <div class="notice-manage-detail__title">{{ detail.title }}</div>
@@ -298,6 +298,8 @@ const submitAction = useActionLoading();
 const loading = tableFeedback.loading;
 const submitting = submitAction.loading;
 const tableEmptyText = tableFeedback.emptyText;
+let detailRequestToken = 0;
+let editRequestToken = 0;
 
 const {
   canAdd,
@@ -381,14 +383,25 @@ async function loadData() {
     if (tableRef.value) {
       tableRef.value.clearSelection();
     }
-    if (!optionLoaded.value) {
-      const [roles, depts, users] = await Promise.all([fetchRoles(), fetchDepts(), fetchUsers()]);
-      roleOptions.value = roles.map((item) => ({ label: item.roleName, value: item.id }));
-      deptOptions.value = flattenDeptOptions(depts).map((item) => ({ label: item.label, value: item.id }));
-      userOptions.value = users.map((item) => ({ label: `${item.nickname || item.username}（${item.username}）`, value: item.id }));
-      optionLoaded.value = true;
-    }
   });
+  await ensureTargetOptionsLoaded();
+}
+
+async function ensureTargetOptionsLoaded() {
+  if (optionLoaded.value) {
+    return true;
+  }
+  try {
+    const [roles, depts, users] = await Promise.all([fetchRoles(), fetchDepts(), fetchUsers()]);
+    roleOptions.value = roles.map((item) => ({ label: item.roleName, value: item.id }));
+    deptOptions.value = flattenDeptOptions(depts).map((item) => ({ label: item.label, value: item.id }));
+    userOptions.value = users.map((item) => ({ label: `${item.nickname || item.username}（${item.username}）`, value: item.id }));
+    optionLoaded.value = true;
+    return true;
+  } catch (error) {
+    ignoreHandledError(error);
+    return false;
+  }
 }
 
 function handleSelectionChange(value) {
@@ -466,15 +479,26 @@ function handleReset() {
 }
 
 async function openDetail(id) {
+  const currentToken = ++detailRequestToken;
   try {
-    detail.value = await fetchNoticeDetail(id);
+    const data = await fetchNoticeDetail(id);
+    if (currentToken !== detailRequestToken) {
+      return;
+    }
+    detail.value = data;
     detailVisible.value = true;
   } catch (error) {
+    if (currentToken === detailRequestToken) {
+      detail.value = null;
+      detailVisible.value = false;
+    }
     ignoreHandledError(error);
   }
 }
 
 function openCreate() {
+  void ensureTargetOptionsLoaded();
+  editRequestToken += 1;
   editingId.value = null;
   form.value = createEmptyForm();
   validRange.value = [];
@@ -482,8 +506,12 @@ function openCreate() {
 }
 
 async function openEdit(id) {
+  const currentToken = ++editRequestToken;
   try {
-    const data = await fetchNoticeDetail(id);
+    const [data] = await Promise.all([fetchNoticeDetail(id), ensureTargetOptionsLoaded()]);
+    if (currentToken !== editRequestToken) {
+      return;
+    }
     editingId.value = id;
     form.value = {
       title: data.title,
@@ -499,8 +527,28 @@ async function openEdit(id) {
     validRange.value = data.validFrom || data.validTo ? [data.validFrom || '', data.validTo || ''] : [];
     dialogVisible.value = true;
   } catch (error) {
+    if (currentToken === editRequestToken) {
+      editingId.value = null;
+      form.value = createEmptyForm();
+      validRange.value = [];
+      dialogVisible.value = false;
+    }
     ignoreHandledError(error);
   }
+}
+
+function handleEditDialogClose() {
+  editRequestToken += 1;
+  dialogVisible.value = false;
+  editingId.value = null;
+  form.value = createEmptyForm();
+  validRange.value = [];
+}
+
+function handleDetailDialogClose() {
+  detailRequestToken += 1;
+  detailVisible.value = false;
+  detail.value = null;
 }
 
 function validateForm() {
@@ -788,10 +836,11 @@ watch(() => form.value.publishMode, (value) => {
   }
 });
 
-watch(() => form.value.targetType, (value) => {
-  if (value === 'ALL') {
-    form.value.targetIds = [];
+watch(() => form.value.targetType, (value, oldValue) => {
+  if (value === oldValue) {
+    return;
   }
+  form.value.targetIds = [];
 });
 
 watch(activeBucket, async (value) => {

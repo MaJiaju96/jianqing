@@ -99,6 +99,7 @@ function createLocalListPage(options) {
   });
 
   const total = computed(() => displayRows.value.length);
+  const totalPages = computed(() => Math.max(1, Math.ceil(total.value / options.pageSize.value)));
 
   const pagedRows = computed(() => {
     const start = (options.pageNo.value - 1) * options.pageSize.value;
@@ -108,6 +109,16 @@ function createLocalListPage(options) {
   watch([keyword, filterValue], () => {
     options.pageNo.value = 1;
   });
+
+  watch([totalPages, options.pageSize], () => {
+    if (options.pageNo.value > totalPages.value) {
+      options.pageNo.value = totalPages.value;
+      return;
+    }
+    if (options.pageNo.value < 1) {
+      options.pageNo.value = 1;
+    }
+  }, { immediate: true });
 
   function handleSearch() {
     keyword.value = keywordInput.value.trim();

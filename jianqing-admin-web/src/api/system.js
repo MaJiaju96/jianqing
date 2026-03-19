@@ -272,9 +272,15 @@ export async function subscribeMyNoticeStream(onMessage, onOpen, onError, signal
     const chunks = buffer.split('\n\n');
     buffer = chunks.pop() || '';
     chunks.forEach((chunk) => {
-      const event = parseSseChunk(chunk);
-      if (event?.event === 'notice-sync' && event.data && onMessage) {
-        onMessage(JSON.parse(event.data));
+      try {
+        const event = parseSseChunk(chunk);
+        if (event?.event === 'notice-sync' && event.data && onMessage) {
+          onMessage(JSON.parse(event.data));
+        }
+      } catch (error) {
+        if (onError) {
+          onError(error);
+        }
       }
     });
   }

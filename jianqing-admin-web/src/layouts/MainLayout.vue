@@ -90,7 +90,7 @@
     </el-container>
   </el-container>
 
-  <el-dialog v-model="noticeDialogVisible" title="待处理通知" width="620px" append-to-body>
+  <el-dialog v-model="noticeDialogVisible" title="待处理通知" width="620px" append-to-body :before-close="handlePopupBeforeClose">
     <div v-if="popupCurrent" class="global-notice-panel">
       <div class="global-notice-panel__summary">
         <span>待提醒 {{ popupTotal }} 条</span>
@@ -156,6 +156,7 @@ const noticeDialogVisible = ref(false);
 const popupAction = useActionLoading();
 let noticeStreamController = null;
 let noticeStreamRetryTimer = null;
+let popupSyncToken = 0;
 const popupTotal = computed(() => popupCandidates.value.length);
 const popupCurrent = computed(() => popupCandidates.value[popupIndex.value] || null);
 const activePath = computed(() => {
@@ -229,12 +230,24 @@ function levelTagType(level) {
 
 async function loadNoticePanel() {
   if (!authStore.isLoggedIn()) {
+    unreadCount.value = 0;
+    latestNotices.value = [];
     return;
   }
   try {
-    const [count, latest] = await Promise.all([fetchMyNoticeUnreadCount(), fetchMyLatestNotices(5)]);
-    unreadCount.value = Number(count || 0);
-    latestNotices.value = latest || [];
+    const [countResult, latestResult] = await Promise.allSettled([fetchMyNoticeUnreadCount(), fetchMyLatestNotices(5)]);
+    if (countResult.status === 'fulfilled') {
+      unreadCount.value = Number(countResult.value || 0);
+    } else {
+      unreadCount.value = 0;
+      ignoreHandledError(countResult.reason);
+    }
+    if (latestResult.status === 'fulfilled') {
+      latestNotices.value = latestResult.value || [];
+    } else {
+      latestNotices.value = [];
+      ignoreHandledError(latestResult.reason);
+    }
   } catch (error) {
     ignoreHandledError(error);
   }
@@ -262,23 +275,35 @@ function popupMuted() {
 
 async function tryShowPopupNotices() {
   if (!authStore.isLoggedIn() || popupMuted()) {
+    resetPopupDialog();
     return;
   }
   if (route.path.startsWith('/messages/')) {
-    noticeDialogVisible.value = false;
-    popupCandidates.value = [];
+    resetPopupDialog();
     return;
   }
+  const currentToken = ++popupSyncToken;
   try {
-    const [candidates, realtime] = await Promise.all([
-      fetchMyPopupCandidates(20),
-      fetchMyNoticeRealtime()
-    ]);
-    popupCandidates.value = candidates || [];
-    unreadCount.value = Number(realtime?.unreadCount || 0);
-    latestNotices.value = realtime?.latestNotices || [];
-    popupIndex.value = 0;
-    noticeDialogVisible.value = popupCandidates.value.length > 0;
+    const [candidateResult, realtimeResult] = await Promise.allSettled([fetchMyPopupCandidates(20), fetchMyNoticeRealtime()]);
+    if (currentToken !== popupSyncToken) {
+      return;
+    }
+    if (candidateResult.status === 'fulfilled') {
+      popupCandidates.value = candidateResult.value || [];
+      popupIndex.value = 0;
+      noticeDialogVisible.value = popupCandidates.value.length > 0;
+    } else {
+      resetPopupDialog();
+      ignoreHandledError(candidateResult.reason);
+    }
+    if (realtimeResult.status === 'fulfilled') {
+      unreadCount.value = Number(realtimeResult.value?.unreadCount || 0);
+      latestNotices.value = realtimeResult.value?.latestNotices || [];
+    } else {
+      unreadCount.value = 0;
+      latestNotices.value = [];
+      ignoreHandledError(realtimeResult.reason);
+    }
   } catch (error) {
     ignoreHandledError(error);
   }
@@ -287,6 +312,33 @@ async function tryShowPopupNotices() {
 function handleNoticeRefreshEvent() {
   loadNoticeRealtimeFallback();
   tryShowPopupNotices();
+}
+
+async function syncPopupCandidates() {
+  if (!authStore.isLoggedIn() || popupMuted()) {
+    resetPopupDialog();
+    return;
+  }
+  if (route.path.startsWith('/messages/')) {
+    resetPopupDialog();
+    return;
+  }
+  const currentToken = ++popupSyncToken;
+  try {
+    const candidates = await fetchMyPopupCandidates(20);
+    if (currentToken !== popupSyncToken) {
+      return;
+    }
+    popupCandidates.value = candidates || [];
+    if (!popupCandidates.value.length) {
+      resetPopupDialog();
+      return;
+    }
+    popupIndex.value = Math.min(popupIndex.value, popupCandidates.value.length - 1);
+    noticeDialogVisible.value = true;
+  } catch (error) {
+    ignoreHandledError(error);
+  }
 }
 
 function previewContent(content, maxLength = 72) {
@@ -301,6 +353,7 @@ function previewContent(content, maxLength = 72) {
 }
 
 function resetPopupDialog() {
+  popupSyncToken += 1;
   noticeDialogVisible.value = false;
   popupCandidates.value = [];
   popupIndex.value = 0;
@@ -338,6 +391,7 @@ function connectNoticeStream() {
   if (!authStore.isLoggedIn()) {
     unreadCount.value = 0;
     latestNotices.value = [];
+    resetPopupDialog();
     return;
   }
   noticeStreamController = new AbortController();
@@ -345,6 +399,7 @@ function connectNoticeStream() {
     (payload) => {
       unreadCount.value = Number(payload?.unreadCount || 0);
       latestNotices.value = payload?.latestNotices || [];
+      syncPopupCandidates();
     },
     () => {
       loadNoticeRealtimeFallback();
@@ -427,6 +482,12 @@ function openMessageCenter() {
   sessionStorage.setItem(NOTICE_SNOOZE_KEY, String(Date.now() + 10 * 1000));
   resetPopupDialog();
   router.push('/messages/mine');
+}
+
+function handlePopupBeforeClose(done) {
+  sessionStorage.setItem(NOTICE_SNOOZE_KEY, String(Date.now() + 5 * 60 * 1000));
+  resetPopupDialog();
+  done();
 }
 
 watch(() => route.fullPath, () => {
@@ -548,6 +609,8 @@ onBeforeUnmount(() => {
 
 .global-notice-panel__summary {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   justify-content: space-between;
   color: var(--jq-card-subtitle);
   font-size: 12px;
@@ -563,13 +626,16 @@ onBeforeUnmount(() => {
 .global-notice-item__title {
   margin-top: 8px;
   font-weight: 700;
+  line-height: 1.5;
   color: var(--jq-card-title);
+  word-break: break-word;
 }
 
 .global-notice-item__content {
   margin-top: 8px;
   color: var(--jq-card-subtitle);
   line-height: 1.6;
+  word-break: break-word;
 }
 
 .global-notice-item__top {
@@ -648,6 +714,10 @@ onBeforeUnmount(() => {
   font-size: 12px;
   line-height: 1.5;
   color: var(--jq-card-subtitle);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .notice-dropdown-item__dot {
@@ -669,5 +739,20 @@ onBeforeUnmount(() => {
 :deep(.el-dropdown-menu__item.is-current) {
   color: var(--jq-menu-active-text-color);
   font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .jq-header {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .jq-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
 }
 </style>

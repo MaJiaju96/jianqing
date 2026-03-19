@@ -7,7 +7,7 @@
           <div class="jq-page-subtitle">查看站内通知全文与阅读状态。</div>
         </div>
         <div class="notice-detail-head__actions">
-          <el-button @click="router.push('/messages/mine')">返回列表</el-button>
+          <el-button @click="handleBack">返回列表</el-button>
         </div>
       </div>
     </template>
@@ -39,11 +39,15 @@
         <div class="notice-content">{{ detail.remark || '-' }}</div>
       </el-card>
     </template>
+
+    <el-empty v-else-if="!loading" description="消息不存在或已失效，请返回列表后重试。" class="notice-detail-empty">
+      <el-button type="primary" @click="handleBack">返回列表</el-button>
+    </el-empty>
   </el-card>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { fetchMyNoticeDetail } from '../../api/system';
 import { NOTICE_LEVEL_OPTIONS } from '../../constants/app';
@@ -54,6 +58,7 @@ const route = useRoute();
 const router = useRouter();
 const detail = ref(null);
 const loading = ref(false);
+let detailRequestToken = 0;
 
 function levelText(level) {
   return NOTICE_LEVEL_OPTIONS.find((item) => item.value === level)?.label || level || '-';
@@ -65,19 +70,48 @@ function levelTagType(level) {
 
 async function loadDetail(id) {
   if (!id) {
+    detailRequestToken += 1;
+    detail.value = null;
+    loading.value = false;
     return;
   }
+  const currentToken = ++detailRequestToken;
   loading.value = true;
   try {
-    detail.value = await fetchMyNoticeDetail(id);
+    const data = await fetchMyNoticeDetail(id);
+    if (currentToken !== detailRequestToken) {
+      return;
+    }
+    detail.value = data;
+    notifyNoticeRefresh();
   } catch (error) {
+    if (currentToken === detailRequestToken) {
+      detail.value = null;
+    }
     ignoreHandledError(error);
   } finally {
-    loading.value = false;
+    if (currentToken === detailRequestToken) {
+      loading.value = false;
+    }
   }
 }
 
+function notifyNoticeRefresh() {
+  window.dispatchEvent(new CustomEvent('jq-notice-refresh'));
+}
+
+function handleBack() {
+  detailRequestToken += 1;
+  detail.value = null;
+  loading.value = false;
+  router.push('/messages/mine');
+}
+
 watch(() => route.params.id, (id) => loadDetail(id), { immediate: true });
+
+onBeforeUnmount(() => {
+  detailRequestToken += 1;
+});
 </script>
 
 <style scoped>
@@ -130,5 +164,9 @@ watch(() => route.params.id, (id) => loadDetail(id), { immediate: true });
   white-space: pre-wrap;
   line-height: 1.8;
   color: var(--jq-card-text, #31444d);
+}
+
+.notice-detail-empty {
+  min-height: 360px;
 }
 </style>

@@ -187,6 +187,7 @@ async function handleMarkAllRead() {
       await markAllMyNoticesRead();
       showSuccessMessage('已全部标记已读');
       await loadRows();
+      notifyNoticeRefresh();
     });
   } catch (error) {
     ignoreHandledError(error);
@@ -211,10 +212,18 @@ async function handleBatchMarkRead(excludeUrgent) {
   try {
     await ElMessageBox.confirm(title, '提示', { type: 'warning' });
     await batchReadAction.run(async () => {
-      await Promise.all(candidates.map((item) => markMyNoticeRead(item.noticeId)));
-      showSuccessMessage(`已标记 ${candidates.length} 条消息为已读`);
+      const settled = await runBatchMarkRead(candidates, 4);
+      const successCount = settled.filter((item) => item.status === 'fulfilled').length;
+      const failedCount = settled.length - successCount;
+      if (successCount) {
+        showSuccessMessage(`已标记 ${successCount} 条消息为已读`);
+      }
+      if (failedCount) {
+        ElMessage.warning(`${failedCount} 条消息处理失败，请刷新后重试`);
+      }
       await loadRows();
       handleListSearch();
+      notifyNoticeRefresh();
     });
   } catch (error) {
     ignoreHandledError(error);
@@ -237,7 +246,42 @@ function previewContent(content) {
   if (!content) {
     return '-';
   }
-  return content.length > 80 ? `${content.slice(0, 80)}...` : content;
+  const normalized = String(content).replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return '-';
+  }
+  return normalized.length > 80 ? `${normalized.slice(0, 80)}...` : normalized;
+}
+
+function notifyNoticeRefresh() {
+  window.dispatchEvent(new CustomEvent('jq-notice-refresh'));
+}
+
+async function runBatchMarkRead(items, limit) {
+  const safeLimit = Math.max(1, Number(limit) || 1);
+  const results = new Array(items.length);
+  let currentIndex = 0;
+
+  async function worker() {
+    while (currentIndex < items.length) {
+      const index = currentIndex;
+      currentIndex += 1;
+      try {
+        await markMyNoticeRead(items[index].noticeId);
+        results[index] = { status: 'fulfilled' };
+      } catch (error) {
+        results[index] = { status: 'rejected', reason: error };
+        ignoreHandledError(error);
+      }
+    }
+  }
+
+  const workers = [];
+  for (let i = 0; i < Math.min(safeLimit, items.length); i += 1) {
+    workers.push(worker());
+  }
+  await Promise.all(workers);
+  return results;
 }
 
 usePageInitializer(async () => {
